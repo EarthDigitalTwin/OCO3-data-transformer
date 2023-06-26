@@ -7,7 +7,7 @@ output:  # required; one-of
 input: # required; one of
   single-file: # url to single input file
   queue: # AWS SQS queue to monitor for inputs
-    url:
+    url: https://sqs.us-west-2.amazonaws.com/yaddayaddayadda/oco3SAMQueue
     region: us-west-2 # optional; assume us-west-2; should match output.s3.region
 drop-dims: # optional
   - group: "/"
