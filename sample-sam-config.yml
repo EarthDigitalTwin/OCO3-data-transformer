@@ -1,0 +1,32 @@
+output:  # required; one-of
+  s3:
+    url: s3://sam-zarr-bucket/ # required
+    region: us-west-2 # optional; assume us-west-2; should match input.queue.region
+  local:
+    path:
+input: # required; one of
+  single-file: # url to single input file
+  queue: # AWS SQS queue to monitor for inputs
+    url:
+    region: us-west-2 # optional; assume us-west-2; should match output.s3.region
+drop-dims: # optional
+  - group: "/"
+    name: xco2_averaging_kernel # Just an example; probably wouldn't drop a root variable
+  - group: /Sounding # required
+    name: albedo_slope_o2a # required
+targets: # required
+  - type: city
+    locations:
+      - name: Brisbane_Australia
+        point:
+          wkt: POINT(152.92334 -27.45844)
+      - name: Los_Angeles_USA
+        point:
+          lat: 34.050376
+          lon: -118.241413
+  - type: volcano
+    locations:
+      - name: Popocatepetl
+        point:
+          lat: 19
+          lon: -98.5

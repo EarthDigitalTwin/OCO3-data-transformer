@@ -1,0 +1,12 @@
+python>=3.9
+xarray
+dask
+netCDF4
+bottleneck
+scipy
+zarr
+h5netcdf
+cftime
+shapely
+pyyaml
+boto3
