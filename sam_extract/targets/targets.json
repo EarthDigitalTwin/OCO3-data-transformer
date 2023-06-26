@@ -1,0 +1,1644 @@
+{
+    "targets": [
+        {
+            "type": "city",
+            "locations": [
+                {
+                    "name": "Mexico_City_Mexico",
+                    "id": "fossil0036",
+                    "point": {
+                        "wkt": "POINT(-99.130205 19.43547)"
+                    }
+                },
+                {
+                    "name": "Medina_Saudi_Arabia",
+                    "id": "fossil0150",
+                    "point": {
+                        "wkt": "POINT(39.609594 24.470712)"
+                    }
+                },
+                {
+                    "name": "Chongqing_China",
+                    "id": "fossil0066",
+                    "point": {
+                        "wkt": "POINT(106.556296 29.56607)"
+                    }
+                },
+                {
+                    "name": "Hyderabad_India",
+                    "id": "fossil0087",
+                    "point": {
+                        "wkt": "POINT(78.473629 17.398431)"
+                    }
+                },
+                {
+                    "name": "Al_Ain_UAE",
+                    "id": "fossil0126",
+                    "point": {
+                        "wkt": "POINT(55.68952 24.210827)"
+                    }
+                },
+                {
+                    "name": "Washington_DC_USA",
+                    "id": "fossil0033",
+                    "point": {
+                        "wkt": "POINT(-77.027491 38.893212)"
+                    }
+                },
+                {
+                    "name": "Chennai_India",
+                    "id": "fossil0105",
+                    "point": {
+                        "wkt": "POINT(80.147542 13.031651)"
+                    }
+                },
+                {
+                    "name": "Seoul_South_Korea",
+                    "id": "fossil0001",
+                    "point": {
+                        "wkt": NaN
+                    }
+                },
+                {
+                    "name": "Pusan_South_Korea",
+                    "id": "fossil0049",
+                    "point": {
+                        "wkt": "POINT(129.040721 35.380498)"
+                    }
+                },
+                {
+                    "name": "Benha_Egypt",
+                    "id": "fossil0016",
+                    "point": {
+                        "wkt": "POINT(31.182166 30.462319)"
+                    }
+                },
+                {
+                    "name": "Sacramento_USA",
+                    "id": "fossil0110",
+                    "point": {
+                        "wkt": "POINT(-121.486423 38.582303)"
+                    }
+                },
+                {
+                    "name": "Xiamen_China",
+                    "id": "fossil0130",
+                    "point": {
+                        "wkt": "POINT(118.05774 24.61404)"
+                    }
+                },
+                {
+                    "name": "Lahore_Pakistan",
+                    "id": "fossil0168",
+                    "point": {
+                        "wkt": "POINT(74.347286 31.552939)"
+                    }
+                },
+                {
+                    "name": "Buenos_Aires_Argentina",
+                    "id": "fossil0035",
+                    "point": {
+                        "wkt": "POINT(-58.69946 -34.861215)"
+                    }
+                },
+                {
+                    "name": "St_Petersburg_USA",
+                    "id": "fossil0134",
+                    "point": {
+                        "wkt": "POINT(-82.520069 27.888221)"
+                    }
+                },
+                {
+                    "name": "Miller_Power_Plant_USA",
+                    "id": "fossil0180",
+                    "point": {
+                        "wkt": "POINT(-87.116134 33.643133)"
+                    }
+                },
+                {
+                    "name": "Quanzhou_China",
+                    "id": "fossil0071",
+                    "point": {
+                        "wkt": "POINT(118.57052 24.92197)"
+                    }
+                },
+                {
+                    "name": "Dubai_UAE",
+                    "id": "fossil0011",
+                    "point": {
+                        "wkt": "POINT(55.44884 25.12951)"
+                    }
+                },
+                {
+                    "name": "St_Louis_USA",
+                    "id": "fossil0081",
+                    "point": {
+                        "wkt": "POINT(-90.195126 38.63061)"
+                    }
+                },
+                {
+                    "name": "Wuhan_China",
+                    "id": "fossil0040",
+                    "point": {
+                        "wkt": "POINT(114.328321 30.646782)"
+                    }
+                },
+                {
+                    "name": "Jinan_China",
+                    "id": "fossil0083",
+                    "point": {
+                        "wkt": "POINT(117.00141 36.67131)"
+                    }
+                },
+                {
+                    "name": "Philadelphia_USA",
+                    "id": "fossil0027",
+                    "point": {
+                        "wkt": "POINT(-75.157564 39.954986)"
+                    }
+                },
+                {
+                    "name": "Chifeng_China",
+                    "id": "fossil0123",
+                    "point": {
+                        "wkt": "POINT(118.959907 42.274641)"
+                    }
+                },
+                {
+                    "name": "Jeddah_Saudi_Arabia",
+                    "id": "fossil0032",
+                    "point": {
+                        "wkt": "POINT(39.32247 21.642386)"
+                    }
+                },
+                {
+                    "name": "Nanjing_China",
+                    "id": "fossil0043",
+                    "point": {
+                        "wkt": "POINT(118.781501 32.064869)"
+                    }
+                },
+                {
+                    "name": "Shantou_China",
+                    "id": "fossil0046",
+                    "point": {
+                        "wkt": "POINT(116.56479 23.51814)"
+                    }
+                },
+                {
+                    "name": "Rio_de_Janeiro_Brazil",
+                    "id": "fossil0133",
+                    "point": {
+                        "wkt": "POINT(-43.162802 -22.707722)"
+                    }
+                },
+                {
+                    "name": "Karachi_Pakistan",
+                    "id": "fossil0174",
+                    "point": {
+                        "wkt": "POINT(67.233219 25.066309)"
+                    }
+                },
+                {
+                    "name": "New_Orleans_USA",
+                    "id": "fossil0138",
+                    "point": {
+                        "wkt": "POINT(-90.074204 29.956977)"
+                    }
+                },
+                {
+                    "name": "Cologne_Germany",
+                    "id": "fossil0030",
+                    "point": {
+                        "wkt": "POINT(6.962143 50.942574)"
+                    }
+                },
+                {
+                    "name": "Ashgabat_Turkmenistan",
+                    "id": "fossil0170",
+                    "point": {
+                        "wkt": "POINT(58.387676 37.952904)"
+                    }
+                },
+                {
+                    "name": "Tel_Aviv-Yafo_Israel",
+                    "id": "fossil0074",
+                    "point": {
+                        "wkt": "POINT(35.01953 32.09556)"
+                    }
+                },
+                {
+                    "name": "Houston_USA",
+                    "id": "fossil0031",
+                    "point": {
+                        "wkt": "POINT(-95.366149 29.763863)"
+                    }
+                },
+                {
+                    "name": "Budapest_Hungary",
+                    "id": "fossil0169",
+                    "point": {
+                        "wkt": "POINT(19.061114 47.501606)"
+                    }
+                },
+                {
+                    "name": "Hangzhou_China",
+                    "id": "fossil0041",
+                    "point": {
+                        "wkt": "POINT(120.164992 30.296915)"
+                    }
+                },
+                {
+                    "name": "Zibo_China",
+                    "id": "fossil0120",
+                    "point": {
+                        "wkt": "POINT(118.067534 36.793533)"
+                    }
+                },
+                {
+                    "name": "Cleveland_USA",
+                    "id": "fossil0097",
+                    "point": {
+                        "wkt": "POINT(-81.685889 41.507371)"
+                    }
+                },
+                {
+                    "name": "Indianapolis_USA",
+                    "id": "fossil0119",
+                    "point": {
+                        "wkt": "POINT(-86.14537 39.769689)"
+                    }
+                },
+                {
+                    "name": "Adelaide_Australia",
+                    "id": "fossil0151",
+                    "point": {
+                        "wkt": "POINT(138.767339 -34.796665)"
+                    }
+                },
+                {
+                    "name": "Ad_Damman_Saudi_Arabia",
+                    "id": "fossil0069",
+                    "point": {
+                        "wkt": "POINT(49.81005 26.183082)"
+                    }
+                },
+                {
+                    "name": "Changchun_China",
+                    "id": "fossil0091",
+                    "point": {
+                        "wkt": "POINT(125.308943 43.886555)"
+                    }
+                },
+                {
+                    "name": "Warsaw_Poland",
+                    "id": "fossil0152",
+                    "point": {
+                        "wkt": "POINT(21.027704 52.245634)"
+                    }
+                },
+                {
+                    "name": "Las_Vegas_USA",
+                    "id": "fossil0100",
+                    "point": {
+                        "wkt": "POINT(-115.135878 36.174938)"
+                    }
+                },
+                {
+                    "name": "Wenzhou_China",
+                    "id": "fossil0070",
+                    "point": {
+                        "wkt": "POINT(120.60682 28.05942)"
+                    }
+                },
+                {
+                    "name": "Al-Ahmadi_Kuwait",
+                    "id": "fossil0019",
+                    "point": {
+                        "wkt": "POINT(47.895341 28.922262)"
+                    }
+                },
+                {
+                    "name": "Tokyo_Japan",
+                    "id": "fossil0009",
+                    "point": {
+                        "wkt": "POINT(139.695795 35.69249)"
+                    }
+                },
+                {
+                    "name": "Taichung_Taiwan",
+                    "id": "fossil0132",
+                    "point": {
+                        "wkt": "POINT(120.70821 24.23324)"
+                    }
+                },
+                {
+                    "name": "Calgary_Canada",
+                    "id": "fossil0145",
+                    "point": {
+                        "wkt": "POINT(-114.055994 51.046166)"
+                    }
+                },
+                {
+                    "name": "Katowice_Poland",
+                    "id": "fossil0172",
+                    "point": {
+                        "wkt": "POINT(19.037824 50.257601)"
+                    }
+                },
+                {
+                    "name": "Houston_GeoCarb_USA",
+                    "id": "fossil0237",
+                    "point": {
+                        "wkt": "POINT(-95.27968 29.47058)"
+                    }
+                },
+                {
+                    "name": "Atlanta_USA",
+                    "id": "fossil0059",
+                    "point": {
+                        "wkt": "POINT(-84.387233 33.751438)"
+                    }
+                },
+                {
+                    "name": "Columbus_USA",
+                    "id": "fossil0116",
+                    "point": {
+                        "wkt": "POINT(-82.998132 39.964755)"
+                    }
+                },
+                {
+                    "name": "San_Antonio_USA",
+                    "id": "fossil0121",
+                    "point": {
+                        "wkt": "POINT(-98.491104 29.427874)"
+                    }
+                },
+                {
+                    "name": "Phoenix_USA",
+                    "id": "fossil0039",
+                    "point": {
+                        "wkt": "POINT(-112.071952 33.451391)"
+                    }
+                },
+                {
+                    "name": "Minneapolis_USA",
+                    "id": "fossil0064",
+                    "point": {
+                        "wkt": "POINT(-93.259464 44.981294)"
+                    }
+                },
+                {
+                    "name": "Astana_Kazakhstan",
+                    "id": "fossil0154",
+                    "point": {
+                        "wkt": "POINT(71.435342 51.128512)"
+                    }
+                },
+                {
+                    "name": "London_UK",
+                    "id": "fossil0015",
+                    "point": {
+                        "wkt": "POINT(-0.120045 51.506956)"
+                    }
+                },
+                {
+                    "name": "Datong_Shanxi_China",
+                    "id": "fossil0129",
+                    "point": {
+                        "wkt": "POINT(113.296027 40.096366)"
+                    }
+                },
+                {
+                    "name": "Sohag_Egypt",
+                    "id": "fossil0158",
+                    "point": {
+                        "wkt": "POINT(31.698758 26.558509)"
+                    }
+                },
+                {
+                    "name": "Brussels_Belgium",
+                    "id": "fossil0171",
+                    "point": {
+                        "wkt": "POINT(4.363042 50.845342)"
+                    }
+                },
+                {
+                    "name": "Orlando_USA",
+                    "id": "fossil0108",
+                    "point": {
+                        "wkt": "POINT(-81.373949 28.541552)"
+                    }
+                },
+                {
+                    "name": "Pittsburgh_USA",
+                    "id": "fossil0146",
+                    "point": {
+                        "wkt": "POINT(-79.992652 40.441239)"
+                    }
+                },
+                {
+                    "name": "Janschwalde_Germany",
+                    "id": "fossil0182",
+                    "point": {
+                        "wkt": "POINT(14.507201 51.620427)"
+                    }
+                },
+                {
+                    "name": "Qingdao_China",
+                    "id": "fossil0078",
+                    "point": {
+                        "wkt": "POINT(120.26194 36.20861)"
+                    }
+                },
+                {
+                    "name": "Rome_Italy",
+                    "id": "fossil0137",
+                    "point": {
+                        "wkt": "POINT(12.667976 41.994253)"
+                    }
+                },
+                {
+                    "name": "Santiago_Chile",
+                    "id": "fossil0084",
+                    "point": {
+                        "wkt": "POINT(-70.646174 -33.434078)"
+                    }
+                },
+                {
+                    "name": "Chios_Turkey",
+                    "id": "fossil0140",
+                    "point": {
+                        "wkt": "POINT(29.051401 40.194828)"
+                    }
+                },
+                {
+                    "name": "Prague_Czech_Republic",
+                    "id": "fossil0163",
+                    "point": {
+                        "wkt": "POINT(14.439741 50.080383)"
+                    }
+                },
+                {
+                    "name": "San_Francisco_USA",
+                    "id": "fossil0203",
+                    "point": {
+                        "wkt": "POINT(-122.103296 37.794042)"
+                    }
+                },
+                {
+                    "name": "Guangzhou_China",
+                    "id": "fossil0002",
+                    "point": {
+                        "wkt": "POINT(113.24 23.12667)"
+                    }
+                },
+                {
+                    "name": "Baabda_Lebanon",
+                    "id": "fossil0161",
+                    "point": {
+                        "wkt": "POINT(36.08785 34.39451)"
+                    }
+                },
+                {
+                    "name": "Luanda_Angola",
+                    "id": "fossil0176",
+                    "point": {
+                        "wkt": "POINT(13.45288 -8.80566)"
+                    }
+                },
+                {
+                    "name": "Shenyang_China",
+                    "id": "fossil0044",
+                    "point": {
+                        "wkt": "POINT(123.437678 41.794835)"
+                    }
+                },
+                {
+                    "name": "Durban_South_Africa",
+                    "id": "fossil0099",
+                    "point": {
+                        "wkt": "POINT(30.9059 -29.71705)"
+                    }
+                },
+                {
+                    "name": "Barcelona_Spain",
+                    "id": "fossil0089",
+                    "point": {
+                        "wkt": "POINT(2.04001 41.51804)"
+                    }
+                },
+                {
+                    "name": "Ningbo_China",
+                    "id": "fossil0131",
+                    "point": {
+                        "wkt": "POINT(121.401328 29.737705)"
+                    }
+                },
+                {
+                    "name": "Khartoum_Sudan",
+                    "id": "fossil0178",
+                    "point": {
+                        "wkt": "POINT(32.562707 15.504286)"
+                    }
+                },
+                {
+                    "name": "San_Jose_USA",
+                    "id": "fossil0028",
+                    "point": {
+                        "wkt": "POINT(-121.88115 37.341591)"
+                    }
+                },
+                {
+                    "name": "Riyadh_Saudi_Arabia",
+                    "id": "fossil0010",
+                    "point": {
+                        "wkt": "POINT(46.690386 24.685607)"
+                    }
+                },
+                {
+                    "name": "Maracaibo_Venezuela",
+                    "id": "fossil0167",
+                    "point": {
+                        "wkt": "POINT(-71.73757 10.69769)"
+                    }
+                },
+                {
+                    "name": "Esfahan_Iran",
+                    "id": "fossil0117",
+                    "point": {
+                        "wkt": "POINT(51.681384 32.660395)"
+                    }
+                },
+                {
+                    "name": "Manila_Philippines",
+                    "id": "fossil0115",
+                    "point": {
+                        "wkt": "POINT(120.987321 14.592236)"
+                    }
+                },
+                {
+                    "name": "Zhengzhou_China",
+                    "id": "fossil0065",
+                    "point": {
+                        "wkt": "POINT(113.652589 34.76086)"
+                    }
+                },
+                {
+                    "name": "Baghdad_Iraq",
+                    "id": "fossil0109",
+                    "point": {
+                        "wkt": "POINT(44.396928 33.345276)"
+                    }
+                },
+                {
+                    "name": "Peshawar_Pakistan",
+                    "id": "fossil0177",
+                    "point": {
+                        "wkt": "POINT(71.582393 34.011116)"
+                    }
+                },
+                {
+                    "name": "Guadalajara_Mexico",
+                    "id": "fossil0142",
+                    "point": {
+                        "wkt": "POINT(-103.348043 20.691089)"
+                    }
+                },
+                {
+                    "name": "Sydney_Australia",
+                    "id": "fossil0050",
+                    "point": {
+                        "wkt": "POINT(150.96755 -33.917656)"
+                    }
+                },
+                {
+                    "name": "Montreal_Canada",
+                    "id": "fossil0080",
+                    "point": {
+                        "wkt": "POINT(-73.549104 45.514603)"
+                    }
+                },
+                {
+                    "name": "Munich_Germany",
+                    "id": "fossil0159",
+                    "point": {
+                        "wkt": "POINT(11.583732 48.138171)"
+                    }
+                },
+                {
+                    "name": "Hong_Kong_China",
+                    "id": "fossil0004",
+                    "point": {
+                        "wkt": "POINT(114.130669 22.496801)"
+                    }
+                },
+                {
+                    "name": "Mumbai_India",
+                    "id": "fossil0068",
+                    "point": {
+                        "wkt": "POINT(73.066397 19.219503)"
+                    }
+                },
+                {
+                    "name": "Shijiazhuang_China",
+                    "id": "fossil0095",
+                    "point": {
+                        "wkt": "POINT(114.482967 38.044288)"
+                    }
+                },
+                {
+                    "name": "Milan_Italy",
+                    "id": "fossil0075",
+                    "point": {
+                        "wkt": "POINT(9.187357 45.470169)"
+                    }
+                },
+                {
+                    "name": "Bogota_Colombia",
+                    "id": "fossil0111",
+                    "point": {
+                        "wkt": "POINT(-74.066807 4.618626)"
+                    }
+                },
+                {
+                    "name": "Lima_Peru",
+                    "id": "fossil0101",
+                    "point": {
+                        "wkt": "POINT(-76.859997 -11.818561)"
+                    }
+                },
+                {
+                    "name": "Monterrey_Mexico",
+                    "id": "fossil0135",
+                    "point": {
+                        "wkt": "POINT(-100.306737 25.674332)"
+                    }
+                },
+                {
+                    "name": "Chicago_USA",
+                    "id": "fossil0008",
+                    "point": {
+                        "wkt": "POINT(-87.627537 41.886857)"
+                    }
+                },
+                {
+                    "name": "Rostov-on-Don_Russia",
+                    "id": "fossil0162",
+                    "point": {
+                        "wkt": "POINT(39.722729 47.228845)"
+                    }
+                },
+                {
+                    "name": "Urumqi_China",
+                    "id": "fossil0113",
+                    "point": {
+                        "wkt": "POINT(87.591516 43.790286)"
+                    }
+                },
+                {
+                    "name": "Xian_China",
+                    "id": "fossil0051",
+                    "point": {
+                        "wkt": "POINT(108.929049 34.273604)"
+                    }
+                },
+                {
+                    "name": "Maebashi_Japan",
+                    "id": "fossil0155",
+                    "point": {
+                        "wkt": "POINT(139.067576 36.392493)"
+                    }
+                },
+                {
+                    "name": "Rotterdam_Netherlands",
+                    "id": "fossil0085",
+                    "point": {
+                        "wkt": NaN
+                    }
+                },
+                {
+                    "name": "Taegu_South_Korea",
+                    "id": "fossil0112",
+                    "point": {
+                        "wkt": "POINT(128.595208 35.873304)"
+                    }
+                },
+                {
+                    "name": "Taejon_South_Korea",
+                    "id": "fossil0122",
+                    "point": {
+                        "wkt": "POINT(127.193842 36.084403)"
+                    }
+                },
+                {
+                    "name": "Dhaka_Bangladesh",
+                    "id": "fossil0144",
+                    "point": {
+                        "wkt": "POINT(90.402713 23.716679)"
+                    }
+                },
+                {
+                    "name": "Cairo_Egypt",
+                    "id": "fossil0236",
+                    "point": {
+                        "wkt": "POINT(31.283955 30.082072)"
+                    }
+                },
+                {
+                    "name": "Miami_USA",
+                    "id": "fossil0020",
+                    "point": {
+                        "wkt": "POINT(-80.46773 25.77481)"
+                    }
+                },
+                {
+                    "name": "Huhot_China",
+                    "id": "fossil0053",
+                    "point": {
+                        "wkt": "POINT(118.549089 25.76784)"
+                    }
+                },
+                {
+                    "name": "Vancouver_Canada",
+                    "id": "fossil0128",
+                    "point": {
+                        "wkt": "POINT(-122.671224 49.361359)"
+                    }
+                },
+                {
+                    "name": "Pune_India",
+                    "id": "fossil0125",
+                    "point": {
+                        "wkt": "POINT(73.855929 18.507765)"
+                    }
+                },
+                {
+                    "name": "Athens_Greece",
+                    "id": "fossil0058",
+                    "point": {
+                        "wkt": "POINT(23.888834 38.077606)"
+                    }
+                },
+                {
+                    "name": "Bucharest_Romania",
+                    "id": "fossil0166",
+                    "point": {
+                        "wkt": "POINT(26.108348 44.436632)"
+                    }
+                },
+                {
+                    "name": "Guiyang_China",
+                    "id": "fossil0104",
+                    "point": {
+                        "wkt": "POINT(106.698039 26.575799)"
+                    }
+                },
+                {
+                    "name": "Dallas_USA",
+                    "id": "fossil0023",
+                    "point": {
+                        "wkt": "POINT(-96.791615 32.78132)"
+                    }
+                },
+                {
+                    "name": "Timmins_Canada",
+                    "id": "fossil0238",
+                    "point": {
+                        "wkt": "POINT(-81.368697 48.571667)"
+                    }
+                },
+                {
+                    "name": "Tabriz_Iran",
+                    "id": "fossil0156",
+                    "point": {
+                        "wkt": "POINT(46.296262 38.082896)"
+                    }
+                },
+                {
+                    "name": "Amsterdam_Netherlands",
+                    "id": "fossil0165",
+                    "point": {
+                        "wkt": "POINT(4.925236 52.379964)"
+                    }
+                },
+                {
+                    "name": "Nagoya_Japan",
+                    "id": "fossil0079",
+                    "point": {
+                        "wkt": "POINT(136.910707 35.18448)"
+                    }
+                },
+                {
+                    "name": "Boston_USA",
+                    "id": "fossil0054",
+                    "point": {
+                        "wkt": "POINT(-71.251095 42.258528)"
+                    }
+                },
+                {
+                    "name": "Los_Angeles_USA",
+                    "id": "fossil0005",
+                    "point": {
+                        "wkt": "POINT(-118.155377 34.125071)"
+                    }
+                },
+                {
+                    "name": "Hefei_China",
+                    "id": "fossil0094",
+                    "point": {
+                        "wkt": "POINT(117.284533 31.867097)"
+                    }
+                },
+                {
+                    "name": "Doha_Qatar",
+                    "id": "fossil0067",
+                    "point": {
+                        "wkt": "POINT(51.31269 25.076492)"
+                    }
+                },
+                {
+                    "name": "Ho_Chi_Minh_City_Vietnam",
+                    "id": "fossil0088",
+                    "point": {
+                        "wkt": "POINT(106.70591 10.781852)"
+                    }
+                },
+                {
+                    "name": "Yinchuan_China",
+                    "id": "fossil0061",
+                    "point": {
+                        "wkt": "POINT(106.269623 38.46949)"
+                    }
+                },
+                {
+                    "name": "Tianjin_China",
+                    "id": "fossil0024",
+                    "point": {
+                        "wkt": "POINT(117.181173 39.145045)"
+                    }
+                },
+                {
+                    "name": "Chengdu_China",
+                    "id": "fossil0052",
+                    "point": {
+                        "wkt": "POINT(104.079403 30.675151)"
+                    }
+                },
+                {
+                    "name": "Harbin_China",
+                    "id": "fossil0096",
+                    "point": {
+                        "wkt": "POINT(126.645148 45.757698)"
+                    }
+                },
+                {
+                    "name": "Bangalore_India",
+                    "id": "fossil0107",
+                    "point": {
+                        "wkt": "POINT(77.590158 12.970463)"
+                    }
+                },
+                {
+                    "name": "Samut_Prakan_Thailand",
+                    "id": "fossil0021",
+                    "point": {
+                        "wkt": "POINT(100.731942 13.77616)"
+                    }
+                },
+                {
+                    "name": "Brisbane_Australia",
+                    "id": "fossil0072",
+                    "point": {
+                        "wkt": "POINT(152.844599 -27.646089)"
+                    }
+                },
+                {
+                    "name": "Tehran_Iran",
+                    "id": "fossil0014",
+                    "point": {
+                        "wkt": "POINT(51.425589 35.697423)"
+                    }
+                },
+                {
+                    "name": "Shah_Alam_Malaysia",
+                    "id": "fossil0037",
+                    "point": {
+                        "wkt": "POINT(101.553924 3.176392)"
+                    }
+                },
+                {
+                    "name": "Kolkata_India",
+                    "id": "fossil0048",
+                    "point": {
+                        "wkt": "POINT(88.374325 22.574013)"
+                    }
+                },
+                {
+                    "name": "Ahvaz_Iran",
+                    "id": "fossil0160",
+                    "point": {
+                        "wkt": "POINT(48.672957 31.323528)"
+                    }
+                },
+                {
+                    "name": "Singapore_Singapore",
+                    "id": "fossil0007",
+                    "point": {
+                        "wkt": "POINT(103.837293 1.578634)"
+                    }
+                },
+                {
+                    "name": "New_Delhi_India",
+                    "id": "fossil0029",
+                    "point": {
+                        "wkt": "POINT(77.220727 28.634269)"
+                    }
+                },
+                {
+                    "name": "Seattle_USA",
+                    "id": "fossil0060",
+                    "point": {
+                        "wkt": "POINT(-122.323392 47.605438)"
+                    }
+                },
+                {
+                    "name": "Denver_USA",
+                    "id": "fossil0057",
+                    "point": {
+                        "wkt": "POINT(-104.987434 39.742792)"
+                    }
+                },
+                {
+                    "name": "Madrid_Spain",
+                    "id": "fossil0047",
+                    "point": {
+                        "wkt": "POINT(-3.701085 40.42301)"
+                    }
+                },
+                {
+                    "name": "Osaka_Japan",
+                    "id": "fossil0034",
+                    "point": {
+                        "wkt": "POINT(135.506134 34.69681)"
+                    }
+                },
+                {
+                    "name": "Birmingham_UK",
+                    "id": "fossil0093",
+                    "point": {
+                        "wkt": "POINT(-1.888546 52.488944)"
+                    }
+                },
+                {
+                    "name": "Mecca_Saudi_Arabia",
+                    "id": "fossil0127",
+                    "point": {
+                        "wkt": "POINT(39.82525 21.424606)"
+                    }
+                },
+                {
+                    "name": "Naples_Italy",
+                    "id": "fossil0141",
+                    "point": {
+                        "wkt": "POINT(14.533109 40.998854)"
+                    }
+                },
+                {
+                    "name": "Portland_USA",
+                    "id": "fossil0118",
+                    "point": {
+                        "wkt": "POINT(-122.670044 45.513993)"
+                    }
+                },
+                {
+                    "name": "Paris_France",
+                    "id": "fossil0022",
+                    "point": {
+                        "wkt": "POINT(2.347779 48.85877)"
+                    }
+                },
+                {
+                    "name": "Salt_Lake_City_USA",
+                    "id": "fossil0149",
+                    "point": {
+                        "wkt": "POINT(-111.883484 40.763013)"
+                    }
+                },
+                {
+                    "name": "San_Diego_USA",
+                    "id": "fossil0082",
+                    "point": {
+                        "wkt": "POINT(-116.94203 32.899458)"
+                    }
+                },
+                {
+                    "name": "Jakarta_Indonesia",
+                    "id": "fossil0018",
+                    "point": {
+                        "wkt": "POINT(106.719096 -6.321541)"
+                    }
+                },
+                {
+                    "name": "Kansas_City_USA",
+                    "id": "fossil0103",
+                    "point": {
+                        "wkt": "POINT(-94.578613 39.106268)"
+                    }
+                },
+                {
+                    "name": "Vienna_Austria",
+                    "id": "fossil0114",
+                    "point": {
+                        "wkt": "POINT(16.374628 48.204378)"
+                    }
+                },
+                {
+                    "name": "Baltimore_USA",
+                    "id": "fossil0090",
+                    "point": {
+                        "wkt": "POINT(-76.604737 39.293394)"
+                    }
+                },
+                {
+                    "name": "Keystone_HomerCity_Conemaugh_Powerplants",
+                    "id": "fossil0187",
+                    "point": {
+                        "wkt": "POINT(-79.189302 40.515723)"
+                    }
+                },
+                {
+                    "name": "Algoma_Steel",
+                    "id": "fossil0233",
+                    "point": {
+                        "wkt": "POINT(-84.368195 46.525053)"
+                    }
+                },
+                {
+                    "name": "New_York_USA",
+                    "id": "fossil0003",
+                    "point": {
+                        "wkt": "POINT(-74.011868 40.711843)"
+                    }
+                },
+                {
+                    "name": "Baotou_China",
+                    "id": "fossil0055",
+                    "point": {
+                        "wkt": "POINT(109.82694 40.654932)"
+                    }
+                },
+                {
+                    "name": "Beijing_China",
+                    "id": "fossil0017",
+                    "point": {
+                        "wkt": "POINT(116.40184 39.910269)"
+                    }
+                },
+                {
+                    "name": "Shanghai_China",
+                    "id": "fossil0006",
+                    "point": {
+                        "wkt": "POINT(121.275986 31.060508)"
+                    }
+                },
+                {
+                    "name": "Johannesburg_South_Africa",
+                    "id": "fossil0013",
+                    "point": {
+                        "wkt": "POINT(28.043345 -26.201521)"
+                    }
+                },
+                {
+                    "name": "Wuxi_China",
+                    "id": "fossil0012",
+                    "point": {
+                        "wkt": "POINT(120.292248 31.572088)"
+                    }
+                },
+                {
+                    "name": "Al_Hofuf_Saudi_Arabia",
+                    "id": "fossil0139",
+                    "point": {
+                        "wkt": "POINT(49.590745 25.37165)"
+                    }
+                },
+                {
+                    "name": "Amman_Jordan",
+                    "id": "fossil0148",
+                    "point": {
+                        "wkt": "POINT(35.944131 31.955003)"
+                    }
+                },
+                {
+                    "name": "Melbourne_Australia",
+                    "id": "fossil0045",
+                    "point": {
+                        "wkt": "POINT(144.971478 -37.814578)"
+                    }
+                },
+                {
+                    "name": "Taiyuan_China",
+                    "id": "fossil0056",
+                    "point": {
+                        "wkt": "POINT(112.553857 37.884318)"
+                    }
+                },
+                {
+                    "name": "Caracas_Venezuela",
+                    "id": "fossil0106",
+                    "point": {
+                        "wkt": "POINT(-66.999888 10.324424)"
+                    }
+                },
+                {
+                    "name": "Tutuka_and_Majuba_Powerplant",
+                    "id": "fossil0181",
+                    "point": {
+                        "wkt": "POINT(29.563332 -26.946631)"
+                    }
+                },
+                {
+                    "name": "Fremantle_Australia",
+                    "id": "fossil0098",
+                    "point": {
+                        "wkt": "POINT(115.979446 -31.912813)"
+                    }
+                },
+                {
+                    "name": "San_Cristobal_Dominican_Republic",
+                    "id": "fossil0164",
+                    "point": {
+                        "wkt": "POINT(-70.2 18.51667)"
+                    }
+                },
+                {
+                    "name": "Sao_Paulo_Brazil",
+                    "id": "fossil0062",
+                    "point": {
+                        "wkt": "POINT(-46.651545 -23.559418)"
+                    }
+                },
+                {
+                    "name": "Lagos_Nigeria",
+                    "id": "fossil0175",
+                    "point": {
+                        "wkt": "POINT(3.527766 6.648613)"
+                    }
+                },
+                {
+                    "name": "Istanbul_Turkey",
+                    "id": "fossil0025",
+                    "point": {
+                        "wkt": "POINT(29.054803 41.072796)"
+                    }
+                },
+                {
+                    "name": "Almaty_Kazakhstan",
+                    "id": "fossil0092",
+                    "point": {
+                        "wkt": "POINT(76.893287 43.253134)"
+                    }
+                },
+                {
+                    "name": "Nairobi_Kenya",
+                    "id": "fossil0179",
+                    "point": {
+                        "wkt": "POINT(36.824486 -1.288427)"
+                    }
+                },
+                {
+                    "name": "Hanoi_Vietnam",
+                    "id": "fossil0136",
+                    "point": {
+                        "wkt": "POINT(105.857652 21.032383)"
+                    }
+                },
+                {
+                    "name": "Toronto_Canada",
+                    "id": "fossil0042",
+                    "point": {
+                        "wkt": "POINT(-79.38022 43.651121)"
+                    }
+                },
+                {
+                    "name": "Taipei_Taiwan",
+                    "id": "fossil0038",
+                    "point": {
+                        "wkt": "POINT(121.42223 24.886894)"
+                    }
+                },
+                {
+                    "name": "Cape_Town_South_Africa",
+                    "id": "fossil0086",
+                    "point": {
+                        "wkt": "POINT(18.658898 -33.728485)"
+                    }
+                },
+                {
+                    "name": "Mashhad_Iran",
+                    "id": "fossil0102",
+                    "point": {
+                        "wkt": "POINT(59.572109 36.31859)"
+                    }
+                },
+                {
+                    "name": "Ahmadabad_India",
+                    "id": "fossil0157",
+                    "point": {
+                        "wkt": "POINT(72.603358 23.031233)"
+                    }
+                },
+                {
+                    "name": "Dalian_China",
+                    "id": "fossil0073",
+                    "point": {
+                        "wkt": "POINT(121.606691 38.915061)"
+                    }
+                },
+                {
+                    "name": "Ankara_Turkey",
+                    "id": "fossil0077",
+                    "point": {
+                        "wkt": "POINT(32.858522 39.923859)"
+                    }
+                },
+                {
+                    "name": "Abu_Dhabi_UAE",
+                    "id": "fossil0076",
+                    "point": {
+                        "wkt": "POINT(54.51173 24.32918)"
+                    }
+                },
+                {
+                    "name": "Detroit_USA",
+                    "id": "fossil0026",
+                    "point": {
+                        "wkt": "POINT(-83.043013 42.334245)"
+                    }
+                },
+                {
+                    "name": "Kaoshsiung_Taiwan",
+                    "id": "fossil0143",
+                    "point": {
+                        "wkt": "POINT(120.538076 22.863398)"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "powerplant",
+            "locations": [
+                {
+                    "name": "Tropomi_2_powerplant",
+                    "id": "fossil0225",
+                    "point": {
+                        "wkt": "POINT(129.10703 35.442389)"
+                    }
+                },
+                {
+                    "name": "Waigaoqiao_powerplant",
+                    "id": "fossil0215",
+                    "point": {
+                        "wkt": "POINT(121.508905 31.272903)"
+                    }
+                },
+                {
+                    "name": "Mundra_Umpp_powerplant",
+                    "id": "fossil0218",
+                    "point": {
+                        "wkt": "POINT(69.708007 23.016815)"
+                    }
+                },
+                {
+                    "name": "Dofasco_powerplant",
+                    "id": "fossil0192",
+                    "point": {
+                        "wkt": "POINT(-79.805951 43.262173)"
+                    }
+                },
+                {
+                    "name": "Rihand_powerplant",
+                    "id": "fossil0219",
+                    "point": {
+                        "wkt": "POINT(82.79466 24.030442)"
+                    }
+                },
+                {
+                    "name": "Scherer_powerplant",
+                    "id": "fossil0189",
+                    "point": {
+                        "wkt": "POINT(-83.806189 33.064158)"
+                    }
+                },
+                {
+                    "name": "Hekinan_powerplant",
+                    "id": "fossil0222",
+                    "point": {
+                        "wkt": "POINT(137.204687 35.022602)"
+                    }
+                },
+                {
+                    "name": "Pingwei_Tianji_Bengbu_Fengtai_Luohe_powerplants",
+                    "id": "fossil0200",
+                    "point": {
+                        "wkt": "POINT(116.904277 32.689303)"
+                    }
+                },
+                {
+                    "name": "Joliet_powerplant",
+                    "id": "fossil0206",
+                    "point": {
+                        "wkt": "POINT(-88.11895 41.497242)"
+                    }
+                },
+                {
+                    "name": "Monroe_powerplant",
+                    "id": "fossil0184",
+                    "point": {
+                        "wkt": "POINT(-83.337085 41.897606)"
+                    }
+                },
+                {
+                    "name": "Intermountain_powerplant",
+                    "id": "fossil0235",
+                    "point": {
+                        "wkt": "POINT(-112.575448 39.5138)"
+                    }
+                },
+                {
+                    "name": "Bowen_powerplant",
+                    "id": "fossil0188",
+                    "point": {
+                        "wkt": "POINT(-84.918086 34.127111)"
+                    }
+                },
+                {
+                    "name": "Korba_powerplant",
+                    "id": "fossil0224",
+                    "point": {
+                        "wkt": "POINT(82.695076 22.400476)"
+                    }
+                },
+                {
+                    "name": "PLTU_Paiton_powerplant",
+                    "id": "fossil0221",
+                    "point": {
+                        "wkt": "POINT(113.445476 -7.908318)"
+                    }
+                },
+                {
+                    "name": "Dickerson_powerplant",
+                    "id": "fossil0205",
+                    "point": {
+                        "wkt": "POINT(-77.459888 39.21252)"
+                    }
+                },
+                {
+                    "name": "Datang_Tuoketuo_powerplant",
+                    "id": "fossil0214",
+                    "point": {
+                        "wkt": "POINT(111.363551 40.197448)"
+                    }
+                },
+                {
+                    "name": "Dry_Fork_Station_powerplant",
+                    "id": "fossil0231",
+                    "point": {
+                        "wkt": "POINT(-105.462214 44.388606)"
+                    }
+                },
+                {
+                    "name": "Sheerness_powerplant",
+                    "id": "fossil0191",
+                    "point": {
+                        "wkt": "POINT(-111.778928 51.532218)"
+                    }
+                },
+                {
+                    "name": "North_Valmy_powerplant",
+                    "id": "fossil0211",
+                    "point": {
+                        "wkt": "POINT(-117.146846 40.883993)"
+                    }
+                },
+                {
+                    "name": "Somerset_Operating_powerplant",
+                    "id": "fossil0207",
+                    "point": {
+                        "wkt": "POINT(-78.599533 43.361362)"
+                    }
+                },
+                {
+                    "name": "Boundary_Dam_powerplant",
+                    "id": "fossil0190",
+                    "point": {
+                        "wkt": "POINT(-103.024056 49.0976)"
+                    }
+                },
+                {
+                    "name": "Sasan_powerplant",
+                    "id": "fossil0220",
+                    "point": {
+                        "wkt": "POINT(82.630657 23.981843)"
+                    }
+                },
+                {
+                    "name": "Vindhyachal_Sasan_Singrauli_Rihand_powerplants",
+                    "id": "fossil0199",
+                    "point": {
+                        "wkt": "POINT(82.676774 24.10066)"
+                    }
+                },
+                {
+                    "name": "Shaiba_powerplant",
+                    "id": "fossil0195",
+                    "point": {
+                        "wkt": "POINT(39.744166 20.883628)"
+                    }
+                },
+                {
+                    "name": "Az_Zour_powerplant",
+                    "id": "fossil0226",
+                    "point": {
+                        "wkt": "POINT(48.113562 28.483472)"
+                    }
+                },
+                {
+                    "name": "Cumberland_powerplant",
+                    "id": "fossil0229",
+                    "point": {
+                        "wkt": "POINT(-87.654117 36.391131)"
+                    }
+                },
+                {
+                    "name": "Wagner_powerplant",
+                    "id": "fossil0204",
+                    "point": {
+                        "wkt": "POINT(-76.522292 39.180922)"
+                    }
+                },
+                {
+                    "name": "Spurlock_powerplant",
+                    "id": "fossil0230",
+                    "point": {
+                        "wkt": "POINT(-83.816281 38.699024)"
+                    }
+                },
+                {
+                    "name": "Stanwell_powerplant",
+                    "id": "fossil0202",
+                    "point": {
+                        "wkt": "POINT(150.321632 -23.507147)"
+                    }
+                },
+                {
+                    "name": "Belchatow_powerplant",
+                    "id": "fossil0193",
+                    "point": {
+                        "wkt": "POINT(19.338087 51.268716)"
+                    }
+                },
+                {
+                    "name": "Meramec_powerplant",
+                    "id": "fossil0212",
+                    "point": {
+                        "wkt": "POINT(-90.331396 38.404575)"
+                    }
+                },
+                {
+                    "name": "Will_County_powerplant",
+                    "id": "fossil0208",
+                    "point": {
+                        "wkt": "POINT(-88.058028 41.636029)"
+                    }
+                },
+                {
+                    "name": "Poplar_River_powerplant",
+                    "id": "fossil0232",
+                    "point": {
+                        "wkt": "POINT(-105.4825 49.0569)"
+                    }
+                },
+                {
+                    "name": "AlQurayyah_powerplant",
+                    "id": "fossil0196",
+                    "point": {
+                        "wkt": "POINT(49.907793 25.616136)"
+                    }
+                },
+                {
+                    "name": "Colstrip_powerplant",
+                    "id": "fossil0183",
+                    "point": {
+                        "wkt": "POINT(-106.605336 45.883751)"
+                    }
+                },
+                {
+                    "name": "Sammis_Cardinal_Mansfield_powerplants",
+                    "id": "fossil0186",
+                    "point": {
+                        "wkt": "POINT(-80.555316 40.41773)"
+                    }
+                },
+                {
+                    "name": "Dangjin_Yonghungdo_Taean_powerplants",
+                    "id": "fossil0194",
+                    "point": {
+                        "wkt": "POINT(126.7792 37.091084)"
+                    }
+                },
+                {
+                    "name": "Avon Lake_powerplant",
+                    "id": "fossil0210",
+                    "point": {
+                        "wkt": "POINT(-82.049749 41.507141)"
+                    }
+                },
+                {
+                    "name": "GG_Allen_powerplant",
+                    "id": "fossil0213",
+                    "point": {
+                        "wkt": "POINT(-81.008176 35.192759)"
+                    }
+                },
+                {
+                    "name": "Arnot_Duvha_Hendrina_powerplants",
+                    "id": "fossil0197",
+                    "point": {
+                        "wkt": "POINT(29.614275 -26.029706)"
+                    }
+                },
+                {
+                    "name": "Hammond_powerplant",
+                    "id": "fossil0209",
+                    "point": {
+                        "wkt": "POINT(-85.341673 34.255905)"
+                    }
+                },
+                {
+                    "name": "Comanche_powerplant",
+                    "id": "fossil0185",
+                    "point": {
+                        "wkt": "POINT(-104.575409 38.202888)"
+                    }
+                },
+                {
+                    "name": "Gwangyang_powerplant",
+                    "id": "fossil0227",
+                    "point": {
+                        "wkt": "POINT(127.653 35)"
+                    }
+                },
+                {
+                    "name": "Hazelwood_Yallourn_Loy_Yang_powerplants",
+                    "id": "fossil0201",
+                    "point": {
+                        "wkt": "POINT(146.399385 -38.260715)"
+                    }
+                },
+                {
+                    "name": "Niederaussem_powerplant",
+                    "id": "fossil0217",
+                    "point": {
+                        "wkt": "POINT(6.675498 50.993878)"
+                    }
+                },
+                {
+                    "name": "Kendal_powerplant",
+                    "id": "fossil0223",
+                    "point": {
+                        "wkt": "POINT(28.972178 -26.084608)"
+                    }
+                },
+                {
+                    "name": "Labadie_powerplant",
+                    "id": "fossil0228",
+                    "point": {
+                        "wkt": "POINT(-90.83605 38.561779)"
+                    }
+                },
+                {
+                    "name": "Duvha_Kendal_Kriel_Matla_powerplants",
+                    "id": "fossil0198",
+                    "point": {
+                        "wkt": "POINT(29.178712 -25.874685)"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "volcano",
+            "locations": [
+                {
+                    "name": "Popocatepetl",
+                    "id": "volcano0002",
+                    "point": {
+                        "lat": 19,
+                        "lon": -98.5
+                    }
+                }
+            ]
+        }
+    ]
+}
