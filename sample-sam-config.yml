@@ -2,8 +2,7 @@ output:  # required; one-of
   s3:
     url: s3://sam-zarr-bucket/ # required
     region: us-west-2 # optional; assume us-west-2; should match input.queue.region
-  local:
-    path:
+  local: # path to local file
 input: # required; one of
   single-file: # url to single input file
   queue: # AWS SQS queue to monitor for inputs

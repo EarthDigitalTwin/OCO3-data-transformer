@@ -1,8 +1,3 @@
-from math import sqrt, ceil
-
-import xarray as xr
-import zarr
-
 from yaml import load
 
 try:
@@ -11,12 +6,28 @@ except ImportError:
     from yaml import Loader
 
 from sam_extract.targets import Targets
+from sam_extract.readers import GranuleReader
 
 import argparse
 
 
+def process_input(input_url, cfg, input_region):
+    additional_params = {'drop_dims': cfg['drop-dims']}
+
+    if cfg['input']['type'] == 'aws':
+        additional_params['s3_region'] = input_region
+
+    path = input_url
+
+    with GranuleReader(path, **additional_params) as ds:
+        print(ds)
+
 def main(cfg):
-    print(cfg)
+
+
+    if cfg['input']['type'] == 'aws':
+        pass
+        # TODO monitoring code here
 
 
 def parse_args():
@@ -56,12 +67,14 @@ def parse_args():
             output = cfg_yml['output']
             inp = cfg_yml['input']
 
-            if output['local']['path']:
-                config_dict['output'] = {'local': output['local']}
+            if output['local']:
+                config_dict['output']['type'] = 'local'
+                config_dict['output']['local'] = output['local']
             elif output['s3']['url']:
                 if not output['s3']['region']:
                     output['s3']['region'] = 'us-west-2'
 
+                config_dict['output']['type'] = 'aws'
                 config_dict['output'] = {'s3': output['s3']}
             else:
                 raise ValueError('No output params configured')
@@ -73,8 +86,10 @@ def parse_args():
                 inp['queue']['region'] = 'us-west-2'
 
             if inp['single-file']:
+                config_dict['input']['type'] = 'local'
                 config_dict['input']['single-file'] = inp['single-file']
             else:
+                config_dict['input']['type'] = 'aws'
                 config_dict['input'] = {'queue': inp['queue']}
 
             config_dict['drop-dims'] = [(dim['group'], dim['name']) for dim in cfg_yml['drop-dims']]
