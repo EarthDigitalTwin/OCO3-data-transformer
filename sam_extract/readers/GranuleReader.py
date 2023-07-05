@@ -41,13 +41,40 @@ class GranuleReader:
             raise ValueError(f'Invalid URL scheme: {url.scheme}. Expected file or S3')
 
         try:
+            # Open the input datasets but do not mask out missing values yet
             ds_dict = {
-                '/': xr.open_dataset(path),
-                '/Meteorology': xr.open_dataset(path, group='Meteorology'),
-                '/Preprocessors': xr.open_dataset(path, group='Preprocessors'),
-                '/Retrieval': xr.open_dataset(path, group='Retrieval'),
-                '/Sounding': xr.open_dataset(path, group='Sounding'),
+                '/': xr.open_dataset(path, mask_and_scale=False),
+                '/Meteorology': xr.open_dataset(path, group='Meteorology', mask_and_scale=False),
+                '/Preprocessors': xr.open_dataset(path, group='Preprocessors', mask_and_scale=False),
+                '/Retrieval': xr.open_dataset(path, group='Retrieval', mask_and_scale=False),
+                '/Sounding': xr.open_dataset(path, group='Sounding', mask_and_scale=False),
             }
+
+            # This is obscene but essential to preserve fill value from cdf to zarr output so that the zarr is read
+            # correctly
+
+            # fill_values = {} # group -> [var -> fill value]
+            #
+            # # Map all groups + variables to their missing value attributes, then mask out the missing data
+            #
+            # for group in ds_dict:
+            #     fill_values[group] = {}
+            #     for var in ds_dict[group].data_vars:
+            #         if 'missing_value' in ds_dict[group][var].attrs:
+            #             fill_values[group][var] = ds_dict[group][var].attrs['missing_value']
+            #         else:
+            #             fill_values[group][var] = None
+            #
+            #     # ds_dict[group] = xr.decode_cf(ds_dict[group], mask_and_scale=True)
+            #
+            # print(fill_values)
+            #
+            # # Now re-add the missing data values
+            #
+            # for group in ds_dict:
+            #     for var in ds_dict[group].data_vars:
+            #         if fill_values[group][var] is not None:
+            #             ds_dict[group][var].attrs['_FillValue'] = fill_values[group][var]
         except FileNotFoundError:
             logger.error(f'Input file {path} does not exist')
             raise
@@ -72,6 +99,10 @@ class GranuleReader:
                 ds_dict[group] = ds_dict[group].drop_vars(var)
             except ValueError:
                 logger.warning(f'Variable to drop {"/".join((group, var))} is not present in the dataset; ignoring')
+
+        for group in ds_dict:
+            for var in ds_dict[group].data_vars:
+                ds_dict[group][var].attrs['_FillValue'] = float('nan')
 
         logger.info('Dropped all requested variables')
 

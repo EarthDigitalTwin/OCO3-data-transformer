@@ -10,3 +10,4 @@ cftime
 shapely
 pyyaml
 boto3
+geos>=3.10.0
