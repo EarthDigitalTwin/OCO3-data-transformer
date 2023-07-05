@@ -129,3 +129,10 @@ dmypy.json
 .pyre/
 
 .idea/
+
+*.zarr/
+
+test_data/
+
+*.nc
+*.nc4
