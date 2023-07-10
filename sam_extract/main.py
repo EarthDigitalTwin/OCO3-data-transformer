@@ -1,5 +1,7 @@
 import argparse
 import logging
+import os.path
+from tempfile import TemporaryDirectory
 from datetime import datetime
 
 import numpy as np
@@ -13,7 +15,7 @@ from shapely.ops import unary_union
 from yaml import load
 
 from sam_extract.readers import GranuleReader
-from sam_extract.targets import Targets
+from sam_extract.writers import NetCDFWriter, ZarrWriter
 
 try:
     from yaml import CLoader as Loader
@@ -21,7 +23,10 @@ except ImportError:
     from yaml import Loader
 
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] [%(name)s::%(lineno)d] %(message)s')
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] [%(threadName)s] [%(name)s::%(lineno)d] %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 
@@ -67,7 +72,7 @@ def __fit_data_to_grid(sams, cfg):
         interp_ds[group] = interp_ds[group].drop_vars(drop_dims[group], errors='ignore')
 
     lon_grid, lat_grid = np.mgrid[-180:180:complex(0, cfg['grid']['longitude']),
-                                  -90:90:complex(0, cfg['grid']['latitude'])]
+                                  -90:90:complex(0, cfg['grid']['latitude'])].astype(np.dtype('float32'))
 
     coords = {
         'longitude': ('longitude', lon_grid.transpose()[0]),
@@ -85,7 +90,7 @@ def __fit_data_to_grid(sams, cfg):
         return [griddata(points,
                 in_grp[grp][var].to_numpy(),
                 (lon_grid, lat_grid),
-                method=cfg['grid'].get('method', 'nearest'),
+                method=cfg['grid'].get('method', 'cubic'),
                 fill_value=in_grp[grp][var].attrs['missing_value'])]
 
     for group in interp_ds:
@@ -183,7 +188,7 @@ def __mask_data(sams, grid_ds, cfg):
     return grid_ds
 
 
-def process_input(input_url, cfg, input_region=None):
+def process_input(input_url, cfg, temp_dir, input_region=None):
     additional_params = {'drop_dims': cfg['drop-dims']}
 
     if cfg['input']['type'] == 'aws':
@@ -239,12 +244,19 @@ def process_input(input_url, cfg, input_region=None):
 
         gridded_groups = __mask_data(extracted_sams, __fit_data_to_grid(extracted_sams, cfg), cfg)
 
+        temp_path = os.path.join(temp_dir, os.path.basename(input_url)) + '.zarr'
+
+        writer = ZarrWriter(temp_path, (5, 250, 250), overwrite=True, verify=False)
+        writer.write(gridded_groups)
+
         logger.info(f'Finished processing input at {path}')
 
-        return gridded_groups
+        return ZarrWriter.open_zarr_group(temp_path, 'local', None)
 
 
 def __merge_groups(groups):
+    logger.info(f'Merging {len(groups)} interpolated groups')
+
     return {
         '/': xr.concat([g['/'] for g in groups], dim='time').sortby('time'),
         '/Meteorology': xr.concat([g['/Meteorology'] for g in groups], dim='time').sortby('time'),
@@ -292,26 +304,27 @@ def main(cfg):
             # "../test_data/jun22/oco3_LtCO2_220701_B10400Br_221004062104s.nc4"
         ]
 
-        # process_input(cfg['input']['single-file'], cfg)
+        with TemporaryDirectory(prefix='oco-sam-extract-', suffix='-zarr-scratch', ignore_cleanup_errors=True) as td:
+            proccess = partial(process_input, cfg=cfg, temp_dir=td, input_region=None)
 
-        # processed_groups = [process_input(f, cfg) for f in in_files]
+            with ThreadPoolExecutor(max_workers=cfg.get('max-workers'), thread_name_prefix='process-worker') as pool:
+                processed_groups = []
 
-        proccess = partial(process_input, cfg=cfg, input_region=None)
+                for result in pool.map(proccess, in_files):
+                    processed_groups.append(result)
 
-        pool = ThreadPoolExecutor(max_workers=cfg.get('max-workers'))
+            merged = __merge_groups(processed_groups)
+            logger.info('Final merging complete, writing to store(s)')
 
-        processed_groups = []
+            cdf_writer = NetCDFWriter('file:///Users/rileykk/oco3/oco-sam-extract/test_netcdf.nc', overwrite=True)
+            cdf_writer.write(merged)
 
-        for result in pool.map(proccess, in_files):
-            processed_groups.append(result)
-
-        pool.shutdown()
-
-        merged = __merge_groups(processed_groups)
-
-        print(merged)
-
-        merged['/'].to_netcdf('test_1mo.nc')
+            zarr_writer = ZarrWriter(
+                'file:///Users/rileykk/oco3/oco-sam-extract/test_zarr_writer.zarr',
+                (5, 250, 250),
+                overwrite=True
+            )
+            zarr_writer.write(merged)
 
 
 def parse_args():
@@ -377,16 +390,6 @@ def parse_args():
                 config_dict['input'] = {'queue': inp['queue']}
 
             config_dict['drop-dims'] = [(dim['group'], dim['name']) for dim in cfg_yml['drop-dims']]
-
-            locations = []
-
-            for type in cfg_yml['targets']:
-                for location in type['locations']:
-                    location['type'] = type['type']
-                    locations.append(location)
-
-            config_dict['targets'] = locations
-
         except KeyError as e:
             logger.exception(e)
             raise ValueError('Invalid configuration')
@@ -405,6 +408,9 @@ def parse_args():
                 'type': 'local'
             },
             'drop-dims': [
+                # ('/Meteorology', 'psurf_apriori_o2a'),
+                ('/Meteorology', 'psurf_apriori_sco2'),
+                ('/Meteorology', 'psurf_apriori_wco2'),
                 ('/Meteorology', 'windspeed_u_met'),
                 ('/Meteorology', 'windspeed_v_met'),
                 ('/Preprocessors', 'xco2_weak_idp'),
@@ -412,6 +418,8 @@ def parse_args():
                 ('/Preprocessors', 'max_declocking_o2a'),
                 ('/Preprocessors', 'csstd_ratio_wco2'),
                 ('/Preprocessors', 'dp_abp'),
+                # ('/Preprocessors', 'h2o_ratio'),
+                ('/Preprocessors', 'co2_ratio'),
                 ('/Retrieval', 'surface_type'),
                 ('/Retrieval', 'psurf'),
                 ('/Retrieval', 'SigmaB'),
@@ -483,10 +491,9 @@ def parse_args():
                 ('/Sounding', 'target_id'),
                 ('/Sounding', 'target_name'),
             ],
-            'targets': Targets.get_default_target_list(),
             'grid': {
-                'latitude': 1800,
-                'longitude': 3600
+                'latitude': 1800 * 3,
+                'longitude': 3600 * 3
             },
             'mask-tolerance': 1,
             'max-workers': 4
