@@ -38,14 +38,14 @@ def __fit_data_to_grid(sams, cfg):
     :return: xr
     """
 
-    logger.info('Merging SAM datasets for interpolation')
+    logger.info('Concatenating SAM datasets for interpolation')
 
     interp_ds = {
-        '/': xr.merge([sam['/'] for sam in sams]),
-        '/Meteorology': xr.merge([sam['/Meteorology'] for sam in sams]),
-        '/Preprocessors': xr.merge([sam['/Preprocessors'] for sam in sams]),
-        '/Retrieval': xr.merge([sam['/Retrieval'] for sam in sams]),
-        '/Sounding': xr.merge([sam['/Sounding'] for sam in sams]),
+        '/': xr.concat([sam['/'] for sam in sams], 'sounding_id'),
+        '/Meteorology': xr.concat([sam['/Meteorology'] for sam in sams], 'sounding_id'),
+        '/Preprocessors': xr.concat([sam['/Preprocessors'] for sam in sams], 'sounding_id'),
+        '/Retrieval': xr.concat([sam['/Retrieval'] for sam in sams], 'sounding_id'),
+        '/Sounding': xr.concat([sam['/Sounding'] for sam in sams], 'sounding_id'),
     }
 
     lats = interp_ds['/'].latitude.to_numpy()
@@ -60,6 +60,8 @@ def __fit_data_to_grid(sams, cfg):
               'sensor_zenith_angle', 'solar_zenith_angle', 'source_files', 'time', 'vertex_latitude',
               'vertex_longitude', 'vertices', 'xco2_averaging_kernel', 'xco2_qf_bitflag', 'xco2_qf_simple_bitflag',
               'xco2_quality_flag', 'co2_profile_apriori'],
+        # '/Meteorology': ['psurf_apriori_o2a'],
+        # '/Preprocessors': ['h2o_ratio'],
         '/Retrieval': ['diverging_steps', 'iterations', 'surface_type', 'SigmaB'],
         '/Sounding': ['att_data_source', 'footprint', 'land_fraction', 'land_water_indicator', 'operation_mode',
                       'orbit', 'pma_azimuth_angle', 'pma_elevation_angle', 'sensor_azimuth_angle',
@@ -74,10 +76,36 @@ def __fit_data_to_grid(sams, cfg):
     lon_grid, lat_grid = np.mgrid[-180:180:complex(0, cfg['grid']['longitude']),
                                   -90:90:complex(0, cfg['grid']['latitude'])].astype(np.dtype('float32'))
 
+    lat_attrs = {
+        'long_name': 'latitude',
+        'standard_name': 'latitude',
+        'axis': 'Y',
+        'units': 'degrees_north',
+        'valid_min': -90.0,
+        'valid_max': 90.0,
+    }
+
+    lon_attrs = {
+        'long_name': 'longitude',
+        'standard_name': 'longitude',
+        'axis': 'X',
+        'units': 'degrees_east',
+        'valid_min': -180.0,
+        'valid_max': 180.0,
+    }
+
+    time_attrs = {
+        'long_name': 'time',
+        'standard_name': 'time',
+        'axis': 'T',
+        'units': 'seconds since 1970-01-01 00:00:00',
+        'comment': 'Day of the source L2 Lite file from which the data at this time slice was extracted at midnight UTC'
+    }
+
     coords = {
-        'longitude': ('longitude', lon_grid.transpose()[0]),
-        'latitude': ('latitude', lat_grid[0]),
-        'time': ('time', time)
+        'longitude': ('longitude', lon_grid.transpose()[0], lon_attrs),
+        'latitude': ('latitude', lat_grid[0], lat_attrs),
+        'time': ('time', time, time_attrs)
     }
 
     gridded_ds = {}
@@ -188,7 +216,7 @@ def __mask_data(sams, grid_ds, cfg):
     return grid_ds
 
 
-def process_input(input_url, cfg, temp_dir, input_region=None):
+def process_input(input_url, cfg, temp_dir, input_region=None, output_pre_qf=True):
     additional_params = {'drop_dims': cfg['drop-dims']}
 
     if cfg['input']['type'] == 'aws':
@@ -221,37 +249,81 @@ def process_input(input_url, cfg, temp_dir, input_region=None):
         if sam:
             sam_slices.append(slice(start, i))
 
-        extracted_sams = []
+        extracted_sams_pre_qf = []
+        extracted_sams_post_qf = []
 
         logger.info('Filtering out bad quality soundings in SAM ranges')
 
         for s in sam_slices:
             sam_group = {group: ds[group].isel(sounding_id=s) for group in ds}
 
+            if output_pre_qf:
+                extracted_sams_pre_qf.append(sam_group)
+
             quality = sam_group['/'].xco2_quality_flag == 0
 
             # If this SAM has no good data
             if not any(quality):
-                logger.info(f'Dropping SAM from sounding_id range {s.start} to {s.stop} as there are no points flagged'
-                            f' as good.')
+                logger.info(f'Dropping SAM from sounding_id range '
+                            f'{ds["/"].sounding_id[s.start].item()} to '
+                            f'{ds["/"].sounding_id[s.stop].item()} ({len(quality):,} soundings) as there are no '
+                            f'points flagged as good.')
                 continue
 
-            extracted_sams.append({group: sam_group[group].where(quality, drop=True) for group in sam_group})
+            extracted_sams_post_qf.append({group: sam_group[group].where(quality, drop=True) for group in sam_group})
 
-        logger.info(f'Extracted {len(extracted_sams)} SAMs with good data')
+        if output_pre_qf:
+            logger.info(f'Extracted {len(extracted_sams_pre_qf)} SAMs total, {len(extracted_sams_post_qf)} SAMs with '
+                        f'good data')
+        else:
+            logger.info(f'Extracted {len(extracted_sams_post_qf)} SAMs with good data')
 
-        logger.info('Fitting SAM data to output grid')
+        if output_pre_qf:
+            logger.info('Fitting unfiltered SAM data to output grid')
 
-        gridded_groups = __mask_data(extracted_sams, __fit_data_to_grid(extracted_sams, cfg), cfg)
+            gridded_groups_pre_qf = __mask_data(
+                extracted_sams_pre_qf,
+                __fit_data_to_grid(
+                    extracted_sams_pre_qf,
+                    cfg
+                ),
+                cfg
+            )
 
-        temp_path = os.path.join(temp_dir, os.path.basename(input_url)) + '.zarr'
+            temp_path_pre = os.path.join(temp_dir, 'pre_qf', os.path.basename(input_url)) + '.zarr'
 
-        writer = ZarrWriter(temp_path, (5, 250, 250), overwrite=True, verify=False)
-        writer.write(gridded_groups)
+            logger.info('Outputting unfiltered SAM product slice to temporary Zarr array')
+
+            writer = ZarrWriter(temp_path_pre, (5, 250, 250), overwrite=True, verify=False)
+            writer.write(gridded_groups_pre_qf)
+
+            del gridded_groups_pre_qf
+
+        logger.info('Fitting filtered SAM data to output grid')
+
+        gridded_groups_post_qf = __mask_data(
+            extracted_sams_post_qf,
+            __fit_data_to_grid(
+                extracted_sams_post_qf,
+                cfg
+            ),
+            cfg
+        )
+
+        temp_path_post = os.path.join(temp_dir, 'post_qf', os.path.basename(input_url)) + '.zarr'
+
+        logger.info('Outputting filtered SAM product slice to temporary Zarr array')
+
+        writer = ZarrWriter(temp_path_post, (5, 250, 250), overwrite=True, verify=False)
+        writer.write(gridded_groups_post_qf)
 
         logger.info(f'Finished processing input at {path}')
 
-        return ZarrWriter.open_zarr_group(temp_path, 'local', None)
+        if output_pre_qf:
+            return ZarrWriter.open_zarr_group(temp_path_pre, 'local', None), \
+                ZarrWriter.open_zarr_group(temp_path_post, 'local', None)
+        else:
+            return None, ZarrWriter.open_zarr_group(temp_path_post, 'local', None)
 
 
 def __merge_groups(groups):
@@ -273,6 +345,7 @@ def main(cfg):
     else:
         in_files = [
             # "../test_data/jun22/oco3_LtCO2_220531_B10400Br_220929040438s.nc4",
+
             "../test_data/jun22/oco3_LtCO2_220601_B10400Br_220929042003s.nc4",
             "../test_data/jun22/oco3_LtCO2_220602_B10400Br_220929042003s.nc4",
             "../test_data/jun22/oco3_LtCO2_220603_B10400Br_220929042003s.nc4",
@@ -280,10 +353,12 @@ def main(cfg):
             "../test_data/jun22/oco3_LtCO2_220605_B10400Br_220929042003s.nc4",
             "../test_data/jun22/oco3_LtCO2_220606_B10400Br_220929042047s.nc4",
             "../test_data/jun22/oco3_LtCO2_220607_B10400Br_220929042103s.nc4",
+
             # "../test_data/jun22/oco3_LtCO2_220608_B10400Br_220929042114s.nc4",
             # "../test_data/jun22/oco3_LtCO2_220609_B10400Br_220929042122s.nc4",
             # "../test_data/jun22/oco3_LtCO2_220610_B10400Br_220929042125s.nc4",
             # "../test_data/jun22/oco3_LtCO2_220611_B10400Br_220929042205s.nc4",
+
             # "../test_data/jun22/oco3_LtCO2_220612_B10400Br_220929042219s.nc4",
             # "../test_data/jun22/oco3_LtCO2_220613_B10400Br_220929042220s.nc4",
             # "../test_data/jun22/oco3_LtCO2_220614_B10400Br_220929042227s.nc4",
@@ -305,26 +380,36 @@ def main(cfg):
         ]
 
         with TemporaryDirectory(prefix='oco-sam-extract-', suffix='-zarr-scratch', ignore_cleanup_errors=True) as td:
-            proccess = partial(process_input, cfg=cfg, temp_dir=td, input_region=None)
+            process = partial(process_input, cfg=cfg, temp_dir=td, input_region=None)
 
             with ThreadPoolExecutor(max_workers=cfg.get('max-workers'), thread_name_prefix='process-worker') as pool:
-                processed_groups = []
+                processed_groups_pre = []
+                processed_groups_post = []
 
-                for result in pool.map(proccess, in_files):
-                    processed_groups.append(result)
+                for result_pre, result_post in pool.map(process, in_files):
+                    processed_groups_pre.append(result_pre)
+                    processed_groups_post.append(result_post)
 
-            merged = __merge_groups(processed_groups)
-            logger.info('Final merging complete, writing to store(s)')
+            if all(processed_groups_pre):
+                merged_pre = __merge_groups(processed_groups_pre)
+                logger.info('Merged processed pre_qf data')
 
-            cdf_writer = NetCDFWriter('file:///Users/rileykk/oco3/oco-sam-extract/test_netcdf.nc', overwrite=True)
-            cdf_writer.write(merged)
+                zarr_writer = ZarrWriter(
+                    'file:///Users/rileykk/oco3/oco-sam-extract/test_zarr_writer_pre_qf.zarr',
+                    (5, 250, 250),
+                    overwrite=True
+                )
+                zarr_writer.write(merged_pre)
+
+            merged_post = __merge_groups(processed_groups_post)
+            logger.info('Merged processed post_qf data')
 
             zarr_writer = ZarrWriter(
-                'file:///Users/rileykk/oco3/oco-sam-extract/test_zarr_writer.zarr',
+                'file:///Users/rileykk/oco3/oco-sam-extract/test_zarr_writer_post_qf.zarr',
                 (5, 250, 250),
                 overwrite=True
             )
-            zarr_writer.write(merged)
+            zarr_writer.write(merged_post)
 
 
 def parse_args():
@@ -492,8 +577,8 @@ def parse_args():
                 ('/Sounding', 'target_name'),
             ],
             'grid': {
-                'latitude': 1800 * 3,
-                'longitude': 3600 * 3
+                'latitude': 1800 * 4,
+                'longitude': 3600 * 4
             },
             'mask-tolerance': 1,
             'max-workers': 4
@@ -503,4 +588,16 @@ def parse_args():
 
 
 if __name__ == '__main__':
-    main(parse_args())
+    start = datetime.now()
+    v = -1
+
+    try:
+        main(parse_args())
+        v = 0
+    except Exception as e:
+        logger.critical('An unrecoverable exception has occurred')
+        logger.exception(e)
+        v = 1
+    finally:
+        logger.info(f'Exiting code {v}. Runtime={datetime.now() - start}')
+        exit(v)

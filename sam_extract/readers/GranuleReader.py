@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 ESSENTIAL_VARS = [
     ('/', '*'),
-    ('/Sounding', 'orbit'),
     ('/Sounding', 'operation_mode')
 ]
 
@@ -49,32 +48,6 @@ class GranuleReader:
                 '/Retrieval': xr.open_dataset(path, group='Retrieval', mask_and_scale=False),
                 '/Sounding': xr.open_dataset(path, group='Sounding', mask_and_scale=False),
             }
-
-            # This is obscene but essential to preserve fill value from cdf to zarr output so that the zarr is read
-            # correctly
-
-            # fill_values = {} # group -> [var -> fill value]
-            #
-            # # Map all groups + variables to their missing value attributes, then mask out the missing data
-            #
-            # for group in ds_dict:
-            #     fill_values[group] = {}
-            #     for var in ds_dict[group].data_vars:
-            #         if 'missing_value' in ds_dict[group][var].attrs:
-            #             fill_values[group][var] = ds_dict[group][var].attrs['missing_value']
-            #         else:
-            #             fill_values[group][var] = None
-            #
-            #     # ds_dict[group] = xr.decode_cf(ds_dict[group], mask_and_scale=True)
-            #
-            # print(fill_values)
-            #
-            # # Now re-add the missing data values
-            #
-            # for group in ds_dict:
-            #     for var in ds_dict[group].data_vars:
-            #         if fill_values[group][var] is not None:
-            #             ds_dict[group][var].attrs['_FillValue'] = fill_values[group][var]
         except FileNotFoundError:
             logger.error(f'Input file {path} does not exist')
             raise

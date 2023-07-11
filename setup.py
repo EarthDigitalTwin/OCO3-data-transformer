@@ -8,7 +8,7 @@ except (CalledProcessError, IOError) as e:
 
 setup(
     name='oco3_sam_zarr',
-    version='0.0.1',
+    version='0.5.0',
     url='https://github.jpl.nasa.gov/rileykk/oco-sam-extract',
     author='Riley Kuttruff',
     author_email='riley.k.kuttruff@jpl.nasa.gov',

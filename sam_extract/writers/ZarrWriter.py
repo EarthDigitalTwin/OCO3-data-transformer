@@ -75,17 +75,24 @@ class ZarrWriter(Writer):
 
         compressor = zarr.Blosc(cname='blosclz', clevel=9)
 
-        encodings = {group: {
-            vname: {
-                'compressor': compressor,
-                'chunks': self.__chunking,
-                'write_empty_chunks': False
-            } for vname in ds[group].data_vars
-        } for group in ds}
+        if self.overwrite or not self._exists():
+            encodings = {group: {
+                vname: {
+                    'compressor': compressor,
+                    'chunks': self.__chunking,
+                    'write_empty_chunks': False
+                } for vname in ds[group].data_vars
+            } for group in ds}
+        else:
+            encodings = {group: None for group in Writer.GROUP_KEYS}
+
+        logger.info('Setting Zarr chunk shapes')
 
         for group in ds:
             for var in ds[group].data_vars:
                 ds[group][var] = ds[group][var].chunk(self.__chunking)
+
+        logger.info('Outputting Zarr array')
 
         if self.store == 'local':
             for group in Writer.GROUP_KEYS:
@@ -99,7 +106,11 @@ class ZarrWriter(Writer):
         else:
             raise NotImplementedError()
 
+        logger.info(f'Finished writing Zarr array to {self.path}')
+
         if self.__verify and not self.overwrite:
+            logger.info('Verifying written Zarr array')
+
             zarr_group = ZarrWriter.open_zarr_group(self.path, self.store, self.store_params, root=True)
             dim = zarr_group['/'][self.__append_dim].to_numpy()
 

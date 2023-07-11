@@ -38,7 +38,7 @@ class Writer(ABC):
 
     def _exists(self) -> bool:
         if self.store == 'local':
-            return exists(self.path)
+            return exists(urlparse(self.path).path)
         else:
             url = urlparse(self.path)
 
