@@ -131,6 +131,7 @@ dmypy.json
 .idea/
 
 *.zarr/
+!notebook/data/zarr/*.zarr/
 
 test_data/
 
