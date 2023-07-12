@@ -33,6 +33,9 @@ class NetCDFWriter(Writer):
             for group in Writer.GROUP_KEYS:
                 cdf_group = group[1:]
 
+                if group not in ds:
+                    continue
+
                 if cdf_group == '':
                     if self.overwrite:
                         ds[group].to_netcdf(local_path, mode='w', encoding=encodings[group])

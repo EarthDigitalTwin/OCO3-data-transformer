@@ -51,13 +51,18 @@ class ZarrWriter(Writer):
                 '/': xr.open_zarr(store, consolidated=True),
             }
         else:
-            return {
-                '/': xr.open_zarr(store, consolidated=True),
-                '/Meteorology': xr.open_zarr(store, group='Meteorology', consolidated=True),
-                '/Preprocessors': xr.open_zarr(store, group='Preprocessors', consolidated=True),
-                '/Retrieval': xr.open_zarr(store, group='Retrieval', consolidated=True),
-                '/Sounding': xr.open_zarr(store, group='Sounding', consolidated=True),
-            }
+            groups = {'/': xr.open_zarr(store, consolidated=True)}
+
+            for group in Writer.GROUP_KEYS:
+                if group == '/':
+                    continue
+
+                try:
+                    groups[group] = xr.open_zarr(store, group=group[1:], consolidated=True)
+                except:
+                    pass
+
+            return groups
 
     def write(self, ds: Dict[str, Dataset]):
         logger.info(f'Writing SAM group to Zarr array at {self.path}')
@@ -96,6 +101,9 @@ class ZarrWriter(Writer):
 
         if self.store == 'local':
             for group in Writer.GROUP_KEYS:
+                if group not in ds:
+                    continue
+
                 cdf_group = group[1:]
 
                 if cdf_group == '':
@@ -123,6 +131,9 @@ class ZarrWriter(Writer):
                 self.overwrite = True
 
                 for key in Writer.GROUP_KEYS:
+                    if key not in zarr_group:
+                        continue
+
                     zarr_group[key] = zarr_group[key].sortby(self.__append_dim)
 
                 self.write(zarr_group)

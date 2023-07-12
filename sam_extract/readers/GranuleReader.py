@@ -58,7 +58,7 @@ class GranuleReader:
             logger.error('Something went wrong!')
             raise
 
-        logger.info(f'Granule at {path} loaded successfully); now dropping dimensions provided')
+        logger.info(f'Granule at {path} loaded successfully; now dropping dimensions provided')
 
         for group, var in self.__drop:
             if group == '/' or (group, var) in ESSENTIAL_VARS:
