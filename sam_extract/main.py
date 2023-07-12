@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from scipy.interpolate import griddata
 from shapely.affinity import scale
-from shapely.geometry import Polygon, box
+from shapely.geometry import Polygon, box, MultiPolygon
 from shapely.ops import unary_union
 from yaml import load
 
@@ -25,7 +25,7 @@ except ImportError:
 
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s [%(levelname)s] [%(threadName)s] [%(name)s::%(lineno)d] %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -43,14 +43,6 @@ def __fit_data_to_grid(sams, cfg):
 
     if len(sams) == 0:
         return None
-
-    # interp_ds = {
-    #     '/': xr.concat([sam['/'] for sam in sams], 'sounding_id'),
-    #     '/Meteorology': xr.concat([sam['/Meteorology'] for sam in sams], 'sounding_id'),
-    #     '/Preprocessors': xr.concat([sam['/Preprocessors'] for sam in sams], 'sounding_id'),
-    #     '/Retrieval': xr.concat([sam['/Retrieval'] for sam in sams], 'sounding_id'),
-    #     '/Sounding': xr.concat([sam['/Sounding'] for sam in sams], 'sounding_id'),
-    # }
 
     interp_ds = {group: xr.concat([sam[group] for sam in sams], 'sounding_id') for group in sams[0]}
 
@@ -186,6 +178,8 @@ def __mask_data(sams, grid_ds, cfg):
 
         bounding_poly = unary_union(footprint_polygons)
 
+        logger.debug(f'Created poly with bbox {bounding_poly.bounds}')
+
         sam_polys.append(bounding_poly)
 
     logger.info('Producing geo mask from SAM polys')
@@ -196,21 +190,39 @@ def __mask_data(sams, grid_ds, cfg):
     lat_len = latitudes[1] - latitudes[0]
 
     for poly in sam_polys:
-        minx, miny, maxx, maxy = poly.bounds
+        lat_indices = []
+        lon_indices = []
 
-        lat_indices = np.argwhere(np.logical_and(miny <= latitudes, latitudes <= maxy))
-        lon_indices = np.argwhere(np.logical_and(minx <= longitudes, longitudes <= maxx))
+        if isinstance(poly, MultiPolygon):
+            for geom in poly.geoms:
+                minx, miny, maxx, maxy = geom.bounds
+
+                lat_indices.extend(np.argwhere(np.logical_and(miny <= latitudes, latitudes <= maxy)))
+                lon_indices.extend(np.argwhere(np.logical_and(minx <= longitudes, longitudes <= maxx)))
+        else:
+            minx, miny, maxx, maxy = poly.bounds
+
+            lat_indices.extend(np.argwhere(np.logical_and(miny <= latitudes, latitudes <= maxy)))
+            lon_indices.extend(np.argwhere(np.logical_and(minx <= longitudes, longitudes <= maxx)))
+
+        logger.debug(f'Checking for poly ({poly.bounds}) across {len(lat_indices):,} latitudes, {len(lon_indices):,} '
+                     f'longitudes. {len(lat_indices) * len(lon_indices):,} total points.')
 
         for lon_i in lon_indices:
             for lat_i in lat_indices:
                 lon_i = tuple(lon_i)
                 lat_i = tuple(lat_i)
 
+                if geo_mask[lon_i][lat_i]:
+                    continue
+
                 lon = longitudes[lon_i]
                 lat = latitudes[lat_i]
                 grid_poly = box(lon - lon_len, lat - lat_len, lon + lon_len, lat + lat_len)
 
-                geo_mask[lon_i][lat_i] = geo_mask[lon_i][lat_i] or grid_poly.intersects(poly)
+                geo_mask[lon_i][lat_i] = grid_poly.intersects(poly)
+
+        logger.debug(f'Finished geo masking for poly ({poly.bounds})')
 
     mask = np.array([geo_mask])
 
@@ -362,14 +374,6 @@ def __merge_groups(groups):
         return None
 
     return {group: xr.concat([g[group] for g in groups], dim='time').sortby('time') for group in groups[0]}
-
-    # return {
-    #     '/': xr.concat([g['/'] for g in groups], dim='time').sortby('time'),
-    #     '/Meteorology': xr.concat([g['/Meteorology'] for g in groups], dim='time').sortby('time'),
-    #     '/Preprocessors': xr.concat([g['/Preprocessors'] for g in groups], dim='time').sortby('time'),
-    #     '/Retrieval': xr.concat([g['/Retrieval'] for g in groups], dim='time').sortby('time'),
-    #     '/Sounding': xr.concat([g['/Sounding'] for g in groups], dim='time').sortby('time'),
-    # }
 
 
 def main(cfg):
