@@ -137,3 +137,4 @@ test_data/
 
 *.nc
 *.nc4
+!notebook/data/netcdf/*.nc4
