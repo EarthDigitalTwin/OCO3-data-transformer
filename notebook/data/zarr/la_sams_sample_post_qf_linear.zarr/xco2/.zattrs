@@ -1,0 +1,10 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "time",
+        "longitude",
+        "latitude"
+    ],
+    "comment": "Column-averaged dry-air mole fraction of CO2 (includes bias correction)",
+    "long_name": "XCO2",
+    "units": "ppm"
+}

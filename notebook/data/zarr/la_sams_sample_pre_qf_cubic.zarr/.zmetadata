@@ -1,6 +1,8 @@
 {
     "metadata": {
-        ".zattrs": {},
+        ".zattrs": {
+            "interpolation_method": "cubic"
+        },
         ".zgroup": {
             "zarr_format": 2
         },
@@ -259,39 +261,6 @@
             ],
             "comment": "Column-averaged dry-air mole fraction of CO2 (includes bias correction)",
             "long_name": "XCO2",
-            "units": "ppm"
-        },
-        "xco2_apriori/.zarray": {
-            "chunks": [
-                5,
-                250,
-                250
-            ],
-            "compressor": {
-                "blocksize": 0,
-                "clevel": 9,
-                "cname": "blosclz",
-                "id": "blosc",
-                "shuffle": 1
-            },
-            "dtype": "<f8",
-            "fill_value": "NaN",
-            "filters": null,
-            "order": "C",
-            "shape": [
-                8,
-                14400,
-                7200
-            ],
-            "zarr_format": 2
-        },
-        "xco2_apriori/.zattrs": {
-            "_ARRAY_DIMENSIONS": [
-                "time",
-                "longitude",
-                "latitude"
-            ],
-            "long_name": "A priori XCO2 Value",
             "units": "ppm"
         },
         "xco2_uncertainty/.zarray": {
