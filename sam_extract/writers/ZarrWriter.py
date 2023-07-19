@@ -73,14 +73,13 @@ class ZarrWriter(Writer):
             logger.warning('File already exists and will be overwritten')
         elif exists and not self.overwrite:
             logger.info('File exists and will be appended to')
-            raise ValueError('File exists and cannot be overwritten')
 
         mode = 'w' if self.overwrite else 'a'
-        append_dim = self.__append_dim if not self.overwrite else None
+        append_dim = self.__append_dim if (not self.overwrite) and exists else None
 
         compressor = zarr.Blosc(cname='blosclz', clevel=9)
 
-        if self.overwrite or not self._exists():
+        if self.overwrite or not exists:
             encodings = {group: {
                 vname: {
                     'compressor': compressor,
@@ -122,7 +121,7 @@ class ZarrWriter(Writer):
             zarr_group = ZarrWriter.open_zarr_group(self.path, self.store, self.store_params, root=True)
             dim = zarr_group['/'][self.__append_dim].to_numpy()
 
-            if not all(np.diff(dim) >= 0):
+            if not all(np.diff(dim).astype(int) >= 0):
                 logger.warning('Appended Zarr array not monotonically increasing along append dimension. '
                                'It will need to be sorted')
 

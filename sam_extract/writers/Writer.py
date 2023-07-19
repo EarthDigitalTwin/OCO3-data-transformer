@@ -30,8 +30,9 @@ class Writer(ABC):
         elif url.scheme == 's3':
             self.store = 's3'
 
-            self.store_params['public'] = kwargs['public'] if 'public' in kwargs else False
+            # self.store_params['public'] = kwargs['public'] if 'public' in kwargs else False
             self.store_params['region'] = kwargs['region'] if 'region' in kwargs else 'us-west-2'
+            self.store_params['auth'] = kwargs['auth'] if 'auth' in kwargs else None
         else:
             raise ValueError(f"Invalid URL scheme provided for output: {url.scheme}. Must be either file:// (explicit "
                              f"or implicit) or s3://")

@@ -16,7 +16,7 @@ from shapely.ops import unary_union
 from yaml import load
 
 from sam_extract.readers import GranuleReader
-from sam_extract.writers import NetCDFWriter, ZarrWriter
+from sam_extract.writers import ZarrWriter
 
 try:
     from yaml import CLoader as Loader
@@ -28,7 +28,10 @@ logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s [%(levelname)s] [%(threadName)s] [%(name)s::%(lineno)d] %(message)s'
 )
-logger = logging.getLogger(__name__)
+
+logger = logging.getLogger('sam_extract.main')
+
+DEFAULT_INTERPOLATE_METHOD = 'cubic'
 
 
 def __fit_data_to_grid(sams, cfg):
@@ -57,9 +60,7 @@ def __fit_data_to_grid(sams, cfg):
         '/': ['bands', 'date', 'file_index', 'latitude', 'levels', 'longitude', 'pressure_levels', 'pressure_weight',
               'sensor_zenith_angle', 'solar_zenith_angle', 'source_files', 'time', 'vertex_latitude',
               'vertex_longitude', 'vertices', 'xco2_averaging_kernel', 'xco2_qf_bitflag', 'xco2_qf_simple_bitflag',
-              'xco2_quality_flag', 'co2_profile_apriori'],
-        # '/Meteorology': ['psurf_apriori_o2a'],
-        # '/Preprocessors': ['h2o_ratio'],
+              'xco2_quality_flag', 'co2_profile_apriori', 'xco2_apriori'],
         '/Retrieval': ['diverging_steps', 'iterations', 'surface_type', 'SigmaB'],
         '/Sounding': ['att_data_source', 'footprint', 'land_fraction', 'land_water_indicator', 'operation_mode',
                       'orbit', 'pma_azimuth_angle', 'pma_elevation_angle', 'sensor_azimuth_angle',
@@ -72,8 +73,12 @@ def __fit_data_to_grid(sams, cfg):
         if group in interp_ds:
             interp_ds[group] = interp_ds[group].drop_vars(drop_dims[group], errors='ignore')
 
+    logger.debug('Building coordinate meshes')
+
     lon_grid, lat_grid = np.mgrid[-180:180:complex(0, cfg['grid']['longitude']),
                                   -90:90:complex(0, cfg['grid']['latitude'])].astype(np.dtype('float32'))
+
+    logger.debug('Building attribute and coordinate dictionaries')
 
     lat_attrs = {
         'long_name': 'latitude',
@@ -109,7 +114,7 @@ def __fit_data_to_grid(sams, cfg):
 
     gridded_ds = {}
 
-    logger.info(f"Interpolating retained data variables to {cfg['grid']['longitude']} by {cfg['grid']['latitude']}"
+    logger.info(f"Interpolating retained data variables to {cfg['grid']['longitude']:,} by {cfg['grid']['latitude']:,}"
                 f" grid")
 
     def __interpolate(in_grp, grp, var):
@@ -117,7 +122,7 @@ def __fit_data_to_grid(sams, cfg):
         return [griddata(points,
                 in_grp[grp][var].to_numpy(),
                 (lon_grid, lat_grid),
-                method=cfg['grid'].get('method', 'cubic'),
+                method=cfg['grid'].get('method', DEFAULT_INTERPOLATE_METHOD),
                 fill_value=in_grp[grp][var].attrs['missing_value'])]
 
     for group in interp_ds:
@@ -135,6 +140,13 @@ def __fit_data_to_grid(sams, cfg):
             gridded_ds[group][var].attrs = interp_ds[group][var].attrs
 
     logger.info('Completed interpolations to grid')
+
+    gridded_ds['/'].attrs['interpolation_method'] = cfg['grid'].get('method', DEFAULT_INTERPOLATE_METHOD)
+
+    res_attr = cfg['grid'].get('resolution_attr')
+
+    if res_attr:
+        gridded_ds['/'].attrs['resolution'] = res_attr
 
     return gridded_ds
 
@@ -238,10 +250,9 @@ def __mask_data(sams, grid_ds, cfg):
     return grid_ds
 
 
-def process_input(input_url,
+def process_input(input_file,
                   cfg,
                   temp_dir,
-                  input_region=None,
                   output_pre_qf=True,
                   exclude_groups: Optional[List[str]] = None):
     additional_params = {'drop_dims': cfg['drop-dims']}
@@ -252,10 +263,20 @@ def process_input(input_url,
     if '/' in exclude_groups:
         raise ValueError('Cannot exclude root group')
 
-    if cfg['input']['type'] == 'aws':
-        additional_params['s3_region'] = input_region
+    if isinstance(input_file, dict):
+        path = input_file['path']
 
-    path = input_url
+        additional_params['s3_auth'] = {
+            'accessKeyID': input_file['accessKeyID'],
+            'secretAccessKey': input_file['secretAccessKey']
+        }
+
+        if 'region' in input_file:
+            additional_params['s3_region'] = input_file['region']
+        else:
+            additional_params['s3_region'] = 'us-west-2'
+    else:
+        path = input_file
 
     logger.info(f'Processing input at {path}')
     logger.info('Opening granule')
@@ -324,7 +345,7 @@ def process_input(input_url,
             )
 
             if gridded_groups_pre_qf is not None:
-                temp_path_pre = os.path.join(temp_dir, 'pre_qf', os.path.basename(input_url)) + '.zarr'
+                temp_path_pre = os.path.join(temp_dir, 'pre_qf', os.path.basename(input_file)) + '.zarr'
 
                 logger.info('Outputting unfiltered SAM product slice to temporary Zarr array')
 
@@ -349,7 +370,7 @@ def process_input(input_url,
         )
 
         if gridded_groups_post_qf is not None:
-            temp_path_post = os.path.join(temp_dir, 'post_qf', os.path.basename(input_url)) + '.zarr'
+            temp_path_post = os.path.join(temp_dir, 'post_qf', os.path.basename(input_file)) + '.zarr'
 
             logger.info('Outputting filtered SAM product slice to temporary Zarr array')
 
@@ -376,10 +397,85 @@ def __merge_groups(groups):
     return {group: xr.concat([g[group] for g in groups], dim='time').sortby('time') for group in groups[0]}
 
 
+def process_inputs(in_files, cfg):
+    logger.info(f'Interpolating {len(in_files)} L2 Lite file(s) with interpolation method '
+                f'{cfg["grid"].get("method", DEFAULT_INTERPOLATE_METHOD)}')
+
+    def __output_cfg(cfg):
+        cfg = cfg['output']
+
+        additional_params = {'verify': True}
+
+        if cfg['type'] == 'local':
+            path_root = cfg['local']
+        else:
+            path_root = cfg['s3']['url']
+            additional_params['region'] = cfg['s3']['region']
+            additional_params['auth'] = cfg['s3']['auth']
+
+        return path_root, additional_params
+
+    with TemporaryDirectory(prefix='oco-sam-extract-', suffix='-zarr-scratch', ignore_cleanup_errors=True) as td:
+        exclude = [
+            '/Preprocessors',
+            '/Meteorology',
+            '/Sounding'
+        ]
+
+        process = partial(process_input, cfg=cfg, temp_dir=td, exclude_groups=exclude)
+
+        with ThreadPoolExecutor(max_workers=cfg.get('max-workers'), thread_name_prefix='process_worker') as pool:
+            processed_groups_pre = []
+            processed_groups_post = []
+
+            for result_pre, result_post in pool.map(process, in_files):
+                processed_groups_pre.append(result_pre)
+                processed_groups_post.append(result_post)
+
+        merged_pre = __merge_groups(processed_groups_pre)
+
+        # method = cfg['grid'].get('method', DEFAULT_INTERPOLATE_METHOD)
+
+        output_root, output_kwargs = __output_cfg(cfg)
+
+        if merged_pre is not None:
+            logger.info('Merged processed pre_qf data')
+
+            zarr_writer = ZarrWriter(
+                # f'file:///Users/rileykk/oco3/oco-sam-extract/la_sams_sample_pre_qf_1km_{method}.zarr',
+                os.path.join(output_root, cfg['output']['naming']['pre_qf']),
+                (5, 250, 250),
+                overwrite=False,
+                **output_kwargs
+            )
+            zarr_writer.write(merged_pre)
+        else:
+            logger.info('No pre_qf data generated')
+
+        merged_post = __merge_groups(processed_groups_post)
+
+        if merged_post is not None:
+            logger.info('Merged processed post_qf data')
+
+            zarr_writer = ZarrWriter(
+                # f'file:///Users/rileykk/oco3/oco-sam-extract/la_sams_sample_post_qf_1km_{method}.zarr',
+                os.path.join(output_root, cfg['output']['naming']['post_qf']),
+                (5, 250, 250),
+                overwrite=False,
+                **output_kwargs
+            )
+            zarr_writer.write(merged_post)
+        else:
+            logger.info('No post_qf data generated, all SAMs on these days may have been filtered out for bad qf')
+
+
 def main(cfg):
     if cfg['input']['type'] == 'aws':
         pass
         # TODO monitoring code here
+    elif cfg['input']['type'] == 'files':
+        in_files = cfg['input']['files']
+        process_inputs(in_files, cfg)
     else:
         in_files = [
             # "../test_data/jun22/oco3_LtCO2_220531_B10400Br_220929040438s.nc4",
@@ -426,131 +522,89 @@ def main(cfg):
             "../test_data/la/oco3_LtCO2_221028_B10400Br_221205203441s.nc4",
         ]
 
-        with TemporaryDirectory(prefix='oco-sam-extract-', suffix='-zarr-scratch', ignore_cleanup_errors=True) as td:
-            exclude = [
-                '/Preprocessors',
-                '/Meteorology',
-                '/Sounding'
-            ]
-
-            process = partial(process_input, cfg=cfg, temp_dir=td, input_region=None, exclude_groups=exclude)
-
-            with ThreadPoolExecutor(max_workers=cfg.get('max-workers'), thread_name_prefix='process-worker') as pool:
-                processed_groups_pre = []
-                processed_groups_post = []
-
-                for result_pre, result_post in pool.map(process, in_files):
-                    processed_groups_pre.append(result_pre)
-                    processed_groups_post.append(result_post)
-
-            merged_pre = __merge_groups(processed_groups_pre)
-
-            if merged_pre is not None:
-                logger.info('Merged processed pre_qf data')
-
-                zarr_writer = ZarrWriter(
-                    'file:///Users/rileykk/oco3/oco-sam-extract/la_sams_sample_pre_qf.zarr',
-                    (5, 250, 250),
-                    overwrite=True
-                )
-                zarr_writer.write(merged_pre)
-            else:
-                logger.info('No pre_qf data generated')
-
-            merged_post = __merge_groups(processed_groups_post)
-
-            if merged_post is not None:
-                logger.info('Merged processed post_qf data')
-
-                zarr_writer = ZarrWriter(
-                    'file:///Users/rileykk/oco3/oco-sam-extract/la_sams_sample_post_qf.zarr',
-                    (5, 250, 250),
-                    overwrite=True
-                )
-                zarr_writer.write(merged_post)
-            else:
-                logger.info('No post_qf data generated, all SAMs on these days may have been filtered out for bad qf')
+        process_inputs(in_files, cfg)
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    input_config = parser.add_argument_group('Config file', 'Use a config yaml file')
+    parser.add_argument('-i', help='Configuration yaml file', metavar='YAML', dest='cfg', required=True)
 
-    local = parser.add_argument_group('Single input file', 'Process only a single input file with default '
-                                                           'settings')
-
-    local.add_argument('-f', '--input-file',
-                       help='Path to local OCO-3 lite NetCDF file to process',
-                       metavar='FILE',
-                       dest='in_file')
-
-    local.add_argument('-o', '--output',
-                       help='Path to directory to store output zarr arrays',
-                       metavar='DIR',
-                       dest='out')
-
-    input_config.add_argument('-i', help='Configuration yaml file', metavar='YAML', dest='cfg')
+    parser.add_argument('--hardcoded', dest='hc', action='store_true')
 
     args = parser.parse_args()
 
-    if args.cfg and (args.out or args.in_file):
-        raise ValueError('Must specify either single input file (+ output dir) or provide a config yaml file. Not both')
-    elif not args.cfg and not all((args.out, args.in_file)):
-        raise ValueError('If providing single input file, both input file and output dir must be provided')
-
-    if args.cfg:
+    if args.cfg and not args.hc:
         with open(args.cfg) as f:
-            cfg_yml = load(f, Loader=Loader)
-
-        config_dict = {}
+            config_dict = load(f, Loader=Loader)
 
         try:
-            output = cfg_yml['output']
-            inp = cfg_yml['input']
+            output = config_dict['output']
+            inp = config_dict['input']
 
-            if output['local']:
+            if 's3' in output and 'local' in output:
+                raise ValueError('Must specify either s3 or local, not both')
+
+            if 'local' in output:
                 config_dict['output']['type'] = 'local'
-                config_dict['output']['local'] = output['local']
-            elif output['s3']['url']:
-                if not output['s3']['region']:
+                # config_dict['output']['local'] = output['local']
+            elif 's3' in output:
+                if 'region' not in output['s3']:
                     output['s3']['region'] = 'us-west-2'
 
-                config_dict['output']['type'] = 'aws'
-                config_dict['output'] = {'s3': output['s3']}
+                config_dict['output']['type'] = 's3'
+                # config_dict['output']['s3'] = output['s3']
             else:
                 raise ValueError('No output params configured')
 
-            if not any((inp['single-file'], inp['queue']['url'])):
+            # config_dict['output']['naming'] = cfg_yml['naming']
+            if 'naming' not in output:
+                raise ValueError('Must specify naming for output')
+
+            if 'queue' in inp and 'files' in inp:
+                raise ValueError('Must specify either files or queue, not both')
+
+            if 'queue' in inp:
+                config_dict['input']['type'] = 'queue'
+
+                if 'region' not in inp['queue']:
+                    config_dict['input']['queue']['region'] = 'us-west-2'
+            elif 'files' in inp:
+                config_dict['input']['type'] = 'files'
+            else:
                 raise ValueError('No input params configured')
 
-            if inp['queue']['url'] and not inp['queue']['region']:
-                inp['queue']['region'] = 'us-west-2'
-
-            if inp['single-file']:
-                config_dict['input']['type'] = 'local'
-                config_dict['input']['single-file'] = inp['single-file']
+            if 'drop-dims' in config_dict:
+                config_dict['drop-dims'] = [
+                    (dim['group'], dim['name']) for dim in config_dict['drop-dims']
+                ]
             else:
-                config_dict['input']['type'] = 'aws'
-                config_dict['input'] = {'queue': inp['queue']}
-
-            config_dict['drop-dims'] = [(dim['group'], dim['name']) for dim in cfg_yml['drop-dims']]
+                config_dict['drop-dims'] = []
         except KeyError as e:
             logger.exception(e)
             raise ValueError('Invalid configuration')
     else:
-        # TODO Eventually I'll enable & implement single use S3
-
         config_dict = {
             'output': {
-                'local': {
-                    'path': args.out
+                'local': 'file:///Users/rileykk/oco3/oco-sam-extract/test_cfg/',
+                'naming': {
+                    'pre_qf': 'oco3_sam_zarr_pre.zarr',
+                    'post_qf': 'oco3_sam_zarr_post.zarr'
                 },
                 'type': 'local'
             },
             'input': {
-                'single-file': args.in_file,
-                'type': 'local'
+                'files': [
+                    "../test_data/la/oco3_LtCO2_200303_B10400Br_220318000013s.nc4",
+                    "../test_data/la/oco3_LtCO2_200505_B10400Br_220318001036s.nc4",
+                    # "../test_data/la/oco3_LtCO2_200527_B10400Br_220318001255s.nc4",
+                    # "../test_data/la/oco3_LtCO2_200814_B10400Br_220318002549s.nc4",
+                    # "../test_data/la/oco3_LtCO2_210325_B10400Br_220318010127s.nc4",
+                    # "../test_data/la/oco3_LtCO2_220218_B10400Br_220505141844s.nc4",
+                    # "../test_data/la/oco3_LtCO2_220813_B10400Br_221010202453s.nc4",
+                    # "../test_data/la/oco3_LtCO2_221028_B10400Br_221205203441s.nc4",
+                ],
+                'type': 'files'
             },
             'drop-dims': [
                 # ('/Meteorology', 'psurf_apriori_o2a'),
@@ -637,18 +691,19 @@ def parse_args():
                 ('/Sounding', 'target_name'),
             ],
             'grid': {
-                'latitude': 1800 * 4,
-                'longitude': 3600 * 4
+                'latitude': int(18000 / 1),
+                'longitude': int(36000 / 1),
+                'method': 'linear',
+                'resolution_attr': '1km'
             },
-            'mask-tolerance': 1,
-            'max-workers': 4
+            'max-workers': 1
         }
 
     return config_dict
 
 
 if __name__ == '__main__':
-    start = datetime.now()
+    start_time = datetime.now()
     v = -1
 
     try:
@@ -659,5 +714,5 @@ if __name__ == '__main__':
         logger.exception(e)
         v = 1
     finally:
-        logger.info(f'Exiting code {v}. Runtime={datetime.now() - start}')
+        logger.info(f'Exiting code {v}. Runtime={datetime.now() - start_time}')
         exit(v)

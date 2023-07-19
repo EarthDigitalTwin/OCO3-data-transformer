@@ -15,11 +15,18 @@ ESSENTIAL_VARS = [
 
 
 class GranuleReader:
-    def __init__(self, path: str, drop_dims: Optional[List[Tuple[str, str]]] = None, s3_region=None):
+    def __init__(
+            self,
+            path: str,
+            drop_dims: Optional[List[Tuple[str, str]]] = None,
+            s3_region=None,
+            s3_auth: Dict[str, str] = None
+    ):
         self.__url = path
         self.__s3_file = None
         self.__s3_region = s3_region
         self.__drop = drop_dims if drop_dims else []
+        self.__auth = s3_auth
 
     def __enter__(self):
         return self.open()

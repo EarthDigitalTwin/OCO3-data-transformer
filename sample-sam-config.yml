@@ -1,31 +1,201 @@
 output:  # required; one-of
-  s3:
-    url: s3://sam-zarr-bucket/ # required
-    region: us-west-2 # optional; assume us-west-2; should match input.queue.region
-  local: # path to local file
+#  s3:
+#    url: s3://sam-zarr-bucket/ # required
+#    region: us-west-2 # optional; assume us-west-2; should match input.queue.region
+#    auth:
+#      accessKeyID: foo
+#      secretAccessKey: bar
+  local: file:///Users/rileykk/oco3/oco-sam-extract/
+  naming:
+    pre_qf: la_sams_sample_pre_qf_1km_linear.zarr # oco3_sam_l3_global_pre_qf.zarr
+    post_qf: la_sams_sample_post_qf_1km_linear.zarr # oco3_sam_l3_global_post_qf.zarr
 input: # required; one of
-  single-file: # url to single input file
-  queue: # AWS SQS queue to monitor for inputs
-    url: https://sqs.us-west-2.amazonaws.com/yaddayaddayadda/oco3SAMQueue
-    region: us-west-2 # optional; assume us-west-2; should match output.s3.region
+  files:
+    - /Users/rileykk/oco3/oco-sam-extract/test_data/la/oco3_LtCO2_200303_B10400Br_220318000013s.nc4
+    - /Users/rileykk/oco3/oco-sam-extract/test_data/la/oco3_LtCO2_200505_B10400Br_220318001036s.nc4
+    - /Users/rileykk/oco3/oco-sam-extract/test_data/la/oco3_LtCO2_200527_B10400Br_220318001255s.nc4
+    #- /Users/rileykk/oco3/oco-sam-extract/test_data/la/oco3_LtCO2_200814_B10400Br_220318002549s.nc4
+    #- /Users/rileykk/oco3/oco-sam-extract/test_data/la/oco3_LtCO2_210325_B10400Br_220318010127s.nc4
+    #- /Users/rileykk/oco3/oco-sam-extract/test_data/la/oco3_LtCO2_220218_B10400Br_220505141844s.nc4
+    #- /Users/rileykk/oco3/oco-sam-extract/test_data/la/oco3_LtCO2_220813_B10400Br_221010202453s.nc4
+    #- /Users/rileykk/oco3/oco-sam-extract/test_data/la/oco3_LtCO2_221028_B10400Br_221205203441s.nc
+#    - paths
+#    - to
+#    - files
+#    - local
+#    - or
+#    - path: s3
+#      accessKeyID: foo
+#      secretAccessKey: bar
+#  queue: # AWS SQS queue to monitor for inputs
+#    url: https://sqs.us-west-2.amazonaws.com/yaddayaddayadda/oco3SAMQueue
+#    region: us-west-2 # optional; assume us-west-2; should match output.s3.region
+#    accessKeyID: foo
+#    secretAccessKey: bar
 drop-dims: # optional
-  - group: "/"
-    name: xco2_averaging_kernel # Just an example; probably wouldn't drop a root variable
-  - group: /Sounding # required
-    name: albedo_slope_o2a # required
-targets: # required
-  - type: city
-    locations:
-      - name: Brisbane_Australia
-        point:
-          wkt: POINT(152.92334 -27.45844)
-      - name: Los_Angeles_USA
-        point:
-          lat: 34.050376
-          lon: -118.241413
-  - type: volcano
-    locations:
-      - name: Popocatepetl
-        point:
-          lat: 19
-          lon: -98.5
+  - group: /Meteorology
+    name: psurf_apriori_sco2
+  - group: /Meteorology
+    name: psurf_apriori_wco2
+  - group: /Meteorology
+    name: windspeed_u_met
+  - group: /Meteorology
+    name: windspeed_v_met
+  - group: /Preprocessors
+    name: xco2_weak_idp
+  - group: /Preprocessors
+    name: xco2_strong_idp
+  - group: /Preprocessors
+    name: max_declocking_o2a
+  - group: /Preprocessors
+    name: csstd_ratio_wco2
+  - group: /Preprocessors
+    name: dp_abp
+  - group: /Preprocessors
+    name: co2_ratio
+  - group: /Retrieval
+    name: surface_type
+  - group: /Retrieval
+    name: psurf
+  - group: /Retrieval
+    name: SigmaB
+  - group: /Retrieval
+    name: windspeed
+  - group: /Retrieval
+    name: windspeed_apriori
+  - group: /Retrieval
+    name: psurf_apriori
+  - group: /Retrieval
+    name: t700
+  - group: /Retrieval
+    name: fs
+  - group: /Retrieval
+    name: fs_rel
+  - group: /Retrieval
+    name: tcwv
+  - group: /Retrieval
+    name: tcwv_apriori
+  - group: /Retrieval
+    name: tcwv_uncertainty
+  - group: /Retrieval
+    name: dp
+  - group: /Retrieval
+    name: dp_o2a
+  - group: /Retrieval
+    name: dp_sco2
+  - group: /Retrieval
+    name: dpfrac
+  - group: /Retrieval
+    name: s31
+  - group: /Retrieval
+    name: s32
+  - group: /Retrieval
+    name: co2_grad_del
+  - group: /Retrieval
+    name: dws
+  - group: /Retrieval
+    name: aod_fine
+  - group: /Retrieval
+    name: eof2_2_rel
+  - group: /Retrieval
+    name: aod_dust
+  - group: /Retrieval
+    name: aod_bc
+  - group: /Retrieval
+    name: aod_oc
+  - group: /Retrieval
+    name: aod_seasalt
+  - group: /Retrieval
+    name: aod_sulfate
+  - group: /Retrieval
+    name: aod_strataer
+  - group: /Retrieval
+    name: aod_water
+  - group: /Retrieval
+    name: aod_ice
+  - group: /Retrieval
+    name: aod_total
+  - group: /Retrieval
+    name: ice_height
+  - group: /Retrieval
+    name: dust_height
+  - group: /Retrieval
+    name: h2o_scale
+  - group: /Retrieval
+    name: deltaT
+  - group: /Retrieval
+    name: albedo_o2a
+  - group: /Retrieval
+    name: albedo_wco2
+  - group: /Retrieval
+    name: albedo_sco2
+  - group: /Retrieval
+    name: albedo_slope_o2a
+  - group: /Retrieval
+    name: albedo_slope_wco2
+  - group: /Retrieval
+    name: albedo_slope_sco2
+  - group: /Retrieval
+    name: chi2_o2a
+  - group: /Retrieval
+    name: chi2_wco2
+  - group: /Retrieval
+    name: chi2_sco2
+  - group: /Retrieval
+    name: rms_rel_o2a
+  - group: /Retrieval
+    name: rms_rel_wco2
+  - group: /Retrieval
+    name: rms_rel_sco2
+  - group: /Retrieval
+    name: iterations
+  - group: /Retrieval
+    name: diverging_steps
+  - group: /Retrieval
+    name: dof_co2
+  - group: /Retrieval
+    name: xco2_zlo_bias
+  - group: /Sounding
+    name: solar_azimuth_angle
+  - group: /Sounding
+    name: sensor_azimuth_angle
+  - group: /Sounding
+    name: pma_elevation_angle
+  - group: /Sounding
+    name: pma_azimuth_angle
+  - group: /Sounding
+    name: polarization_angle
+  - group: /Sounding
+    name: att_data_source
+  - group: /Sounding
+    name: land_fraction
+  - group: /Sounding
+    name: glint_angle
+  - group: /Sounding
+    name: airmass
+  - group: /Sounding
+    name: snr_o2a
+  - group: /Sounding
+    name: snr_wco2
+  - group: /Sounding
+    name: snr_sco2
+  - group: /Sounding
+    name: footprint
+  - group: /Sounding
+    name: land_water_indicator
+  - group: /Sounding
+    name: altitude
+  - group: /Sounding
+    name: altitude_stddev
+  - group: /Sounding
+    name: zlo_wco2
+  - group: /Sounding
+    name: target_id
+  - group: /Sounding
+    name: target_name
+grid:
+  latitude: 18000
+  longitude: 36000
+  method: linear
+  resolution_attr: 1km
+max-workers: 1
