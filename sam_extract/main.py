@@ -201,40 +201,53 @@ def __mask_data(sams, grid_ds, cfg):
     lon_len = longitudes[1] - longitudes[0]
     lat_len = latitudes[1] - latitudes[0]
 
-    for poly in sam_polys:
-        lat_indices = []
-        lon_indices = []
+    for i, poly in enumerate(sam_polys):
+        indices = []
 
         if isinstance(poly, MultiPolygon):
+            logger.debug(f'Determining coordinates from {len(poly.geoms)} sub-polygons in bounding MutliPolygon')
+
             for geom in poly.geoms:
                 minx, miny, maxx, maxy = geom.bounds
 
-                lat_indices.extend(np.argwhere(np.logical_and(miny <= latitudes, latitudes <= maxy)))
-                lon_indices.extend(np.argwhere(np.logical_and(minx <= longitudes, longitudes <= maxx)))
+                indices.append((
+                    np.argwhere(np.logical_and(miny <= latitudes, latitudes <= maxy)),
+                    np.argwhere(np.logical_and(minx <= longitudes, longitudes <= maxx))
+                ))
         else:
+            logger.debug(f'Determining coordinates from bounding Geometry ({type(poly)})')
+
             minx, miny, maxx, maxy = poly.bounds
 
-            lat_indices.extend(np.argwhere(np.logical_and(miny <= latitudes, latitudes <= maxy)))
-            lon_indices.extend(np.argwhere(np.logical_and(minx <= longitudes, longitudes <= maxx)))
+            indices.append((
+                np.argwhere(np.logical_and(miny <= latitudes, latitudes <= maxy)),
+                np.argwhere(np.logical_and(minx <= longitudes, longitudes <= maxx))
+            ))
 
-        logger.debug(f'Checking for poly ({poly.bounds}) across {len(lat_indices):,} latitudes, {len(lon_indices):,} '
-                     f'longitudes. {len(lat_indices) * len(lon_indices):,} total points.')
+        n_lats = sum([len(ind[0]) for ind in indices])
+        n_lons = sum([len(ind[1]) for ind in indices])
+        n_pts = sum([len(ind[0]) * len(ind[1]) for ind in indices])
 
-        for lon_i in lon_indices:
-            for lat_i in lat_indices:
-                lon_i = tuple(lon_i)
-                lat_i = tuple(lat_i)
+        logger.debug(f'Checking for poly ({poly.bounds})')
+        logger.info(f'Applying bounding poly to geo mask across {n_lats:,} latitudes, {n_lons:,} '
+                    f'longitudes. {n_pts:,} total points. [{i+1}/{len(sam_polys)}]')
 
-                if geo_mask[lon_i][lat_i]:
-                    continue
+        for lat_indices, lon_indices in indices:
+            for lon_i in lon_indices:
+                for lat_i in lat_indices:
+                    lon_i = tuple(lon_i)
+                    lat_i = tuple(lat_i)
 
-                lon = longitudes[lon_i]
-                lat = latitudes[lat_i]
-                grid_poly = box(lon - lon_len, lat - lat_len, lon + lon_len, lat + lat_len)
+                    if geo_mask[lon_i][lat_i]:
+                        continue
 
-                geo_mask[lon_i][lat_i] = grid_poly.intersects(poly)
+                    lon = longitudes[lon_i]
+                    lat = latitudes[lat_i]
+                    grid_poly = box(lon - lon_len, lat - lat_len, lon + lon_len, lat + lat_len)
 
-        logger.debug(f'Finished geo masking for poly ({poly.bounds})')
+                    geo_mask[lon_i][lat_i] = grid_poly.intersects(poly)
+
+        logger.debug(f'Finished applying poly ({poly.bounds}) to geo mask')
 
     mask = np.array([geo_mask])
 
@@ -242,10 +255,7 @@ def __mask_data(sams, grid_ds, cfg):
 
     for group in grid_ds:
         for var in grid_ds[group].data_vars:
-            grid_ds[group][var] = grid_ds[group][var].where(
-                mask,
-                # other=grid_ds[group][var].attrs['missing_value']
-            )
+            grid_ds[group][var] = grid_ds[group][var].where(mask)
 
     return grid_ds
 
