@@ -88,6 +88,9 @@ class ZarrWriter(Writer):
                 } for vname in ds[group].data_vars
             } for group in ds}
         else:
+            # TODO: Is there a way to ensure write_empty_chunks=false when appending to existing zarr groups?
+            # TODO: (continued) It cannot be done here and xarray doesn't preserve its value
+            # TODO: (continued)  https://github.com/pydata/xarray/issues/8009
             encodings = {group: None for group in Writer.GROUP_KEYS}
 
         logger.info('Setting Zarr chunk shapes')

@@ -1,14 +1,14 @@
 import argparse
 import logging
 import os.path
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+from functools import partial
 from tempfile import TemporaryDirectory
 from typing import List, Optional
-from datetime import datetime
 
 import numpy as np
 import xarray as xr
-from concurrent.futures import ThreadPoolExecutor
-from functools import partial
 from scipy.interpolate import griddata
 from shapely.affinity import scale
 from shapely.geometry import Polygon, box, MultiPolygon
@@ -171,22 +171,28 @@ def __mask_data(sams, grid_ds, cfg):
     if sams is None:
         return None
 
-    logger.info('Constructing data mask')
+    logger.info('Constructing SAM polygons to build mask')
 
-    latitudes = grid_ds['/'].latitude.to_numpy()  # .tolist()
-    longitudes = grid_ds['/'].longitude.to_numpy()  # .tolist()
+    latitudes = grid_ds['/'].latitude.to_numpy()
+    longitudes = grid_ds['/'].longitude.to_numpy()
 
     sam_polys = []
 
-    for sam in sams:
-        logger.info(f'Creating bounding poly for SAM of {len(sam["/"].vertex_latitude):,} footprints')
+    scaling = cfg.get('mask-scaling', 1.1)
+    scaling = min(max(scaling, 1), 1.5)
+
+    logger.info(f'Footprint scaling factor: {scaling}')
+
+    for i, sam in enumerate(sams):
+        logger.info(f'Creating bounding poly for SAM of {len(sam["/"].vertex_latitude):,} footprints '
+                    f'[{i+1}/{len(sams)}]')
 
         footprint_polygons = []
 
         for lats, lons in zip(sam['/'].vertex_latitude, sam['/'].vertex_longitude):
             v = [(lons[i].item(), lats[i].item()) for i in range(len(lats))]
             v.append((lons[0].item(), lats[0].item()))
-            footprint_polygons.append(scale(Polygon(v), 1.1, 1.1))
+            footprint_polygons.append(scale(Polygon(v), scaling, scaling))
 
         bounding_poly = unary_union(footprint_polygons)
 
@@ -557,17 +563,14 @@ def parse_args():
 
             if 'local' in output:
                 config_dict['output']['type'] = 'local'
-                # config_dict['output']['local'] = output['local']
             elif 's3' in output:
                 if 'region' not in output['s3']:
                     output['s3']['region'] = 'us-west-2'
 
                 config_dict['output']['type'] = 's3'
-                # config_dict['output']['s3'] = output['s3']
             else:
                 raise ValueError('No output params configured')
 
-            # config_dict['output']['naming'] = cfg_yml['naming']
             if 'naming' not in output:
                 raise ValueError('Must specify naming for output')
 

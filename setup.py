@@ -1,10 +1,11 @@
 from setuptools import setup, find_packages
 from subprocess import check_call, CalledProcessError
 
-try:
-    check_call(['conda', 'install', '-yc', 'conda-forge', '--file', 'conda-requirements.txt'])
-except (CalledProcessError, IOError) as e:
-    raise EnvironmentError("Error installing conda packages", e)
+# try:
+#     check_call(['conda', 'install', '-yc', 'conda-forge', '--file', 'conda-requirements.txt'])
+#     pass
+# except (CalledProcessError, IOError) as e:
+#     raise EnvironmentError("Error installing conda packages", e)
 
 setup(
     name='oco3_sam_zarr',

@@ -5,8 +5,8 @@ netCDF4
 bottleneck
 scipy
 zarr
-h5netcdf
-cftime
+# h5netcdf
+# cftime
 shapely
 pyyaml
 boto3
