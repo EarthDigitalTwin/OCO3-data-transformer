@@ -13,6 +13,9 @@ ESSENTIAL_VARS = [
     ('/Sounding', 'operation_mode')
 ]
 
+logging.getLogger('botocore').setLevel(logging.INFO)
+logging.getLogger('s3transfer').setLevel(logging.INFO)
+
 
 class GranuleReader:
     def __init__(
@@ -39,7 +42,7 @@ class GranuleReader:
         url = urlparse(self.__url)
 
         if url.scheme == 's3':
-            self.__s3_file = self.__download_s3(url)
+            self.__s3_file = self.__download_s3(url, self.__auth, self.__s3_region)
             path = self.__s3_file.name
         elif url.scheme in ['', 'file']:
             path = url.path
@@ -89,10 +92,18 @@ class GranuleReader:
         return ds_dict
 
     @staticmethod
-    def __download_s3(url: ParseResult):
+    def __download_s3(url: ParseResult, auth, region):
+        logger.info('Downloading file from s3')
+
         fp = tempfile.NamedTemporaryFile()
 
-        client = boto3.client('s3')
+        client = boto3.client(
+            's3',
+            aws_access_key_id=auth['accessKeyID'],
+            aws_secret_access_key=auth['secretAccessKey'],
+            region_name=region
+        )
+
         client.download_fileobj(url.hostname, url.path[1:], fp)
 
         logger.info(

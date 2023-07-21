@@ -291,6 +291,8 @@ def process_input(input_file,
             additional_params['s3_region'] = input_file['region']
         else:
             additional_params['s3_region'] = 'us-west-2'
+
+        input_file = path # It's used later...
     else:
         path = input_file
 
