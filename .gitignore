@@ -138,3 +138,4 @@ test_data/
 *.nc
 *.nc4
 !notebook/data/netcdf/*.nc4
+/run-config.yml

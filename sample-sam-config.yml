@@ -18,7 +18,7 @@ input: # required; one of
     #- /Users/rileykk/oco3/oco-sam-extract/test_data/la/oco3_LtCO2_210325_B10400Br_220318010127s.nc4
     #- /Users/rileykk/oco3/oco-sam-extract/test_data/la/oco3_LtCO2_220218_B10400Br_220505141844s.nc4
     #- /Users/rileykk/oco3/oco-sam-extract/test_data/la/oco3_LtCO2_220813_B10400Br_221010202453s.nc4
-    #- /Users/rileykk/oco3/oco-sam-extract/test_data/la/oco3_LtCO2_221028_B10400Br_221205203441s.nc
+    #- /Users/rileykk/oco3/oco-sam-extract/test_data/la/oco3_LtCO2_221028_B10400Br_221205203441s.nc4
 #    - paths
 #    - to
 #    - files
@@ -199,3 +199,4 @@ grid:
   method: linear
   resolution_attr: 1km
 max-workers: 1
+mask-scaling: 1.01
