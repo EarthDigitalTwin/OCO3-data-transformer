@@ -44,19 +44,41 @@ class Writer(ABC):
             url = urlparse(self.path)
 
             bucket = url.netloc
+            key = url.path
+
+            # key will likely be of the form '/path/to/root'. Remove leading / and append /.zgroup
+            # since head_object doesn't seem to work for directories. This will also ensure that we
+            # return true iff a zarr array exists @ this path
+            if key[0] == '/':
+                key = key[1:]
+
+            if key[-1] == '/':
+                key = f'{key}.zgroup'
+            else:
+                key = f'{key}/.zgroup'
 
             config = Config(region_name=self.store_params['region'])
 
-            s3 = boto3.client('s3', config=config)
+            s3 = boto3.client(
+                's3',
+                aws_access_key_id=self.store_params['auth']['accessKeyID'],
+                aws_secret_access_key=self.store_params['auth']['secretAccessKey'],
+                config=config
+            )
 
             try:
-                s3.head_object(Bucket=bucket, Key=url.path)
+                s3.head_object(Bucket=bucket, Key=key)
                 return True
             except s3.exceptions.NoSuchKey:
                 return False
             except ClientError as e:
                 r = e.response
-                logger.error(f'An AWS error occurred: Code={r["Error"]["Code"]} Message={r["Error"]["Message"]}')
+                err_code = r["Error"]["Code"]
+
+                if err_code == '404':
+                    return False
+
+                logger.error(f'An AWS error occurred: Code={err_code} Message={r["Error"]["Message"]}')
                 raise
             except Exception as e:
                 logger.error('Something went wrong!')

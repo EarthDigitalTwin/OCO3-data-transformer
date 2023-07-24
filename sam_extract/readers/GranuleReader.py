@@ -13,9 +13,6 @@ ESSENTIAL_VARS = [
     ('/Sounding', 'operation_mode')
 ]
 
-logging.getLogger('botocore').setLevel(logging.INFO)
-logging.getLogger('s3transfer').setLevel(logging.INFO)
-
 
 class GranuleReader:
     def __init__(
