@@ -139,3 +139,4 @@ test_data/
 *.nc4
 !notebook/data/netcdf/*.nc4
 /run-config.yml
+/notebook/SRV-sdap-dev.json

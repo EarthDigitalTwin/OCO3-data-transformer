@@ -32,10 +32,10 @@ logging.basicConfig(
 logger = logging.getLogger('sam_extract.main')
 
 # Semi-suppress some loggers that are super verbose when DEBUG lvl is config'd
-logging.getLogger('botocore').setLevel(logging.WARNING)
-logging.getLogger('s3transfer').setLevel(logging.WARNING)
-logging.getLogger('s3fs').setLevel(logging.WARNING)
-logging.getLogger('urllib3').setLevel(logging.WARNING)
+SUPPRESS = ['botocore', 's3transfer', 's3fs', 'urllib3', 'asyncio']
+
+for logger_name in SUPPRESS:
+    logging.getLogger(logger_name).setLevel(logging.WARNING)
 
 DEFAULT_INTERPOLATE_METHOD = 'cubic'
 

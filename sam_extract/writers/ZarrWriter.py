@@ -97,6 +97,7 @@ class ZarrWriter(Writer):
             # TODO: Is there a way to ensure write_empty_chunks=false when appending to existing zarr groups?
             # TODO: (continued) It cannot be done here and xarray doesn't preserve its value
             # TODO: (continued)  https://github.com/pydata/xarray/issues/8009
+            # TODO: (continued) Pending fix in https://github.com/pydata/xarray/pull/8016
             logger.warning('')
             logger.warning(' ******************************************* WARNING *******************************************')
             logger.warning(' **                                                                                           **')
@@ -160,5 +161,7 @@ class ZarrWriter(Writer):
                     zarr_group[key] = zarr_group[key].sortby(self.__append_dim)
 
                 self.write(zarr_group)
+            else:
+                logger.info('Outputted array looks good')
 
 
