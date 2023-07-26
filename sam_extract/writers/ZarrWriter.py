@@ -1,4 +1,6 @@
 import logging
+import os.path
+from tempfile import TemporaryDirectory
 from typing import Dict, Tuple
 from urllib.parse import urlparse
 
@@ -102,6 +104,7 @@ class ZarrWriter(Writer):
             logger.warning(' ******************************************* WARNING *******************************************')
             logger.warning(' **                                                                                           **')
             logger.warning(' ** APPENDED-TO ZARR ARRAY WILL HAVE -ALL- CHUNKS (EVEN EMPTY ONES) WRITTEN FOR NEW SLICES!!! **')
+            logger.warning(' **                             xarray: (Issue #8009 | PR # 8016)                             **')
             logger.warning(' **                                                                                           **')
             logger.warning(' ***********************************************************************************************')
             logger.warning('')
@@ -143,6 +146,8 @@ class ZarrWriter(Writer):
         if self.__verify and not self.overwrite:
             logger.info('Verifying written Zarr array')
 
+            good = True
+
             zarr_group = ZarrWriter.open_zarr_group(self.path, self.store, self.store_params, root=True)
             dim = zarr_group['/'][self.__append_dim].to_numpy()
 
@@ -152,16 +157,62 @@ class ZarrWriter(Writer):
 
                 zarr_group = ZarrWriter.open_zarr_group(self.path, self.store, self.store_params)
 
-                self.overwrite = True
-
                 for key in Writer.GROUP_KEYS:
                     if key not in zarr_group:
                         continue
 
                     zarr_group[key] = zarr_group[key].sortby(self.__append_dim)
 
-                self.write(zarr_group)
+                good = False
             else:
-                logger.info('Outputted array looks good')
+                logger.info('Appended zarr array is monotonically increasing along append dimension')
 
+            dim = zarr_group['/'][self.__append_dim].to_numpy()
 
+            if any(np.diff(dim).astype(int) == 0):
+                logger.warning('Appended Zarr array has repeated slices along the append dimension. '
+                               'They will be removed')
+
+                # If we've already fully opened and modified the zarr group, don't reopen it
+                if good:
+                    zarr_group = ZarrWriter.open_zarr_group(self.path, self.store, self.store_params)
+
+                prev = None
+                drop = []
+
+                for i, v in enumerate(dim.astype(int)):
+                    if v == prev:
+                        drop.append(i - 1)
+
+                    prev = v
+
+                logger.info(f'Dropping {len(drop)} duplicate slices')
+                logger.debug(f'Dropping slices at indices: {drop}')
+
+                for key in Writer.GROUP_KEYS:
+                    if key not in zarr_group:
+                        continue
+
+                    zarr_group[key] = zarr_group[key].drop_duplicates(dim=self.__append_dim, keep='first')
+
+                good = False
+            else:
+                logger.info('Appended zarr array contains no duplicate slices along append dimension')
+
+            if not good:
+                logger.info('Writing corrected group')
+
+                with TemporaryDirectory(prefix='oco-sam-extract-', suffix='-zarr-scratch-corrected',
+                                        ignore_cleanup_errors=True) as td:
+                    temp_path = os.path.join(td, 'sorted.zarr')
+
+                    writer = ZarrWriter(temp_path, self.__chunking, overwrite=True, verify=False)
+                    writer.write(zarr_group)
+
+                    corrected_group = ZarrWriter.open_zarr_group(temp_path, 'local', None)
+
+                    self.overwrite = True
+
+                    self.write(corrected_group)
+            else:
+                logger.info('Appended Zarr array looks good')
