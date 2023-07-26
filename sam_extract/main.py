@@ -500,53 +500,6 @@ def main(cfg):
     elif cfg['input']['type'] == 'files':
         in_files = cfg['input']['files']
         process_inputs(in_files, cfg)
-    else:
-        in_files = [
-            # "../test_data/jun22/oco3_LtCO2_220531_B10400Br_220929040438s.nc4",
-
-            # "../test_data/jun22/oco3_LtCO2_220601_B10400Br_220929042003s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220602_B10400Br_220929042003s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220603_B10400Br_220929042003s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220604_B10400Br_220929042003s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220605_B10400Br_220929042003s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220606_B10400Br_220929042047s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220607_B10400Br_220929042103s.nc4",
-
-            # "../test_data/jun22/oco3_LtCO2_220608_B10400Br_220929042114s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220609_B10400Br_220929042122s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220610_B10400Br_220929042125s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220611_B10400Br_220929042205s.nc4",
-
-            # "../test_data/jun22/oco3_LtCO2_220612_B10400Br_220929042219s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220613_B10400Br_220929042220s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220614_B10400Br_220929042227s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220615_B10400Br_220929042230s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220616_B10400Br_220929042311s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220617_B10400Br_220929042318s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220618_B10400Br_220929042323s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220619_B10400Br_220929042331s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220622_B10400Br_220929042338s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220623_B10400Br_220929042350s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220624_B10400Br_220929042413s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220625_B10400Br_220929042419s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220626_B10400Br_220929042421s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220627_B10400Br_220929042425s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220628_B10400Br_220929042510s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220629_B10400Br_220929042521s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220630_B10400Br_221003210853s.nc4",
-            # "../test_data/jun22/oco3_LtCO2_220701_B10400Br_221004062104s.nc4",
-
-            "../test_data/la/oco3_LtCO2_200303_B10400Br_220318000013s.nc4",
-            "../test_data/la/oco3_LtCO2_200505_B10400Br_220318001036s.nc4",
-            "../test_data/la/oco3_LtCO2_200527_B10400Br_220318001255s.nc4",
-            "../test_data/la/oco3_LtCO2_200814_B10400Br_220318002549s.nc4",
-            "../test_data/la/oco3_LtCO2_210325_B10400Br_220318010127s.nc4",
-            "../test_data/la/oco3_LtCO2_220218_B10400Br_220505141844s.nc4",
-            "../test_data/la/oco3_LtCO2_220813_B10400Br_221010202453s.nc4",
-            "../test_data/la/oco3_LtCO2_221028_B10400Br_221205203441s.nc4",
-        ]
-
-        process_inputs(in_files, cfg)
 
 
 def parse_args():
@@ -554,171 +507,53 @@ def parse_args():
 
     parser.add_argument('-i', help='Configuration yaml file', metavar='YAML', dest='cfg', required=True)
 
-    parser.add_argument('--hardcoded', dest='hc', action='store_true')
-
     args = parser.parse_args()
 
-    if args.cfg and not args.hc:
-        with open(args.cfg) as f:
-            config_dict = load(f, Loader=Loader)
+    with open(args.cfg) as f:
+        config_dict = load(f, Loader=Loader)
 
-        try:
-            output = config_dict['output']
-            inp = config_dict['input']
+    try:
+        output = config_dict['output']
+        inp = config_dict['input']
 
-            if 's3' in output and 'local' in output:
-                raise ValueError('Must specify either s3 or local, not both')
+        if 's3' in output and 'local' in output:
+            raise ValueError('Must specify either s3 or local, not both')
 
-            if 'local' in output:
-                config_dict['output']['type'] = 'local'
-            elif 's3' in output:
-                if 'region' not in output['s3']:
-                    output['s3']['region'] = 'us-west-2'
+        if 'local' in output:
+            config_dict['output']['type'] = 'local'
+        elif 's3' in output:
+            if 'region' not in output['s3']:
+                output['s3']['region'] = 'us-west-2'
 
-                config_dict['output']['type'] = 's3'
-            else:
-                raise ValueError('No output params configured')
+            config_dict['output']['type'] = 's3'
+        else:
+            raise ValueError('No output params configured')
 
-            if 'naming' not in output:
-                raise ValueError('Must specify naming for output')
+        if 'naming' not in output:
+            raise ValueError('Must specify naming for output')
 
-            if 'queue' in inp and 'files' in inp:
-                raise ValueError('Must specify either files or queue, not both')
+        if 'queue' in inp and 'files' in inp:
+            raise ValueError('Must specify either files or queue, not both')
 
-            if 'queue' in inp:
-                config_dict['input']['type'] = 'queue'
+        if 'queue' in inp:
+            config_dict['input']['type'] = 'queue'
 
-                if 'region' not in inp['queue']:
-                    config_dict['input']['queue']['region'] = 'us-west-2'
-            elif 'files' in inp:
-                config_dict['input']['type'] = 'files'
-            else:
-                raise ValueError('No input params configured')
+            if 'region' not in inp['queue']:
+                config_dict['input']['queue']['region'] = 'us-west-2'
+        elif 'files' in inp:
+            config_dict['input']['type'] = 'files'
+        else:
+            raise ValueError('No input params configured')
 
-            if 'drop-dims' in config_dict:
-                config_dict['drop-dims'] = [
-                    (dim['group'], dim['name']) for dim in config_dict['drop-dims']
-                ]
-            else:
-                config_dict['drop-dims'] = []
-        except KeyError as e:
-            logger.exception(e)
-            raise ValueError('Invalid configuration')
-    else:
-        config_dict = {
-            'output': {
-                'local': 'file:///Users/rileykk/oco3/oco-sam-extract/test_cfg/',
-                'naming': {
-                    'pre_qf': 'oco3_sam_zarr_pre.zarr',
-                    'post_qf': 'oco3_sam_zarr_post.zarr'
-                },
-                'type': 'local'
-            },
-            'input': {
-                'files': [
-                    "../test_data/la/oco3_LtCO2_200303_B10400Br_220318000013s.nc4",
-                    "../test_data/la/oco3_LtCO2_200505_B10400Br_220318001036s.nc4",
-                    # "../test_data/la/oco3_LtCO2_200527_B10400Br_220318001255s.nc4",
-                    # "../test_data/la/oco3_LtCO2_200814_B10400Br_220318002549s.nc4",
-                    # "../test_data/la/oco3_LtCO2_210325_B10400Br_220318010127s.nc4",
-                    # "../test_data/la/oco3_LtCO2_220218_B10400Br_220505141844s.nc4",
-                    # "../test_data/la/oco3_LtCO2_220813_B10400Br_221010202453s.nc4",
-                    # "../test_data/la/oco3_LtCO2_221028_B10400Br_221205203441s.nc4",
-                ],
-                'type': 'files'
-            },
-            'drop-dims': [
-                # ('/Meteorology', 'psurf_apriori_o2a'),
-                ('/Meteorology', 'psurf_apriori_sco2'),
-                ('/Meteorology', 'psurf_apriori_wco2'),
-                ('/Meteorology', 'windspeed_u_met'),
-                ('/Meteorology', 'windspeed_v_met'),
-                ('/Preprocessors', 'xco2_weak_idp'),
-                ('/Preprocessors', 'xco2_strong_idp'),
-                ('/Preprocessors', 'max_declocking_o2a'),
-                ('/Preprocessors', 'csstd_ratio_wco2'),
-                ('/Preprocessors', 'dp_abp'),
-                # ('/Preprocessors', 'h2o_ratio'),
-                ('/Preprocessors', 'co2_ratio'),
-                ('/Retrieval', 'surface_type'),
-                ('/Retrieval', 'psurf'),
-                ('/Retrieval', 'SigmaB'),
-                ('/Retrieval', 'windspeed'),
-                ('/Retrieval', 'windspeed_apriori'),
-                ('/Retrieval', 'psurf_apriori'),
-                ('/Retrieval', 't700'),
-                ('/Retrieval', 'fs'),
-                ('/Retrieval', 'fs_rel'),
-                ('/Retrieval', 'tcwv'),
-                ('/Retrieval', 'tcwv_apriori'),
-                ('/Retrieval', 'tcwv_uncertainty'),
-                ('/Retrieval', 'dp'),
-                ('/Retrieval', 'dp_o2a'),
-                ('/Retrieval', 'dp_sco2'),
-                ('/Retrieval', 'dpfrac'),
-                ('/Retrieval', 's31'),
-                ('/Retrieval', 's32'),
-                ('/Retrieval', 'co2_grad_del'),
-                ('/Retrieval', 'dws'),
-                ('/Retrieval', 'aod_fine'),
-                ('/Retrieval', 'eof2_2_rel'),
-                ('/Retrieval', 'aod_dust'),
-                ('/Retrieval', 'aod_bc'),
-                ('/Retrieval', 'aod_oc'),
-                ('/Retrieval', 'aod_seasalt'),
-                ('/Retrieval', 'aod_sulfate'),
-                ('/Retrieval', 'aod_strataer'),
-                ('/Retrieval', 'aod_water'),
-                ('/Retrieval', 'aod_ice'),
-                ('/Retrieval', 'aod_total'),
-                ('/Retrieval', 'ice_height'),
-                ('/Retrieval', 'dust_height'),
-                ('/Retrieval', 'h2o_scale'),
-                ('/Retrieval', 'deltaT'),
-                ('/Retrieval', 'albedo_o2a'),
-                ('/Retrieval', 'albedo_wco2'),
-                ('/Retrieval', 'albedo_sco2'),
-                ('/Retrieval', 'albedo_slope_o2a'),
-                ('/Retrieval', 'albedo_slope_wco2'),
-                ('/Retrieval', 'albedo_slope_sco2'),
-                ('/Retrieval', 'chi2_o2a'),
-                ('/Retrieval', 'chi2_wco2'),
-                ('/Retrieval', 'chi2_sco2'),
-                ('/Retrieval', 'rms_rel_o2a'),
-                ('/Retrieval', 'rms_rel_wco2'),
-                ('/Retrieval', 'rms_rel_sco2'),
-                ('/Retrieval', 'iterations'),
-                ('/Retrieval', 'diverging_steps'),
-                ('/Retrieval', 'dof_co2'),
-                ('/Retrieval', 'xco2_zlo_bias'),
-                ('/Sounding', 'solar_azimuth_angle'),
-                ('/Sounding', 'sensor_azimuth_angle'),
-                ('/Sounding', 'pma_elevation_angle'),
-                ('/Sounding', 'pma_azimuth_angle'),
-                ('/Sounding', 'polarization_angle'),
-                ('/Sounding', 'att_data_source'),
-                ('/Sounding', 'land_fraction'),
-                ('/Sounding', 'glint_angle'),
-                ('/Sounding', 'airmass'),
-                ('/Sounding', 'snr_o2a'),
-                ('/Sounding', 'snr_wco2'),
-                ('/Sounding', 'snr_sco2'),
-                ('/Sounding', 'footprint'),
-                ('/Sounding', 'land_water_indicator'),
-                ('/Sounding', 'altitude'),
-                ('/Sounding', 'altitude_stddev'),
-                ('/Sounding', 'zlo_wco2'),
-                ('/Sounding', 'target_id'),
-                ('/Sounding', 'target_name'),
-            ],
-            'grid': {
-                'latitude': int(18000 / 1),
-                'longitude': int(36000 / 1),
-                'method': 'linear',
-                'resolution_attr': '1km'
-            },
-            'max-workers': 1
-        }
+        if 'drop-dims' in config_dict:
+            config_dict['drop-dims'] = [
+                (dim['group'], dim['name']) for dim in config_dict['drop-dims']
+            ]
+        else:
+            config_dict['drop-dims'] = []
+    except KeyError as e:
+        logger.exception(e)
+        raise ValueError('Invalid configuration')
 
     return config_dict
 

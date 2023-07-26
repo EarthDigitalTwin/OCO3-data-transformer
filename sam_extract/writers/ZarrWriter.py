@@ -46,7 +46,8 @@ class ZarrWriter(Writer):
                 s3 = s3fs.S3FileSystem(
                     False,
                     key=params['auth']['accessKeyID'],
-                    secret=params['auth']['secretAccessKey']
+                    secret=params['auth']['secretAccessKey'],
+                    client_kwargs=dict(region_name=params["region"])
                 )
                 store = s3fs.S3Map(root=path, s3=s3, check=False)
         else:
