@@ -1,5 +1,6 @@
 import logging
 import tempfile
+import threading
 from typing import Dict, Optional, List, Tuple
 from urllib.parse import urlparse, ParseResult
 
@@ -12,6 +13,10 @@ ESSENTIAL_VARS = [
     ('/', '*'),
     ('/Sounding', 'operation_mode')
 ]
+
+
+BOTO_SESSION = None
+BOTO_LOCK = threading.Lock()
 
 
 class GranuleReader:
@@ -94,12 +99,26 @@ class GranuleReader:
 
         fp = tempfile.NamedTemporaryFile()
 
-        client = boto3.client(
-            's3',
-            aws_access_key_id=auth['accessKeyID'],
-            aws_secret_access_key=auth['secretAccessKey'],
-            region_name=region
-        )
+        with BOTO_LOCK:
+            global BOTO_SESSION
+            if BOTO_SESSION is None:
+                logger.debug('Creating global boto session')
+                BOTO_SESSION = boto3.session.Session()
+
+            session = BOTO_SESSION
+
+        with BOTO_LOCK:
+            try:
+                client = session.client(
+                    's3',
+                    aws_access_key_id=auth['accessKeyID'],
+                    aws_secret_access_key=auth['secretAccessKey'],
+                    region_name=region
+                )
+            except Exception as e:
+                logger.critical('Could not create boto client!')
+                logger.exception(e)
+                raise
 
         client.download_fileobj(url.hostname, url.path[1:], fp)
 
