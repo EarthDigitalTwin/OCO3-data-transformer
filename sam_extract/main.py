@@ -40,14 +40,7 @@ for logger_name in SUPPRESS:
 DEFAULT_INTERPOLATE_METHOD = 'cubic'
 
 
-def __fit_data_to_grid(sams, cfg):
-    """
-    Interpolate the sam data onto a grid.
-    :param sams: List of xr datasets for individual SAMs
-    :param cfg: Config. Can set interpolation method + grid dims
-    :return: xr
-    """
-
+def fit_data_to_grid(sams, cfg):
     logger.info('Concatenating SAM datasets for interpolation')
 
     if len(sams) == 0:
@@ -123,7 +116,7 @@ def __fit_data_to_grid(sams, cfg):
     logger.info(f"Interpolating retained data variables to {cfg['grid']['longitude']:,} by {cfg['grid']['latitude']:,}"
                 f" grid")
 
-    def __interpolate(in_grp, grp, var):
+    def interpolate(in_grp, grp, var):
         logger.info(f'Interpolating variable {var} in group {grp}')
         return [griddata(points,
                 in_grp[grp][var].to_numpy(),
@@ -135,7 +128,7 @@ def __fit_data_to_grid(sams, cfg):
         gridded_ds[group] = xr.Dataset(
             data_vars={
                 var_name: (('time', 'longitude', 'latitude'),
-                           __interpolate(interp_ds, group, var_name))
+                           interpolate(interp_ds, group, var_name))
                 for var_name in interp_ds[group].data_vars
             },
             coords=coords,
@@ -157,23 +150,7 @@ def __fit_data_to_grid(sams, cfg):
     return gridded_ds
 
 
-def __mask_data(sams, grid_ds, cfg):
-    """
-    Construct a mask from the observation footprints. We should mask out areas on the grid
-    outside of these footprints (+/- some tolerance? dwithin in shapely)
-
-    Construct multipolys from each sam's footprints then build a mask array if each point's lat
-    lon is within tolerance of that geometry
-
-    Also here we should add the non-numeric data to the grid. Ex. SAM targets. If a point on the grid
-    is valid, append the data to that point that makes it valid
-
-    Return the grid after masking
-    :param sams:
-    :param cfg:
-    :return:
-    """
-
+def mask_data(sams, grid_ds, cfg):
     if sams is None:
         return None
 
@@ -359,9 +336,9 @@ def process_input(input_file,
         if output_pre_qf:
             logger.info('Fitting unfiltered SAM data to output grid')
 
-            gridded_groups_pre_qf = __mask_data(
+            gridded_groups_pre_qf = mask_data(
                 extracted_sams_pre_qf,
-                __fit_data_to_grid(
+                fit_data_to_grid(
                     extracted_sams_pre_qf,
                     cfg
                 ),
@@ -384,9 +361,9 @@ def process_input(input_file,
 
         logger.info('Fitting filtered SAM data to output grid')
 
-        gridded_groups_post_qf = __mask_data(
+        gridded_groups_post_qf = mask_data(
             extracted_sams_post_qf,
-            __fit_data_to_grid(
+            fit_data_to_grid(
                 extracted_sams_post_qf,
                 cfg
             ),
@@ -410,7 +387,7 @@ def process_input(input_file,
         return ret_pre_qf, ret_post_qf
 
 
-def __merge_groups(groups):
+def merge_groups(groups):
     logger.info(f'Merging {len(groups)} interpolated groups')
 
     groups = [group for group in groups if group is not None]
@@ -425,7 +402,7 @@ def process_inputs(in_files, cfg):
     logger.info(f'Interpolating {len(in_files)} L2 Lite file(s) with interpolation method '
                 f'{cfg["grid"].get("method", DEFAULT_INTERPOLATE_METHOD)}')
 
-    def __output_cfg(cfg):
+    def output_cfg(cfg):
         cfg = cfg['output']
 
         additional_params = {'verify': True}
@@ -456,11 +433,11 @@ def process_inputs(in_files, cfg):
                 processed_groups_pre.append(result_pre)
                 processed_groups_post.append(result_post)
 
-        merged_pre = __merge_groups(processed_groups_pre)
+        merged_pre = merge_groups(processed_groups_pre)
 
         # method = cfg['grid'].get('method', DEFAULT_INTERPOLATE_METHOD)
 
-        output_root, output_kwargs = __output_cfg(cfg)
+        output_root, output_kwargs = output_cfg(cfg)
 
         if merged_pre is not None:
             logger.info('Merged processed pre_qf data')
@@ -476,7 +453,7 @@ def process_inputs(in_files, cfg):
         else:
             logger.info('No pre_qf data generated')
 
-        merged_post = __merge_groups(processed_groups_post)
+        merged_post = merge_groups(processed_groups_post)
 
         if merged_post is not None:
             logger.info('Merged processed post_qf data')
