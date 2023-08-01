@@ -103,7 +103,7 @@ class GranuleReader:
             global BOTO_SESSION
             if BOTO_SESSION is None:
                 logger.debug('Creating global boto session')
-                BOTO_SESSION = boto3.session.Session()
+                BOTO_SESSION = boto3.session.Session(region_name=region)
 
             session = BOTO_SESSION
 
