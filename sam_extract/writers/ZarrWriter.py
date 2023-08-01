@@ -93,7 +93,7 @@ class ZarrWriter(Writer):
                 vname: {
                     'compressor': compressor,
                     'chunks': self.__chunking,
-                    'write_empty_chunks': False
+                    # 'write_empty_chunks': False
                 } for vname in ds[group].data_vars
             } for group in ds}
         else:
@@ -137,10 +137,22 @@ class ZarrWriter(Writer):
             cdf_group = group[1:]
 
             if cdf_group == '':
-                ds[group].to_zarr(ds_store, mode=mode, append_dim=append_dim, encoding=encodings[group])
+                ds[group].to_zarr(
+                    ds_store,
+                    mode=mode,
+                    append_dim=append_dim,
+                    encoding=encodings[group],
+                    write_empty_chunks=False,
+                )
             else:
-                ds[group].to_zarr(ds_store, mode=mode, group=cdf_group, append_dim=append_dim,
-                                  encoding=encodings[group])
+                ds[group].to_zarr(
+                    ds_store,
+                    mode=mode,
+                    group=cdf_group,
+                    append_dim=append_dim,
+                    encoding=encodings[group],
+                    write_empty_chunks=False,
+                )
 
         logger.info(f'Finished writing Zarr array to {self.path}')
 
