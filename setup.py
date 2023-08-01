@@ -9,7 +9,7 @@ from subprocess import check_call, CalledProcessError
 
 setup(
     name='oco3_sam_zarr',
-    version='0.9.2',
+    version='0.9.5',
     url='https://github.jpl.nasa.gov/rileykk/oco-sam-extract',
     author='Riley Kuttruff',
     author_email='riley.k.kuttruff@jpl.nasa.gov',

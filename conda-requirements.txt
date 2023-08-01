@@ -4,9 +4,7 @@ dask
 netCDF4
 bottleneck
 scipy
-zarr
-# h5netcdf
-# cftime
+zarr>=2.11
 shapely
 pyyaml
 boto3
@@ -15,3 +13,4 @@ s3fs==2022.5.0
 fsspec==2022.5.0
 tini
 aiobotocore>=2.3.0,<2.4
+pika

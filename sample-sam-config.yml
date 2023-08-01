@@ -27,11 +27,11 @@ input: # required; one of
 #    - path: s3
 #      accessKeyID: foo
 #      secretAccessKey: bar
-#  queue: # AWS SQS queue to monitor for inputs
-#    url: https://sqs.us-west-2.amazonaws.com/yaddayaddayadda/oco3SAMQueue
-#    region: us-west-2 # optional; assume us-west-2; should match output.s3.region
-#    accessKeyID: foo
-#    secretAccessKey: bar
+#  queue: # RMQ queue to monitor for inputs
+#    host: rmq-host:5672
+#    username: foo
+#    password: bar
+#    queue: oco3
 drop-dims: # optional
   - group: /Meteorology
     name: psurf_apriori_sco2
