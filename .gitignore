@@ -140,3 +140,9 @@ test_data/
 !notebook/data/netcdf/*.nc4
 /run-config.yml
 /notebook/SRV-sdap-dev.json
+
+
+/demo_repeat_slice_post_qf/
+/demo_repeat_slice_pre_qf/
+/s3_src_demo_post_qf/
+/s3_src_demo_pre_qf/
