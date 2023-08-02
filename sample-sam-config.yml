@@ -29,6 +29,7 @@ input: # required; one of
 #      secretAccessKey: bar
 #  queue: # RMQ queue to monitor for inputs
 #    host: rmq-host:5672
+#    port: 5672 # optional
 #    username: foo
 #    password: bar
 #    queue: oco3

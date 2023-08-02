@@ -14,3 +14,4 @@ fsspec==2022.5.0
 tini
 aiobotocore>=2.3.0,<2.4
 pika
+schema

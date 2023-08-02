@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os.path
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from functools import partial
@@ -8,12 +9,19 @@ from tempfile import TemporaryDirectory
 from typing import List, Optional
 
 import numpy as np
+import pika
 import xarray as xr
+import yaml
+from pika.channel import Channel
+from pika.exceptions import AMQPChannelError, AMQPConnectionError, ConnectionClosedByBroker
+from pika.spec import Basic, BasicProperties
+from schema import Schema, Or, SchemaError
 from scipy.interpolate import griddata
 from shapely.affinity import scale
 from shapely.geometry import Polygon, box, MultiPolygon
 from shapely.ops import unary_union
 from yaml import load
+from yaml.scanner import ScannerError
 
 from sam_extract.readers import GranuleReader
 from sam_extract.writers import ZarrWriter
@@ -32,12 +40,32 @@ logging.basicConfig(
 logger = logging.getLogger('sam_extract.main')
 
 # Semi-suppress some loggers that are super verbose when DEBUG lvl is config'd
-SUPPRESS = ['botocore', 's3transfer', 's3fs', 'urllib3', 'asyncio']
+SUPPRESS = [
+    'botocore',
+    's3transfer',
+    's3fs',
+    'urllib3',
+    'asyncio',
+    'pika',
+]
 
 for logger_name in SUPPRESS:
     logging.getLogger(logger_name).setLevel(logging.WARNING)
 
 DEFAULT_INTERPOLATE_METHOD = 'cubic'
+
+RMQ_SCHEMA = Schema({
+    'inputs': [
+        Or(
+            str,
+            {
+                'path': str,
+                'accessKeyID': str,
+                'secretAccessKey': str
+            }
+        )
+    ]
+})
 
 
 def fit_data_to_grid(sams, cfg):
@@ -471,9 +499,107 @@ def process_inputs(in_files, cfg):
 
 
 def main(cfg):
-    if cfg['input']['type'] == 'aws':
-        pass
-        # TODO monitoring code here
+    if cfg['input']['type'] == 'queue':
+        def on_message(
+                channel: Channel,
+                method_frame: Basic.Deliver,
+                header_frame: BasicProperties,
+                body: bytes):
+            logger.info('Recieved message from input queue')
+            logger.debug(method_frame.delivery_tag)
+            logger.debug(method_frame)
+            logger.debug(header_frame)
+            logger.debug(body)
+
+            try:
+                msg_dict = load(body.decode('utf-8'), Loader=Loader)
+                RMQ_SCHEMA.validate(msg_dict)
+
+                logger.info('Successfully decoded and validated message, starting pipeline')
+                pipeline_start_time = datetime.now()
+
+                # process_inputs(msg_dict['inputs'], cfg)
+
+                thread = threading.Thread(
+                    target=process_inputs,
+                    args=(msg_dict['inputs'], cfg),
+                    name='process-message-thread'
+                )
+                thread.start()
+
+                while thread.is_alive():
+                    channel.connection.sleep(1.0)
+
+                logger.info(f'Pipeline completed in {datetime.now() - pipeline_start_time}')
+                channel.basic_ack(delivery_tag=method_frame.delivery_tag)
+            except (yaml.YAMLError, ScannerError):
+                logger.error('Invalid message received: bad yaml. Dropping it from queue')
+                channel.basic_reject(delivery_tag=method_frame.delivery_tag, requeue=False)
+            except SchemaError:
+                logger.error(f'Invalid message received: improper schema. Dropping it from queue')
+                channel.basic_reject(delivery_tag=method_frame.delivery_tag, requeue=False)
+            except KeyboardInterrupt:
+                channel.basic_nack(delivery_tag=method_frame.delivery_tag)
+                raise
+            except Exception:
+                channel.basic_nack(delivery_tag=method_frame.delivery_tag)
+                raise
+            # TODO: Improve exceptions. Custom wrapper classes: Bad msg (drop) [eg, invalid or nonexistent path, bad
+            #  input fmt], Transient (requeue) [transient errors], Unrecoverable (requeue) [kill the whole thing]
+
+        queue_config = cfg['input']['queue']
+
+        creds = pika.PlainCredentials(queue_config['username'], queue_config['password'])
+
+        rmq_host = queue_config['host']
+        rmq_port = queue_config.get('port', 5672)
+
+        params = pika.ConnectionParameters(
+            host=rmq_host,
+            port=rmq_port,
+            credentials=creds,
+            heartbeat=60
+        )
+
+        while True:
+            try:
+                logger.info(f'Connecting to RMQ at {rmq_host}:{rmq_port}...')
+
+                connection = pika.BlockingConnection(params)
+                channel = connection.channel()
+                channel.basic_qos(prefetch_count=1)
+
+                channel.queue_declare(queue_config['queue'], durable=True,)
+
+                logger.info('Connected to RMQ, listening for messages')
+                channel.basic_consume(queue_config['queue'], on_message)
+                try:
+                    channel.start_consuming()
+                except KeyboardInterrupt:
+                    logger.info('Received interrupt. Stopping listening to queue and closing connection')
+                    channel.stop_consuming()
+                    connection.close()
+                    break
+            except ConnectionClosedByBroker:
+                # Uncomment this to make the example not attempt recovery
+                # from server-initiated connection closure, including
+                # when the node is stopped cleanly
+                #
+                # break
+                continue
+                # Do not recover on channel errors
+            except AMQPChannelError as err:
+                logger.error("Caught a channel error: {}, stopping...".format(err))
+                break
+                # Recover on all other connection errors
+            except AMQPConnectionError:
+                logger.error("Connection was closed, retrying...")
+                continue
+            except Exception as err:
+                logger.error('An unexpected error occurred')
+                logger.exception(err)
+                raise
+
     elif cfg['input']['type'] == 'files':
         in_files = cfg['input']['files']
         process_inputs(in_files, cfg)
@@ -514,9 +640,6 @@ def parse_args():
 
         if 'queue' in inp:
             config_dict['input']['type'] = 'queue'
-
-            if 'region' not in inp['queue']:
-                config_dict['input']['queue']['region'] = 'us-west-2'
         elif 'files' in inp:
             config_dict['input']['type'] = 'files'
         else:
