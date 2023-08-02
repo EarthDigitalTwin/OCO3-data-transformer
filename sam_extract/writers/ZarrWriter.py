@@ -14,6 +14,9 @@ from sam_extract.writers import Writer
 
 logger = logging.getLogger(__name__)
 
+# TEMPORARY: If installed xr module is a version built from pydata/xarray#8016
+TEMP_XARRAY_8016 = tuple([int(n) for n in xr.__version__.split('.')[:3]]) >= (2023, 8, 1)
+
 
 class ZarrWriter(Writer):
     def __init__(self,
@@ -74,6 +77,9 @@ class ZarrWriter(Writer):
     def write(self, ds: Dict[str, Dataset]):
         logger.info(f'Writing SAM group to Zarr array at {self.path}')
 
+        if not TEMP_XARRAY_8016:
+            logger.warning('Currently installed version of xarray does not support write_empty_chunks')
+
         exists = self._exists()
 
         if exists and self.overwrite:
@@ -96,6 +102,11 @@ class ZarrWriter(Writer):
                     # 'write_empty_chunks': False
                 } for vname in ds[group].data_vars
             } for group in ds}
+
+            if not TEMP_XARRAY_8016:
+                for grp in ds:
+                    for vname in ds[grp].data_vars:
+                        encodings[grp][vname]['write_empty_chunks'] = False
         else:
             # TODO: Is there a way to ensure write_empty_chunks=false when appending to existing zarr groups?
             # TODO: (continued) It cannot be done here and xarray doesn't preserve its value
@@ -136,23 +147,41 @@ class ZarrWriter(Writer):
 
             cdf_group = group[1:]
 
-            if cdf_group == '':
-                ds[group].to_zarr(
-                    ds_store,
-                    mode=mode,
-                    append_dim=append_dim,
-                    encoding=encodings[group],
-                    write_empty_chunks=False,
-                )
+            if TEMP_XARRAY_8016:
+                if cdf_group == '':
+                    ds[group].to_zarr(
+                        ds_store,
+                        mode=mode,
+                        append_dim=append_dim,
+                        encoding=encodings[group],
+                        write_empty_chunks=False,
+                    )
+                else:
+                    ds[group].to_zarr(
+                        ds_store,
+                        mode=mode,
+                        group=cdf_group,
+                        append_dim=append_dim,
+                        encoding=encodings[group],
+                        write_empty_chunks=False,
+                    )
             else:
-                ds[group].to_zarr(
-                    ds_store,
-                    mode=mode,
-                    group=cdf_group,
-                    append_dim=append_dim,
-                    encoding=encodings[group],
-                    write_empty_chunks=False,
-                )
+                if cdf_group == '':
+                    ds[group].to_zarr(
+                        ds_store,
+                        mode=mode,
+                        append_dim=append_dim,
+                        encoding=encodings[group],
+                    )
+                else:
+                    ds[group].to_zarr(
+                        ds_store,
+                        mode=mode,
+                        group=cdf_group,
+                        append_dim=append_dim,
+                        encoding=encodings[group],
+                    )
+
 
         logger.info(f'Finished writing Zarr array to {self.path}')
 
