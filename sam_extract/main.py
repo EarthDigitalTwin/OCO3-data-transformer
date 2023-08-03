@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from functools import partial
 from tempfile import TemporaryDirectory
+from time import sleep
 from typing import List, Optional
 
 import numpy as np
@@ -15,6 +16,7 @@ import yaml
 from pika.channel import Channel
 from pika.exceptions import AMQPChannelError, AMQPConnectionError, ConnectionClosedByBroker
 from pika.spec import Basic, BasicProperties
+from schema import Optional as Opt
 from schema import Schema, Or, SchemaError
 from scipy.interpolate import griddata
 from shapely.affinity import scale
@@ -23,6 +25,7 @@ from shapely.ops import unary_union
 from yaml import load
 from yaml.scanner import ScannerError
 
+from sam_extract.exceptions import *
 from sam_extract.readers import GranuleReader
 from sam_extract.writers import ZarrWriter
 
@@ -46,11 +49,17 @@ SUPPRESS = [
     's3fs',
     'urllib3',
     'asyncio',
+]
+
+HARD_SUPPRESS = [
     'pika',
 ]
 
 for logger_name in SUPPRESS:
     logging.getLogger(logger_name).setLevel(logging.WARNING)
+
+for logger_name in HARD_SUPPRESS:
+    logging.getLogger(logger_name).setLevel(logging.CRITICAL)
 
 DEFAULT_INTERPOLATE_METHOD = 'cubic'
 
@@ -60,12 +69,46 @@ RMQ_SCHEMA = Schema({
             str,
             {
                 'path': str,
-                'accessKeyID': str,
-                'secretAccessKey': str
+                Opt('accessKeyID'): str,
+                Opt('secretAccessKey'): str,
+                Opt('urs'): str
             }
         )
     ]
 })
+
+
+FILES_SCHEMA = Schema([
+    Or(
+        str,
+        {
+            'path': str,
+            Opt('accessKeyID'): str,
+            Opt('secretAccessKey'): str,
+            Opt('urs'): str
+        }
+    )
+])
+
+
+AWS_CRED_SCHEMA = Schema({
+    'path': str,
+    'accessKeyID': str,
+    'secretAccessKey': str,
+})
+
+
+def __validate_files(files):
+    FILES_SCHEMA.validate(files)
+
+    for file in files:
+        if isinstance(file, dict):
+            if 'urs' not in file:
+                AWS_CRED_SCHEMA.validate(file)
+            else:
+                if 'accessKeyID' in file or 'secretAccessKey' in file:
+                    logger.warning(f'Provided AWS creds for {file["path"]} will be overridden by dynamic STS '
+                                   f'creds')
 
 
 def fit_data_to_grid(sams, cfg):
@@ -294,9 +337,14 @@ def process_input(input_file,
         path = input_file['path']
 
         additional_params['s3_auth'] = {
-            'accessKeyID': input_file['accessKeyID'],
-            'secretAccessKey': input_file['secretAccessKey']
+            'accessKeyID': input_file.get('accessKeyID'),
+            'secretAccessKey': input_file.get('secretAccessKey')
         }
+
+        if 'urs' in input_file:
+            additional_params['s3_auth']['urs'] = input_file['urs']
+            additional_params['s3_auth']['urs_user'] = input_file.get('urs_user')
+            additional_params['s3_auth']['urs_pass'] = input_file.get('urs_pass')
 
         if 'region' in input_file:
             additional_params['s3_region'] = input_file['region']
@@ -310,109 +358,112 @@ def process_input(input_file,
     logger.info(f'Processing input at {path}')
     logger.info('Opening granule')
 
-    with GranuleReader(path, **additional_params) as ds:
-        mode_array = ds['/Sounding']['operation_mode']
+    try:
+        with GranuleReader(path, **additional_params) as ds:
+            mode_array = ds['/Sounding']['operation_mode']
 
-        logger.info('Splitting into individual SAM groups')
+            logger.info('Splitting into individual SAM groups')
 
-        sam_slices = []
-        sam = False
+            sam_slices = []
+            sam = False
 
-        start = None
-        for i, v in enumerate(mode_array.to_numpy()):
-            if v.item() == 4:
-                if not sam:
-                    sam = True
-                    start = i
-            else:
-                if sam:
-                    sam = False
-                    sam_slices.append(slice(start, i))
+            start = None
+            for i, v in enumerate(mode_array.to_numpy()):
+                if v.item() == 4:
+                    if not sam:
+                        sam = True
+                        start = i
+                else:
+                    if sam:
+                        sam = False
+                        sam_slices.append(slice(start, i))
 
-        if sam:
-            sam_slices.append(slice(start, i))
+            if sam:
+                sam_slices.append(slice(start, i))
 
-        extracted_sams_pre_qf = []
-        extracted_sams_post_qf = []
+            extracted_sams_pre_qf = []
+            extracted_sams_post_qf = []
 
-        logger.info('Filtering out bad quality soundings in SAM ranges')
+            logger.info('Filtering out bad quality soundings in SAM ranges')
 
-        for s in sam_slices:
-            sam_group = {group: ds[group].isel(sounding_id=s) for group in ds if group not in exclude_groups}
+            for s in sam_slices:
+                sam_group = {group: ds[group].isel(sounding_id=s) for group in ds if group not in exclude_groups}
+
+                if output_pre_qf:
+                    extracted_sams_pre_qf.append(sam_group)
+
+                quality = sam_group['/'].xco2_quality_flag == 0
+
+                # If this SAM has no good data
+                if not any(quality):
+                    logger.info(f'Dropping SAM from sounding_id range '
+                                f'{ds["/"].sounding_id[s.start].item()} to '
+                                f'{ds["/"].sounding_id[s.stop].item()} ({len(quality):,} soundings) as there are no '
+                                f'points flagged as good.')
+                    continue
+
+                extracted_sams_post_qf.append({group: sam_group[group].where(quality, drop=True) for group in sam_group})
 
             if output_pre_qf:
-                extracted_sams_pre_qf.append(sam_group)
+                logger.info(f'Extracted {len(extracted_sams_pre_qf)} SAMs total, {len(extracted_sams_post_qf)} SAMs with '
+                            f'good data')
+            else:
+                logger.info(f'Extracted {len(extracted_sams_post_qf)} SAMs with good data')
 
-            quality = sam_group['/'].xco2_quality_flag == 0
+            if output_pre_qf:
+                logger.info('Fitting unfiltered SAM data to output grid')
 
-            # If this SAM has no good data
-            if not any(quality):
-                logger.info(f'Dropping SAM from sounding_id range '
-                            f'{ds["/"].sounding_id[s.start].item()} to '
-                            f'{ds["/"].sounding_id[s.stop].item()} ({len(quality):,} soundings) as there are no '
-                            f'points flagged as good.')
-                continue
-
-            extracted_sams_post_qf.append({group: sam_group[group].where(quality, drop=True) for group in sam_group})
-
-        if output_pre_qf:
-            logger.info(f'Extracted {len(extracted_sams_pre_qf)} SAMs total, {len(extracted_sams_post_qf)} SAMs with '
-                        f'good data')
-        else:
-            logger.info(f'Extracted {len(extracted_sams_post_qf)} SAMs with good data')
-
-        if output_pre_qf:
-            logger.info('Fitting unfiltered SAM data to output grid')
-
-            gridded_groups_pre_qf = mask_data(
-                extracted_sams_pre_qf,
-                fit_data_to_grid(
+                gridded_groups_pre_qf = mask_data(
                     extracted_sams_pre_qf,
+                    fit_data_to_grid(
+                        extracted_sams_pre_qf,
+                        cfg
+                    ),
+                    cfg
+                )
+
+                if gridded_groups_pre_qf is not None:
+                    temp_path_pre = os.path.join(temp_dir, 'pre_qf', os.path.basename(input_file)) + '.zarr'
+
+                    logger.info('Outputting unfiltered SAM product slice to temporary Zarr array')
+
+                    writer = ZarrWriter(temp_path_pre, (5, 250, 250), overwrite=True, verify=False)
+                    writer.write(gridded_groups_pre_qf)
+
+                    del gridded_groups_pre_qf
+
+                    ret_pre_qf = ZarrWriter.open_zarr_group(temp_path_pre, 'local', None)
+                else:
+                    ret_pre_qf = None
+
+            logger.info('Fitting filtered SAM data to output grid')
+
+            gridded_groups_post_qf = mask_data(
+                extracted_sams_post_qf,
+                fit_data_to_grid(
+                    extracted_sams_post_qf,
                     cfg
                 ),
                 cfg
             )
 
-            if gridded_groups_pre_qf is not None:
-                temp_path_pre = os.path.join(temp_dir, 'pre_qf', os.path.basename(input_file)) + '.zarr'
+            if gridded_groups_post_qf is not None:
+                temp_path_post = os.path.join(temp_dir, 'post_qf', os.path.basename(input_file)) + '.zarr'
 
-                logger.info('Outputting unfiltered SAM product slice to temporary Zarr array')
+                logger.info('Outputting filtered SAM product slice to temporary Zarr array')
 
-                writer = ZarrWriter(temp_path_pre, (5, 250, 250), overwrite=True, verify=False)
-                writer.write(gridded_groups_pre_qf)
+                writer = ZarrWriter(temp_path_post, (5, 250, 250), overwrite=True, verify=False)
+                writer.write(gridded_groups_post_qf)
 
-                del gridded_groups_pre_qf
-
-                ret_pre_qf = ZarrWriter.open_zarr_group(temp_path_pre, 'local', None)
+                ret_post_qf = ZarrWriter.open_zarr_group(temp_path_post, 'local', None)
             else:
-                ret_pre_qf = None
+                ret_post_qf = None
 
-        logger.info('Fitting filtered SAM data to output grid')
+            logger.info(f'Finished processing input at {path}')
 
-        gridded_groups_post_qf = mask_data(
-            extracted_sams_post_qf,
-            fit_data_to_grid(
-                extracted_sams_post_qf,
-                cfg
-            ),
-            cfg
-        )
-
-        if gridded_groups_post_qf is not None:
-            temp_path_post = os.path.join(temp_dir, 'post_qf', os.path.basename(input_file)) + '.zarr'
-
-            logger.info('Outputting filtered SAM product slice to temporary Zarr array')
-
-            writer = ZarrWriter(temp_path_post, (5, 250, 250), overwrite=True, verify=False)
-            writer.write(gridded_groups_post_qf)
-
-            ret_post_qf = ZarrWriter.open_zarr_group(temp_path_post, 'local', None)
-        else:
-            ret_post_qf = None
-
-        logger.info(f'Finished processing input at {path}')
-
-        return ret_pre_qf, ret_post_qf
+            return ret_pre_qf, ret_post_qf, True, path
+    except ReaderException:
+        return None, None, False, path
 
 
 def merge_groups(groups):
@@ -456,14 +507,24 @@ def process_inputs(in_files, cfg):
         with ThreadPoolExecutor(max_workers=cfg.get('max-workers'), thread_name_prefix='process_worker') as pool:
             processed_groups_pre = []
             processed_groups_post = []
+            failed_inputs = []
 
-            for result_pre, result_post in pool.map(process, in_files):
-                processed_groups_pre.append(result_pre)
-                processed_groups_post.append(result_post)
+            for result_pre, result_post, success, path in pool.map(process, in_files):
+                if success:
+                    processed_groups_pre.append(result_pre)
+                    processed_groups_post.append(result_post)
+                else:
+                    failed_inputs.append(path)
+
+        if len(failed_inputs) == len(in_files):
+            logger.critical('No input files could not be read!')
+            raise NoValidFilesException()
+        elif len(failed_inputs) > 0:
+            logger.error(f'Some input files failed because they could not be read:')
+            for failed in failed_inputs:
+                logger.error(f' - {failed}')
 
         merged_pre = merge_groups(processed_groups_pre)
-
-        # method = cfg['grid'].get('method', DEFAULT_INTERPOLATE_METHOD)
 
         output_root, output_kwargs = output_cfg(cfg)
 
@@ -515,6 +576,8 @@ def main(cfg):
                 msg_dict = load(body.decode('utf-8'), Loader=Loader)
                 RMQ_SCHEMA.validate(msg_dict)
 
+                __validate_files(msg_dict['inputs'])
+
                 logger.info('Successfully decoded and validated message, starting pipeline')
                 pipeline_start_time = datetime.now()
 
@@ -538,6 +601,15 @@ def main(cfg):
             except SchemaError:
                 logger.error(f'Invalid message received: improper schema. Dropping it from queue')
                 channel.basic_reject(delivery_tag=method_frame.delivery_tag, requeue=False)
+            except NonRetryableException:
+                logger.error('The message could not be properly processed and will be dropped from the queue')
+                channel.basic_reject(delivery_tag=method_frame.delivery_tag, requeue=False)
+            except NonRecoverableError:
+                # logger.critical('An unrecoverable exception occurred, exiting.')
+                channel.basic_nack(delivery_tag=method_frame.delivery_tag)  # nacking because it may not be related to
+                                                                            # the message. This scenario should need to
+                                                                            # be manually investigated
+                raise
             except KeyboardInterrupt:
                 channel.basic_nack(delivery_tag=method_frame.delivery_tag)
                 raise
@@ -561,6 +633,8 @@ def main(cfg):
             heartbeat=60
         )
 
+        retries = 5
+
         while True:
             try:
                 logger.info(f'Connecting to RMQ at {rmq_host}:{rmq_port}...')
@@ -571,6 +645,8 @@ def main(cfg):
 
                 channel.queue_declare(queue_config['queue'], durable=True,)
 
+                retries = 5
+
                 logger.info('Connected to RMQ, listening for messages')
                 channel.basic_consume(queue_config['queue'], on_message)
                 try:
@@ -580,21 +656,29 @@ def main(cfg):
                     channel.stop_consuming()
                     connection.close()
                     break
+                except NonRecoverableError:
+                    logger.critical('An unrecoverable exception occurred, exiting.')
+                    channel.stop_consuming()
+                    connection.close()
+                    raise
             except ConnectionClosedByBroker:
-                # Uncomment this to make the example not attempt recovery
-                # from server-initiated connection closure, including
-                # when the node is stopped cleanly
-                #
-                # break
+                logger.warning('Connection closed by server, retrying')
+                sleep(2)
+                retries -= 1
                 continue
-                # Do not recover on channel errors
             except AMQPChannelError as err:
                 logger.error("Caught a channel error: {}, stopping...".format(err))
                 break
                 # Recover on all other connection errors
             except AMQPConnectionError:
-                logger.error("Connection was closed, retrying...")
-                continue
+                if retries > 0:
+                    logger.error("Connection was closed, retrying...")
+                    sleep(2)
+                    retries -= 1
+                    continue
+                else:
+                    logger.critical("Could not reconnect to RMQ")
+                    raise
             except Exception as err:
                 logger.error('An unexpected error occurred')
                 logger.exception(err)
@@ -609,6 +693,20 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-i', help='Configuration yaml file', metavar='YAML', dest='cfg', required=True)
+
+    parser.add_argument(
+        '--ed-user',
+        help='Earthdata username',
+        dest='edu',
+        default=None
+    )
+
+    parser.add_argument(
+        '--ed-pass',
+        help='Earthdata password',
+        dest='edp',
+        default=None
+    )
 
     args = parser.parse_args()
 
@@ -642,6 +740,8 @@ def parse_args():
             config_dict['input']['type'] = 'queue'
         elif 'files' in inp:
             config_dict['input']['type'] = 'files'
+
+            __validate_files(inp['files'])
         else:
             raise ValueError('No input params configured')
 
@@ -654,6 +754,8 @@ def parse_args():
     except KeyError as e:
         logger.exception(e)
         raise ValueError('Invalid configuration')
+
+    GranuleReader.configure_netrc(username=args.edu, password=args.edp)
 
     return config_dict
 
