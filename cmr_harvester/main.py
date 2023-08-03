@@ -49,7 +49,7 @@ def harvest():
     ))
 
     while 'cmr-search-after' in response.headers:
-        logger.info(f'Getting CMR search after page{response.headers["cmr-search-after"]}')
+        logger.info(f'Getting CMR search after page {response.headers["cmr-search-after"]}')
 
         response = requests.get(URL, params=params, headers={'cmr-search-after': response.headers['cmr-search-after']})
         response.raise_for_status()
@@ -144,8 +144,6 @@ def main():
         exit(1)
 
     granules = harvest()
-
-    print(json.dumps(granules, indent=4))
 
     now = datetime.now(tz=timezone.utc).strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
 
