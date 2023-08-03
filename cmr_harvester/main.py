@@ -6,11 +6,7 @@ from time import sleep
 
 import pika
 import requests
-from pika.channel import Channel
-from pika.exceptions import AMQPChannelError, AMQPConnectionError, ConnectionClosedByBroker
-from pika.spec import Basic, BasicProperties
 from yaml import dump
-
 
 from process_history.History import LocalHistory
 
