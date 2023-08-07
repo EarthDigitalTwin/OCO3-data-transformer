@@ -607,8 +607,15 @@ def main(cfg):
                 )
                 thread.start()
 
+                i = 120
+
                 while thread.is_alive():
                     channel.connection.sleep(1.0)
+
+                    i -= 1
+                    if i == 0:
+                        i = 120
+                        channel.connection.process_data_events()
 
                 logger.info(f'Pipeline completed in {datetime.now() - pipeline_start_time}')
                 channel.basic_ack(delivery_tag=method_frame.delivery_tag)
@@ -647,7 +654,7 @@ def main(cfg):
             host=rmq_host,
             port=rmq_port,
             credentials=creds,
-            heartbeat=60
+            heartbeat=600
         )
 
         retries = 5
@@ -685,6 +692,7 @@ def main(cfg):
                 continue
             except AMQPChannelError as err:
                 logger.error("Caught a channel error: {}, stopping...".format(err))
+                logger.exception(err)
                 break
                 # Recover on all other connection errors
             except AMQPConnectionError:
