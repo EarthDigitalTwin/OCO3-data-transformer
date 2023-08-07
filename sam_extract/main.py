@@ -225,6 +225,9 @@ def mask_data(sams, grid_ds, cfg):
     if sams is None:
         return None
 
+    if grid_ds is None:
+        return None
+
     logger.info('Constructing SAM polygons to build mask')
 
     latitudes = grid_ds['/'].latitude.to_numpy()
@@ -351,7 +354,7 @@ def process_input(input_file,
         else:
             additional_params['s3_region'] = 'us-west-2'
 
-        input_file = path # It's used later...
+        input_file = path  # It's used later...
     else:
         path = input_file
 
@@ -409,6 +412,12 @@ def process_input(input_file,
                             f'good data')
             else:
                 logger.info(f'Extracted {len(extracted_sams_post_qf)} SAMs with good data')
+
+            if len(extracted_sams_post_qf) == 0:
+                if not output_pre_qf or len(extracted_sams_pre_qf) == 0:
+                    logger.info('No SAM data to work with, skipping input')
+                    return None, None, True, path
+
 
             if output_pre_qf:
                 logger.info('Fitting unfiltered SAM data to output grid')
@@ -511,13 +520,21 @@ def process_inputs(in_files, cfg):
 
             for result_pre, result_post, success, path in pool.map(process, in_files):
                 if success:
-                    processed_groups_pre.append(result_pre)
-                    processed_groups_post.append(result_post)
+                    if result_pre is not None:
+                        processed_groups_pre.append(result_pre)
+                    else:
+                        logger.info(f'No pre-QF SAM data generated for {path}; likely none was present')
+
+                    if result_post is not None:
+                        processed_groups_post.append(result_post)
+                    else:
+                        logger.info(f'No post-QF SAM data generated for {path}; likely no SAMs were present or they '
+                                    f'were all filtered out')
                 else:
                     failed_inputs.append(path)
 
         if len(failed_inputs) == len(in_files):
-            logger.critical('No input files could not be read!')
+            logger.critical('No input files could be read!')
             raise NoValidFilesException()
         elif len(failed_inputs) > 0:
             logger.error(f'Some input files failed because they could not be read:')
