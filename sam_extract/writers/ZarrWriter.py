@@ -109,9 +109,10 @@ class ZarrWriter(Writer):
                         encodings[grp][vname]['write_empty_chunks'] = False
         else:
             # TODO: Is there a way to ensure write_empty_chunks=false when appending to existing zarr groups?
-            # TODO: (continued) It cannot be done here and xarray doesn't preserve its value
-            # TODO: (continued)  https://github.com/pydata/xarray/issues/8009
-            # TODO: (continued) Pending fix in https://github.com/pydata/xarray/pull/8016
+            #  (continued) It cannot be done here and xarray doesn't preserve its value
+            #  (continued)  https://github.com/pydata/xarray/issues/8009
+            #  (continued) Fixed in https://github.com/pydata/xarray/pull/8016
+            #  (continued) Awaiting new release
             logger.warning('')
             logger.warning(' ******************************************* WARNING *******************************************')
             logger.warning(' **                                                                                           **')
@@ -137,7 +138,8 @@ class ZarrWriter(Writer):
             s3 = s3fs.S3FileSystem(
                 False,
                 key=self.store_params['auth']['accessKeyID'],
-                secret=self.store_params['auth']['secretAccessKey']
+                secret=self.store_params['auth']['secretAccessKey'],
+                client_kwargs=dict(region_name=self.store_params["region"])
             )
             ds_store = s3fs.S3Map(root=self.path, s3=s3, check=False)
 
