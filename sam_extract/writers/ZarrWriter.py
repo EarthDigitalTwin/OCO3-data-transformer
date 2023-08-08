@@ -17,6 +17,17 @@ logger = logging.getLogger(__name__)
 # TEMPORARY: If installed xr module is a version built from pydata/xarray#8016
 TEMP_XARRAY_8016 = tuple([int(n) for n in xr.__version__.split('.')[:3]]) >= (2023, 8, 1)
 
+APPEND_WARNING = [
+    '',
+    ' ******************************************* WARNING *******************************************',
+    ' **                                                                                           **',
+    ' ** APPENDED-TO ZARR ARRAY WILL HAVE -ALL- CHUNKS (EVEN EMPTY ONES) WRITTEN FOR NEW SLICES!!! **',
+    ' **                             xarray: (Issue #8009 | PR # 8016)                             **',
+    ' **                                                                                           **',
+    ' ***********************************************************************************************',
+    '',
+]
+
 
 class ZarrWriter(Writer):
     def __init__(self,
@@ -108,19 +119,14 @@ class ZarrWriter(Writer):
                     for vname in ds[grp].data_vars:
                         encodings[grp][vname]['write_empty_chunks'] = False
         else:
-            # TODO: Is there a way to ensure write_empty_chunks=false when appending to existing zarr groups?
-            #  (continued) It cannot be done here and xarray doesn't preserve its value
-            #  (continued)  https://github.com/pydata/xarray/issues/8009
-            #  (continued) Fixed in https://github.com/pydata/xarray/pull/8016
-            #  (continued) Awaiting new release
-            logger.warning('')
-            logger.warning(' ******************************************* WARNING *******************************************')
-            logger.warning(' **                                                                                           **')
-            logger.warning(' ** APPENDED-TO ZARR ARRAY WILL HAVE -ALL- CHUNKS (EVEN EMPTY ONES) WRITTEN FOR NEW SLICES!!! **')
-            logger.warning(' **                             xarray: (Issue #8009 | PR # 8016)                             **')
-            logger.warning(' **                                                                                           **')
-            logger.warning(' ***********************************************************************************************')
-            logger.warning('')
+            if not TEMP_XARRAY_8016:
+                # TODO: Is there a way to ensure write_empty_chunks=false when appending to existing zarr groups?
+                #  (continued) It cannot be done here and xarray doesn't preserve its value
+                #  (continued)  https://github.com/pydata/xarray/issues/8009
+                #  (continued) Fixed in https://github.com/pydata/xarray/pull/8016
+                #  (continued) Awaiting new release
+                for ln in APPEND_WARNING:
+                    logger.warning(ln)
             
             encodings = {group: None for group in Writer.GROUP_KEYS}
 
@@ -183,7 +189,6 @@ class ZarrWriter(Writer):
                         append_dim=append_dim,
                         encoding=encodings[group],
                     )
-
 
         logger.info(f'Finished writing Zarr array to {self.path}')
 
