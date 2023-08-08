@@ -194,10 +194,19 @@ drop-dims: # optional
     name: target_id
   - group: /Sounding
     name: target_name
+exclude-groups:
+  - /Preprocessors
+  - /Meteorology
+  - /Sounding
+  - /Retrieval
 grid:
   latitude: 18000
   longitude: 36000
   method: linear
   resolution_attr: 1km
+chunking:
+  latitude: 250
+  longitude: 250
+  time: 5
 max-workers: 1
 mask-scaling: 1.01

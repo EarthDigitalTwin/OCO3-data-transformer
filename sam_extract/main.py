@@ -7,7 +7,7 @@ from datetime import datetime
 from functools import partial
 from tempfile import TemporaryDirectory
 from time import sleep
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import numpy as np
 import pika
@@ -96,6 +96,18 @@ AWS_CRED_SCHEMA = Schema({
     'accessKeyID': str,
     'secretAccessKey': str,
 })
+
+
+DEFAULT_EXCLUDE_GROUPS = [
+    '/Preprocessors',
+    '/Meteorology',
+    '/Sounding'
+]
+
+
+# If true, interpolation method will be 'nearest' if there are not enough points for 'linear' or 'cubic'
+# If false, the slice will be skipped
+NEAREST_IF_NOT_ENOUGH = True
 
 
 def __validate_files(files):
@@ -187,19 +199,35 @@ def fit_data_to_grid(sams, cfg):
     logger.info(f"Interpolating retained data variables to {cfg['grid']['longitude']:,} by {cfg['grid']['latitude']:,}"
                 f" grid")
 
-    def interpolate(in_grp, grp, var):
+    desired_method = cfg['grid'].get('method', DEFAULT_INTERPOLATE_METHOD)
+
+    if desired_method != 'nearest' and len(points) < 4:
+        # If there are not enough points to interpolate with the desired method (linear and cubic require >= 4), fall
+        # back to nearest or skip this slice
+        if NEAREST_IF_NOT_ENOUGH:
+            logger.warning(f'Desired interpolation method \'{desired_method}\' not possible with the number of points '
+                           f'present ({len(points)}). Defaulting to \'nearest\'')
+            method = 'nearest'
+        else:
+            logger.warning(f'Desired interpolation method \'{desired_method}\' not possible with the number of points '
+                           f'present ({len(points)}). Skipping this slice.')
+            return None
+    else:
+        method = desired_method
+
+    def interpolate(in_grp, grp, var, m):
         logger.info(f'Interpolating variable {var} in group {grp}')
         return [griddata(points,
                 in_grp[grp][var].to_numpy(),
                 (lon_grid, lat_grid),
-                method=cfg['grid'].get('method', DEFAULT_INTERPOLATE_METHOD),
+                method=m,
                 fill_value=in_grp[grp][var].attrs['missing_value'])]
 
     for group in interp_ds:
         gridded_ds[group] = xr.Dataset(
             data_vars={
                 var_name: (('time', 'longitude', 'latitude'),
-                           interpolate(interp_ds, group, var_name))
+                           interpolate(interp_ds, group, var_name, method))
                 for var_name in interp_ds[group].data_vars
             },
             coords=coords,
@@ -418,6 +446,7 @@ def process_input(input_file,
                     logger.info('No SAM data to work with, skipping input')
                     return None, None, True, path
 
+            chunking: Tuple[int, int, int] = cfg['chunking']['config']
 
             if output_pre_qf:
                 logger.info('Fitting unfiltered SAM data to output grid')
@@ -436,7 +465,8 @@ def process_input(input_file,
 
                     logger.info('Outputting unfiltered SAM product slice to temporary Zarr array')
 
-                    writer = ZarrWriter(temp_path_pre, (5, 250, 250), overwrite=True, verify=False)
+                    # writer = ZarrWriter(temp_path_pre, (5, 250, 250), overwrite=True, verify=False)
+                    writer = ZarrWriter(temp_path_pre, chunking, overwrite=True, verify=False)
                     writer.write(gridded_groups_pre_qf)
 
                     del gridded_groups_pre_qf
@@ -461,7 +491,8 @@ def process_input(input_file,
 
                 logger.info('Outputting filtered SAM product slice to temporary Zarr array')
 
-                writer = ZarrWriter(temp_path_post, (5, 250, 250), overwrite=True, verify=False)
+                # writer = ZarrWriter(temp_path_post, (5, 250, 250), overwrite=True, verify=False)
+                writer = ZarrWriter(temp_path_post, chunking, overwrite=True, verify=False)
                 writer.write(gridded_groups_post_qf)
 
                 ret_post_qf = ZarrWriter.open_zarr_group(temp_path_post, 'local', None)
@@ -505,11 +536,13 @@ def process_inputs(in_files, cfg):
         return path_root, additional_params
 
     with TemporaryDirectory(prefix='oco-sam-extract-', suffix='-zarr-scratch', ignore_cleanup_errors=True) as td:
-        exclude = [
-            '/Preprocessors',
-            '/Meteorology',
-            '/Sounding'
-        ]
+        # exclude = [
+        #     '/Preprocessors',
+        #     '/Meteorology',
+        #     '/Sounding'
+        # ]
+
+        exclude = cfg['exclude-groups']
 
         process = partial(process_input, cfg=cfg, temp_dir=td, exclude_groups=exclude)
 
@@ -545,13 +578,14 @@ def process_inputs(in_files, cfg):
 
         output_root, output_kwargs = output_cfg(cfg)
 
+        chunking: Tuple[int, int, int] = cfg['chunking']['config']
+
         if merged_pre is not None:
             logger.info('Merged processed pre_qf data')
 
             zarr_writer = ZarrWriter(
-                # f'file:///Users/rileykk/oco3/oco-sam-extract/la_sams_sample_pre_qf_1km_{method}.zarr',
                 os.path.join(output_root, cfg['output']['naming']['pre_qf']),
-                (5, 250, 250),
+                chunking,  # (5, 250, 250),
                 overwrite=False,
                 **output_kwargs
             )
@@ -565,15 +599,16 @@ def process_inputs(in_files, cfg):
             logger.info('Merged processed post_qf data')
 
             zarr_writer = ZarrWriter(
-                # f'file:///Users/rileykk/oco3/oco-sam-extract/la_sams_sample_post_qf_1km_{method}.zarr',
                 os.path.join(output_root, cfg['output']['naming']['post_qf']),
-                (5, 250, 250),
+                chunking,  # (5, 250, 250),
                 overwrite=False,
                 **output_kwargs
             )
             zarr_writer.write(merged_post)
         else:
             logger.info('No post_qf data generated, all SAMs on these days may have been filtered out for bad qf')
+
+        logger.info(f'Cleaning up temporary directory at {td}')
 
 
 def main(cfg):
@@ -597,8 +632,6 @@ def main(cfg):
 
                 logger.info('Successfully decoded and validated message, starting pipeline')
                 pipeline_start_time = datetime.now()
-
-                # process_inputs(msg_dict['inputs'], cfg)
 
                 thread = threading.Thread(
                     target=process_inputs,
@@ -629,7 +662,6 @@ def main(cfg):
                 logger.error('The message could not be properly processed and will be dropped from the queue')
                 channel.basic_reject(delivery_tag=method_frame.delivery_tag, requeue=False)
             except NonRecoverableError:
-                # logger.critical('An unrecoverable exception occurred, exiting.')
                 channel.basic_nack(delivery_tag=method_frame.delivery_tag)  # nacking because it may not be related to
                                                                             # the message. This scenario should need to
                                                                             # be manually investigated
@@ -638,6 +670,7 @@ def main(cfg):
                 channel.basic_nack(delivery_tag=method_frame.delivery_tag)
                 raise
             except Exception:
+                logger.error('An exception has occurred, requeueing input message')
                 channel.basic_nack(delivery_tag=method_frame.delivery_tag)
                 raise
             # TODO: Improve exceptions. Custom wrapper classes: Bad msg (drop) [eg, invalid or nonexistent path, bad
@@ -776,6 +809,18 @@ def parse_args():
             ]
         else:
             config_dict['drop-dims'] = []
+
+        if 'chunking' in config_dict:
+            config_dict['chunking']['config'] = (
+                config_dict['chunking'].get('time', 5),
+                config_dict['chunking'].get('longitude', 250),
+                config_dict['chunking'].get('latitude', 250),
+            )
+        else:
+            config_dict['chunking'] = {'config': (5, 250, 250)}
+
+        if 'exclude-groups' not in config_dict:
+            config_dict['exclude-groups'] = DEFAULT_EXCLUDE_GROUPS
     except KeyError as e:
         logger.exception(e)
         raise ValueError('Invalid configuration')
