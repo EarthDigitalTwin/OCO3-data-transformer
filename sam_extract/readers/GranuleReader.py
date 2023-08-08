@@ -2,6 +2,7 @@ import logging
 import os
 import tempfile
 import threading
+from getpass import getpass
 from netrc import netrc
 from subprocess import Popen
 from typing import Dict, Optional, List, Tuple
@@ -185,14 +186,26 @@ class GranuleReader:
         except (FileNotFoundError, TypeError):
             logger.warning('.netrc not found or does not contain needed creds, trying to add them')
 
-            assert username is not None, 'Username must be provided if netrc is not present'
-            assert password is not None, 'Password must be provided if netrc is not present'
+            # assert username is not None, 'Username must be provided if netrc is not present'
+            # assert password is not None, 'Password must be provided if netrc is not present'
+
+            if username is None:
+                username = getpass("Earthdata Username: ")
+
+            if password is None:
+                password = getpass("Earthdata Password: ")
 
             homeDir = os.path.expanduser("~")
-            Popen('touch {0}{2} | echo machine {1} >> {0}{2}'.format(homeDir + os.sep, urs, netrc_name), shell=True)
-            Popen('echo login {} >> {}{}'.format(username, homeDir + os.sep, netrc_name), shell=True)
-            Popen('echo \'password {} \'>> {}{}'.format(password, homeDir + os.sep, netrc_name),
-                  shell=True)
+
+            with open(os.path.join(homeDir, netrc_name), 'at') as nf:
+                nf.write(f'\nmachine {urs}\n')
+                nf.write(f'\n    login {username}\n')
+                nf.write(f'\n    password {password}\n')
+
+            # Popen('touch {0}{2} | echo machine {1} >> {0}{2}'.format(homeDir + os.sep, urs, netrc_name), shell=True)
+            # Popen('echo login {} >> {}{}'.format(username, homeDir + os.sep, netrc_name), shell=True)
+            # Popen('echo \'password {} \'>> {}{}'.format(password, homeDir + os.sep, netrc_name),
+            #       shell=True)
             # Set restrictive permissions
             Popen('chmod 0600 {0}{1}'.format(homeDir + os.sep, netrc_name), shell=True)
 
