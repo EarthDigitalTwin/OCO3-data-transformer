@@ -130,7 +130,7 @@ class ZarrWriter(Writer):
             
             encodings = {group: None for group in Writer.GROUP_KEYS}
 
-        logger.info('Setting Zarr chunk shapes')
+        logger.info(f'Setting Zarr chunk shapes: {self.__chunking}')
 
         for group in ds:
             for var in ds[group].data_vars:
