@@ -611,6 +611,27 @@ def process_inputs(in_files, cfg):
         logger.info(f'Cleaning up temporary directory at {td}')
 
 
+class ProcessThread(threading.Thread):
+    def __init__(self, target, args, name):
+        threading.Thread.__init__(self, target=target, args=args, name=name)
+        self.exc = None
+
+    def run(self) -> None:
+        try:
+            if self._target is not None:
+                self._target(*self._args, **self._kwargs)
+        except BaseException as e:
+            self.exc = e
+        finally:
+            del self._target, self._args, self._kwargs
+
+    def join(self, timeout=None) -> None:
+        threading.Thread.join(self, timeout)
+
+        if self.exc:
+            raise self.exc
+
+
 def main(cfg):
     if cfg['input']['type'] == 'queue':
         def on_message(
@@ -649,6 +670,8 @@ def main(cfg):
                     if i == 0:
                         i = 120
                         channel.connection.process_data_events()
+
+                thread.join()
 
                 logger.info(f'Pipeline completed in {datetime.now() - pipeline_start_time}')
                 channel.basic_ack(delivery_tag=method_frame.delivery_tag)
