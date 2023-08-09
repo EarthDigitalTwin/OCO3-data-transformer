@@ -323,6 +323,8 @@ def mask_data(sams, grid_ds, cfg):
         logger.info(f'Applying bounding poly to geo mask across {n_lats:,} latitudes, {n_lons:,} '
                     f'longitudes. {n_pts:,} total points. [{i+1}/{len(sam_polys)}]')
 
+        valid_points = 0
+
         for lat_indices, lon_indices in indices:
             for lon_i in lon_indices:
                 for lat_i in lat_indices:
@@ -338,7 +340,10 @@ def mask_data(sams, grid_ds, cfg):
 
                     geo_mask[lon_i][lat_i] = grid_poly.intersects(poly)
 
-        logger.debug(f'Finished applying poly ({poly.bounds}) to geo mask')
+                    if geo_mask[lon_i][lat_i]:
+                        valid_points += 1
+
+        logger.debug(f'Finished applying poly ({poly.bounds}) to geo mask. Added {valid_points:,} valid points')
 
     mask = np.array([geo_mask])
 
