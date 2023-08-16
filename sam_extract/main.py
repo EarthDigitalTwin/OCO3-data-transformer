@@ -109,6 +109,10 @@ DEFAULT_EXCLUDE_GROUPS = [
 # If false, the slice will be skipped
 NEAREST_IF_NOT_ENOUGH = True
 
+# If true, expand bounding polys by half of a grid pixel in each directing before determining indices. Useful for SAMs
+# That lie entirely within a pixel
+EXPAND_INDEX_BOUNDS = True
+
 
 def __validate_files(files):
     FILES_SCHEMA.validate(files)
@@ -215,13 +219,13 @@ def fit_data_to_grid(sams, cfg):
     else:
         method = desired_method
 
-    def interpolate(in_grp, grp, var, m):
-        logger.info(f'Interpolating variable {var} in group {grp}')
+    def interpolate(in_grp, grp, var_name, m):
+        logger.info(f'Interpolating variable {var_name} in group {grp}')
         return [griddata(points,
-                in_grp[grp][var].to_numpy(),
+                in_grp[grp][var_name].to_numpy(),
                 (lon_grid, lat_grid),
                 method=m,
-                fill_value=in_grp[grp][var].attrs['missing_value'])]
+                fill_value=in_grp[grp][var_name].attrs['missing_value'])]
 
     for group in interp_ds:
         gridded_ds[group] = xr.Dataset(
@@ -231,7 +235,6 @@ def fit_data_to_grid(sams, cfg):
                 for var_name in interp_ds[group].data_vars
             },
             coords=coords,
-            # attrs=interp_ds[group].attrs     # Add attrs at later point when ds is fully constructed
         )
 
         for var in gridded_ds[group]:
@@ -249,12 +252,14 @@ def fit_data_to_grid(sams, cfg):
     return gridded_ds
 
 
-def mask_data(sams, grid_ds, cfg):
+def mask_data(sams, targets, grid_ds, cfg):
     if sams is None:
         return None
 
     if grid_ds is None:
         return None
+
+    assert len(sams) == len(targets)
 
     logger.info('Constructing SAM polygons to build mask')
 
@@ -268,64 +273,89 @@ def mask_data(sams, grid_ds, cfg):
 
     logger.info(f'Footprint scaling factor: {scaling}')
 
-    for i, sam in enumerate(sams):
-        logger.info(f'Creating bounding poly for SAM of {len(sam["/"].vertex_latitude):,} footprints '
+    target_dict = {}
+
+    for i, (sam, target) in enumerate(zip(sams, targets)):
+        logger.info(f'Creating bounding polys for SAM of {len(sam["/"].vertex_latitude):,} footprints '
                     f'[{i+1}/{len(sams)}]')
 
         footprint_polygons = []
 
-        for lats, lons in zip(sam['/'].vertex_latitude, sam['/'].vertex_longitude):
-            v = [(lons[i].item(), lats[i].item()) for i in range(len(lats))]
-            v.append((lons[0].item(), lats[0].item()))
-            footprint_polygons.append(scale(Polygon(v), scaling, scaling))
+        for lats, lons, tid, tn in zip(
+                sam['/'].vertex_latitude,
+                sam['/'].vertex_longitude,
+                target.target_id,
+                target.target_name
+        ):
+            vertices = [(lons[i].item(), lats[i].item()) for i in range(len(lats))]
+            vertices.append((lons[0].item(), lats[0].item()))
+            if scaling != 1.0:
+                p: Polygon = scale(Polygon(vertices), scaling, scaling)
+            else:
+                p = Polygon(vertices)
 
-        bounding_poly = unary_union(footprint_polygons)
+            tid, tn = tid.item(), tn.item()
+
+            if isinstance(tid, np.ndarray):
+                tid = tid.item()
+
+            if isinstance(tn, np.ndarray):
+                tn = tn.item()
+
+            target_dict[p.wkt] = (tid, tn)
+            footprint_polygons.append(p)
+
+        if scaling != 1.0:
+            bounding_poly = unary_union(footprint_polygons)
+        else:
+            bounding_poly = MultiPolygon(footprint_polygons)
 
         logger.debug(f'Created poly with bbox {bounding_poly.bounds}')
 
-        sam_polys.append(bounding_poly)
+        sam_polys.append((bounding_poly.bounds, footprint_polygons))
 
     logger.info('Producing geo mask from SAM polys')
 
     geo_mask = np.full((len(longitudes), len(latitudes)), False)
+    # tids = np.empty((len(longitudes), len(latitudes)), dtype='<U64')  # , dtype='object')
+    # tns = np.empty((len(longitudes), len(latitudes)), dtype='<U64')  # , dtype='object')
 
     lon_len = longitudes[1] - longitudes[0]
     lat_len = latitudes[1] - latitudes[0]
 
-    for i, poly in enumerate(sam_polys):
+    for i, (bounds, polys) in enumerate(sam_polys):
         indices = []
 
-        if isinstance(poly, MultiPolygon):
-            logger.debug(f'Determining coordinates from {len(poly.geoms)} sub-polygons in bounding MutliPolygon')
+        logger.debug(f'Determining coordinates from {len(polys)} sub-polygons in bounds {bounds}')
 
-            for geom in poly.geoms:
-                minx, miny, maxx, maxy = geom.bounds
-
-                indices.append((
-                    np.argwhere(np.logical_and(miny <= latitudes, latitudes <= maxy)),
-                    np.argwhere(np.logical_and(minx <= longitudes, longitudes <= maxx))
-                ))
-        else:
-            logger.debug(f'Determining coordinates from bounding Geometry ({type(poly)})')
-
+        for poly in polys:
             minx, miny, maxx, maxy = poly.bounds
+
+            # Expand bounds?
+            if EXPAND_INDEX_BOUNDS:
+                minx -= (lon_len / 2)
+                miny -= (lat_len / 2)
+                maxx += (lon_len / 2)
+                maxy += (lat_len / 2)
 
             indices.append((
                 np.argwhere(np.logical_and(miny <= latitudes, latitudes <= maxy)),
-                np.argwhere(np.logical_and(minx <= longitudes, longitudes <= maxx))
+                np.argwhere(np.logical_and(minx <= longitudes, longitudes <= maxx)),
+                target_dict.get(poly.wkt, ('UNKNOWN', 'UNKNOWN')),
+                poly
             ))
 
         n_lats = sum([len(ind[0]) for ind in indices])
         n_lons = sum([len(ind[1]) for ind in indices])
         n_pts = sum([len(ind[0]) * len(ind[1]) for ind in indices])
 
-        logger.debug(f'Checking for poly ({poly.bounds})')
+        logger.debug(f'Checking for polys in ({bounds})')
         logger.info(f'Applying bounding poly to geo mask across {n_lats:,} latitudes, {n_lons:,} '
                     f'longitudes. {n_pts:,} total points. [{i+1}/{len(sam_polys)}]')
 
         valid_points = 0
 
-        for lat_indices, lon_indices in indices:
+        for lat_indices, lon_indices, (tid, tn), poly in indices:
             for lon_i in lon_indices:
                 for lat_i in lat_indices:
                     lon_i = tuple(lon_i)
@@ -338,12 +368,19 @@ def mask_data(sams, grid_ds, cfg):
                     lat = latitudes[lat_i]
                     grid_poly = box(lon - lon_len, lat - lat_len, lon + lon_len, lat + lat_len)
 
-                    geo_mask[lon_i][lat_i] = grid_poly.intersects(poly)
+                    valid = grid_poly.intersects(poly)
 
-                    if geo_mask[lon_i][lat_i]:
+                    if valid:
+                        geo_mask[lon_i][lat_i] = True
                         valid_points += 1
 
-        logger.debug(f'Finished applying poly ({poly.bounds}) to geo mask. Added {valid_points:,} valid points')
+                        # if tids[lon_i][lat_i] == '':
+                        #     tids[lon_i][lat_i] = tid
+                        #
+                        # if tns[lon_i][lat_i] == '':
+                        #     tns[lon_i][lat_i] = tn
+
+        logger.debug(f'Finished applying polys in ({bounds}) to geo mask. Added {valid_points:,} valid points')
 
     mask = np.array([geo_mask])
 
@@ -352,6 +389,50 @@ def mask_data(sams, grid_ds, cfg):
     for group in grid_ds:
         for var in grid_ds[group].data_vars:
             grid_ds[group][var] = grid_ds[group][var].where(mask)
+
+    # logger.info('Adding target id and name variables to dataset')
+    #
+    # tid_attrs = targets[0].target_id.attrs
+    # tid_attrs['_FillValue'] = tid_attrs['missing_value']
+    #
+    # tn_attrs = targets[0].target_name.attrs
+    # tn_attrs['_FillValue'] = tn_attrs['missing_value']
+    #
+    # logger.debug('Filling in missing target values')
+    #
+    # tids = np.where(tids != '', tids, tid_attrs['missing_value'])
+    # tns = np.where(tns != '', tns, tn_attrs['missing_value'])
+    #
+    # tid_da = xr.DataArray(
+    #     data=np.array([tids], dtype='<U64'),
+    #     # data=np.array(tids, dtype='<U64'),
+    #     # coords={dim: grid_ds['/'].coords[dim] for dim in grid_ds['/'].coords if dim != 'time'},
+    #     coords={dim: grid_ds['/'].coords[dim] for dim in grid_ds['/'].coords},
+    #     dims=[
+    #         'time',
+    #         'longitude',
+    #         'latitude'
+    #     ],
+    #     name='target_id',
+    #     attrs=tid_attrs
+    # )
+    #
+    # tn_da = xr.DataArray(
+    #     data=np.array([tns], dtype='<U64'),
+    #     # data=np.array(tns, dtype='<U64'),
+    #     # coords={dim: grid_ds['/'].coords[dim] for dim in grid_ds['/'].coords if dim != 'time'},
+    #     coords={dim: grid_ds['/'].coords[dim] for dim in grid_ds['/'].coords},
+    #     dims=[
+    #         'time',
+    #         'longitude',
+    #         'latitude'
+    #     ],
+    #     name='target_name',
+    #     attrs=tn_attrs
+    # )
+    #
+    # grid_ds['/']['target_id'] = tid_da
+    # grid_ds['/']['target_name'] = tn_da
 
     return grid_ds
 
@@ -420,13 +501,18 @@ def process_input(input_file,
             extracted_sams_pre_qf = []
             extracted_sams_post_qf = []
 
+            extracted_targets_pre_qf = []
+            extracted_targets_post_qf = []
+
             logger.info('Filtering out bad quality soundings in SAM ranges')
 
             for s in sam_slices:
                 sam_group = {group: ds[group].isel(sounding_id=s) for group in ds if group not in exclude_groups}
+                tid_group = ds['/Sounding'].isel(sounding_id=s)[['target_id', 'target_name']]
 
                 if output_pre_qf:
                     extracted_sams_pre_qf.append(sam_group)
+                    extracted_targets_pre_qf.append(tid_group)
 
                 quality = sam_group['/'].xco2_quality_flag == 0
 
@@ -438,11 +524,18 @@ def process_input(input_file,
                                 f'points flagged as good.')
                     continue
 
-                extracted_sams_post_qf.append({group: sam_group[group].where(quality, drop=True) for group in sam_group})
+                tid_group.load()
+
+                extracted_sams_post_qf.append(
+                    {group: sam_group[group].where(quality, drop=True) for group in sam_group}
+                )
+                extracted_targets_post_qf.append(
+                    tid_group.where(quality, drop=True)
+                )
 
             if output_pre_qf:
-                logger.info(f'Extracted {len(extracted_sams_pre_qf)} SAMs total, {len(extracted_sams_post_qf)} SAMs with '
-                            f'good data')
+                logger.info(f'Extracted {len(extracted_sams_pre_qf)} SAMs total, {len(extracted_sams_post_qf)} SAMs '
+                            f'with good data')
             else:
                 logger.info(f'Extracted {len(extracted_sams_post_qf)} SAMs with good data')
 
@@ -457,7 +550,7 @@ def process_input(input_file,
                 logger.info('Fitting unfiltered SAM data to output grid')
 
                 gridded_groups_pre_qf = mask_data(
-                    extracted_sams_pre_qf,
+                    extracted_sams_pre_qf, extracted_targets_pre_qf,
                     fit_data_to_grid(
                         extracted_sams_pre_qf,
                         cfg
@@ -470,7 +563,6 @@ def process_input(input_file,
 
                     logger.info('Outputting unfiltered SAM product slice to temporary Zarr array')
 
-                    # writer = ZarrWriter(temp_path_pre, (5, 250, 250), overwrite=True, verify=False)
                     writer = ZarrWriter(temp_path_pre, chunking, overwrite=True, verify=False)
                     writer.write(gridded_groups_pre_qf)
 
@@ -483,7 +575,7 @@ def process_input(input_file,
             logger.info('Fitting filtered SAM data to output grid')
 
             gridded_groups_post_qf = mask_data(
-                extracted_sams_post_qf,
+                extracted_sams_post_qf, extracted_targets_post_qf,
                 fit_data_to_grid(
                     extracted_sams_post_qf,
                     cfg
@@ -496,7 +588,6 @@ def process_input(input_file,
 
                 logger.info('Outputting filtered SAM product slice to temporary Zarr array')
 
-                # writer = ZarrWriter(temp_path_post, (5, 250, 250), overwrite=True, verify=False)
                 writer = ZarrWriter(temp_path_post, chunking, overwrite=True, verify=False)
                 writer.write(gridded_groups_post_qf)
 
@@ -509,6 +600,10 @@ def process_input(input_file,
             return ret_pre_qf, ret_post_qf, True, path
     except ReaderException:
         return None, None, False, path
+    except Exception as e:
+        logger.error(f'Process task for {path} failed')
+        logger.exception(e)
+        raise
 
 
 def merge_groups(groups):
@@ -526,27 +621,21 @@ def process_inputs(in_files, cfg):
     logger.info(f'Interpolating {len(in_files)} L2 Lite file(s) with interpolation method '
                 f'{cfg["grid"].get("method", DEFAULT_INTERPOLATE_METHOD)}')
 
-    def output_cfg(cfg):
-        cfg = cfg['output']
+    def output_cfg(config):
+        config = config['output']
 
         additional_params = {'verify': True}
 
-        if cfg['type'] == 'local':
-            path_root = cfg['local']
+        if config['type'] == 'local':
+            path_root = config['local']
         else:
-            path_root = cfg['s3']['url']
-            additional_params['region'] = cfg['s3']['region']
-            additional_params['auth'] = cfg['s3']['auth']
+            path_root = config['s3']['url']
+            additional_params['region'] = config['s3']['region']
+            additional_params['auth'] = config['s3']['auth']
 
         return path_root, additional_params
 
     with TemporaryDirectory(prefix='oco-sam-extract-', suffix='-zarr-scratch', ignore_cleanup_errors=True) as td:
-        # exclude = [
-        #     '/Preprocessors',
-        #     '/Meteorology',
-        #     '/Sounding'
-        # ]
-
         exclude = cfg['exclude-groups']
 
         process = partial(process_input, cfg=cfg, temp_dir=td, exclude_groups=exclude)
@@ -644,7 +733,7 @@ def main(cfg):
                 method_frame: Basic.Deliver,
                 header_frame: BasicProperties,
                 body: bytes):
-            logger.info('Recieved message from input queue')
+            logger.info('Received message from input queue')
             logger.debug(method_frame.delivery_tag)
             logger.debug(method_frame)
             logger.debug(header_frame)
@@ -659,7 +748,7 @@ def main(cfg):
                 logger.info('Successfully decoded and validated message, starting pipeline')
                 pipeline_start_time = datetime.now()
 
-                thread = threading.Thread(
+                thread = ProcessThread(
                     target=process_inputs,
                     args=(msg_dict['inputs'], cfg),
                     name='process-message-thread'
@@ -680,6 +769,7 @@ def main(cfg):
 
                 logger.info(f'Pipeline completed in {datetime.now() - pipeline_start_time}')
                 channel.basic_ack(delivery_tag=method_frame.delivery_tag)
+                logger.debug('ACKing message')
             except (yaml.YAMLError, ScannerError):
                 logger.error('Invalid message received: bad yaml. Dropping it from queue')
                 channel.basic_reject(delivery_tag=method_frame.delivery_tag, requeue=False)
@@ -690,9 +780,9 @@ def main(cfg):
                 logger.error('The message could not be properly processed and will be dropped from the queue')
                 channel.basic_reject(delivery_tag=method_frame.delivery_tag, requeue=False)
             except NonRecoverableError:
-                channel.basic_nack(delivery_tag=method_frame.delivery_tag)  # nacking because it may not be related to
-                                                                            # the message. This scenario should need to
-                                                                            # be manually investigated
+                # NACK the message because the error may not be related to the input.
+                # This scenario should need to be manually investigated
+                channel.basic_nack(delivery_tag=method_frame.delivery_tag)
                 raise
             except KeyboardInterrupt:
                 channel.basic_nack(delivery_tag=method_frame.delivery_tag)
@@ -849,8 +939,8 @@ def parse_args():
 
         if 'exclude-groups' not in config_dict:
             config_dict['exclude-groups'] = DEFAULT_EXCLUDE_GROUPS
-    except KeyError as e:
-        logger.exception(e)
+    except KeyError as err:
+        logger.exception(err)
         raise ValueError('Invalid configuration')
 
     GranuleReader.configure_netrc(username=args.edu, password=args.edp)

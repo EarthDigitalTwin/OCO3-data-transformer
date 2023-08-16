@@ -19,7 +19,9 @@ logger = logging.getLogger(__name__)
 
 ESSENTIAL_VARS = [
     ('/', '*'),
-    ('/Sounding', 'operation_mode')
+    ('/Sounding', 'operation_mode'),
+    ('/Sounding', 'target_id'),
+    ('/Sounding', 'target_name')
 ]
 
 

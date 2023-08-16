@@ -72,14 +72,14 @@ class ZarrWriter(Writer):
                 '/': xr.open_zarr(store, consolidated=True),
             }
         else:
-            groups = {'/': xr.open_zarr(store, consolidated=True)}
+            groups = {'/': xr.open_zarr(store, consolidated=True, mask_and_scale=True)}
 
             for group in Writer.GROUP_KEYS:
                 if group == '/':
                     continue
 
                 try:
-                    groups[group] = xr.open_zarr(store, group=group[1:], consolidated=True)
+                    groups[group] = xr.open_zarr(store, group=group[1:], consolidated=True, mask_and_scale=True)
                 except:
                     pass
 
@@ -127,7 +127,10 @@ class ZarrWriter(Writer):
                 #  (continued) Awaiting new release
                 for ln in APPEND_WARNING:
                     logger.warning(ln)
-            
+
+            logger.debug('Appending to store, clearing encoding dicts and removing _FillValue attrs for target id & '
+                         'name variables')
+
             encodings = {group: None for group in Writer.GROUP_KEYS}
 
         logger.info(f'Setting Zarr chunk shapes: {self.__chunking}')
