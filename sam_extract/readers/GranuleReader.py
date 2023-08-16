@@ -50,6 +50,7 @@ class GranuleReader:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.__s3_file:
+            logger.info(f'Deleting temporary input file {self.__s3_file.name}')
             self.__s3_file.close()
 
     def open(self) -> Dict[str, xr.Dataset]:

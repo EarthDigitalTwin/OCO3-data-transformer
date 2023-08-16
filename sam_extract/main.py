@@ -11,6 +11,7 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 import pika
+import sam_extract
 import xarray as xr
 import yaml
 from pika.channel import Channel
@@ -112,6 +113,37 @@ NEAREST_IF_NOT_ENOUGH = True
 # If true, expand bounding polys by half of a grid pixel in each directing before determining indices. Useful for SAMs
 # That lie entirely within a pixel
 EXPAND_INDEX_BOUNDS = True
+
+
+# TODO Check if unset attrs are kept on append (ie, set date_created once and don't bother
+#  resetting when appending)
+FIXED_ATTRIBUTES = {
+    'pipeline_version': sam_extract.__version__,
+    'institution': 'Jet Propulsion Laboratory',
+    'source': 'Derived from the OCO3_L2_Lite_FP_10.4r dataset',
+    'references': '10.5194/amt-12-2341-2019, '
+                  '10.1016/j.rse.2020.112032, '
+                  '10.1016/j.rse.2021.112314',
+    'comment': 'NetCDF Lite files converted to Zarr on fixed grid',
+    'platform': 'ISS',
+    'sensor': 'OCO-3',
+    'operation_mode': 'Snapshot Area Mapping [SAM]',
+    'processing_level': 'L3',
+    'contacts': 'Riley Kuttruff (Riley.K.Kuttruff@jpl.nasa.gov); '
+                'Nga Chung (Nga.T.Chung@jpl.nasa.gov); '
+                'Abhishek Chatterjee (Abhishek.Chatterjee@jpl.nasa.gov)',
+}
+
+
+TARGET_TYPES = dict(
+    fossil=1,
+    ecostress=2,
+    sif=3,
+    volcano=4,
+    tccon=5,
+    other=6,
+    fill=127
+)
 
 
 def __validate_files(files):
