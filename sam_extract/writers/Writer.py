@@ -1,16 +1,35 @@
-from xarray import Dataset
-from typing import Dict
-from abc import ABC, abstractmethod
-
-from os.path import exists
-from urllib.parse import urlparse
-from botocore.exceptions import ClientError
-from botocore.config import Config
-import boto3
 import logging
+from abc import ABC, abstractmethod
+from os.path import exists
+from typing import Dict
+from urllib.parse import urlparse
 
+import boto3
+from botocore.config import Config
+from botocore.exceptions import ClientError
+from xarray import Dataset
+
+import sam_extract
 
 logger = logging.getLogger(__name__)
+
+
+FIXED_ATTRIBUTES = {
+    'pipeline_version': sam_extract.__version__,
+    'institution': 'Jet Propulsion Laboratory',
+    'source': 'Derived from the OCO3_L2_Lite_FP_10.4r dataset',
+    'references': '10.5194/amt-12-2341-2019, '
+                  '10.1016/j.rse.2020.112032, '
+                  '10.1016/j.rse.2021.112314',
+    'comment': 'NetCDF Lite files converted to Zarr on fixed grid',
+    'platform': 'ISS',
+    'sensor': 'OCO-3',
+    'operation_mode': 'Snapshot Area Mapping [SAM]',
+    'processing_level': 'L3',
+    'contacts': 'Riley Kuttruff <Riley.K.Kuttruff@jpl.nasa.gov>; '
+                'Nga Chung <Nga.T.Chung@jpl.nasa.gov>; '
+                'Abhishek Chatterjee <Abhishek.Chatterjee@jpl.nasa.gov>',
+}
 
 
 class Writer(ABC):
@@ -22,6 +41,8 @@ class Writer(ABC):
 
         self.store = None
         self.store_params = {}
+
+        self.final = kwargs.get('final', False)
 
         url = urlparse(path)
 

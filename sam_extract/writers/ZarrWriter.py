@@ -1,5 +1,7 @@
 import logging
 import os.path
+from datetime import datetime
+from itertools import chain
 from tempfile import TemporaryDirectory
 from typing import Dict, Tuple
 from urllib.parse import urlparse
@@ -11,6 +13,7 @@ import zarr
 from xarray import Dataset
 
 from sam_extract.writers import Writer
+from sam_extract.writers.Writer import FIXED_ATTRIBUTES
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +31,8 @@ APPEND_WARNING = [
     '',
 ]
 
+ISO_8601 = "%Y-%m-%dT%H:%M:%S%zZ"
+
 
 class ZarrWriter(Writer):
     def __init__(self,
@@ -39,6 +44,8 @@ class ZarrWriter(Writer):
         Writer.__init__(self, path, overwrite, **kwargs)
         self.__chunking = chunking
         self.__append_dim = append_dim
+        self.__correct_ct = None  # Used in the event that the outputted array needs to be corrected resetting the
+        # date_created attr because overwrite is set to True
 
         self.__verify = False if 'verify' not in kwargs else kwargs['verify']
 
@@ -85,20 +92,75 @@ class ZarrWriter(Writer):
 
             return groups
 
-    def write(self, ds: Dict[str, Dataset]):
+    def write(self, ds: Dict[str, Dataset], attrs: Dict[str, str] | None = None):
         logger.info(f'Writing SAM group to Zarr array at {self.path}')
+
+        if attrs is None:
+            attrs = {}
 
         if not TEMP_XARRAY_8016:
             logger.warning('Currently installed version of xarray does not support write_empty_chunks')
 
         exists = self._exists()
+        dynamic_attrs = None
+        now = datetime.utcnow().strftime(ISO_8601)
 
         if exists and self.overwrite:
             logger.warning('File already exists and will be overwritten')
+
+            if self.final:
+                dynamic_attrs = dict(
+                    date_created=now if self.__correct_ct is None else self.__correct_ct,
+                    date_updated=now,
+                    coverage_start=datetime.fromtimestamp(
+                        ds['/'].time.min().astype(int).item() / 1e9).strftime(ISO_8601),
+                    coverage_end=datetime.fromtimestamp(
+                        ds['/'].time.max().astype(int).item() / 1e9).strftime(ISO_8601)
+                )
         elif exists and not self.overwrite:
             logger.info('File exists and will be appended to')
+
+            if self.final:
+                logger.info('Getting dynamic attributes from store')
+                zarr_group = ZarrWriter.open_zarr_group(self.path, self.store, self.store_params, root=True)
+
+                append_start = datetime.fromtimestamp(ds['/'].time.min().astype(int).item() / 1e9).strftime(ISO_8601)
+                append_end = datetime.fromtimestamp(ds['/'].time.max().astype(int).item() / 1e9).strftime(ISO_8601)
+
+                existing_start = zarr_group['/'].attrs.get('coverage_start', append_start)
+                existing_end = zarr_group['/'].attrs.get('coverage_end', append_end)
+
+                coverage_start = append_start if append_start <= existing_start else existing_start
+                coverage_end = append_end if append_end >= existing_end else existing_end
+
+                dynamic_attrs = dict(
+                    date_created=zarr_group['/'].attrs.get('date_created', now),
+                    date_updated=now,
+                    coverage_start=coverage_start,
+                    coverage_end=coverage_end,
+                )
+
         else:
             logger.debug('Array does not exist so it will be created.')
+
+            if self.final:
+                dynamic_attrs = dict(
+                    date_created=now,
+                    date_updated=now,
+                    coverage_start=datetime.fromtimestamp(
+                        ds['/'].time.min().astype(int).item() / 1e9).strftime(ISO_8601),
+                    coverage_end=datetime.fromtimestamp(
+                        ds['/'].time.max().astype(int).item() / 1e9).strftime(ISO_8601)
+                )
+
+        if self.final:
+            attributes = dict(chain(
+                attrs.items(),
+                FIXED_ATTRIBUTES.items(),
+                dynamic_attrs.items()
+            ))
+
+            ds['/'] = ds['/'].assign_attrs(attributes)
 
         mode = 'w' if self.overwrite else None
         append_dim = self.__append_dim if (not self.overwrite) and exists else None
@@ -128,8 +190,8 @@ class ZarrWriter(Writer):
                 for ln in APPEND_WARNING:
                     logger.warning(ln)
 
-            logger.debug('Appending to store, clearing encoding dicts and removing _FillValue attrs for target id & '
-                         'name variables')
+            # logger.debug('Appending to store, clearing encoding dicts and removing _FillValue attrs for target id & '
+            #              'name variables')
 
             encodings = {group: None for group in Writer.GROUP_KEYS}
 
@@ -166,6 +228,7 @@ class ZarrWriter(Writer):
                         append_dim=append_dim,
                         encoding=encodings[group],
                         write_empty_chunks=False,
+                        consolidated=True,
                     )
                 else:
                     ds[group].to_zarr(
@@ -175,6 +238,7 @@ class ZarrWriter(Writer):
                         append_dim=append_dim,
                         encoding=encodings[group],
                         write_empty_chunks=False,
+                        consolidated=True,
                     )
             else:
                 if cdf_group == '':
@@ -183,6 +247,7 @@ class ZarrWriter(Writer):
                         mode=mode,
                         append_dim=append_dim,
                         encoding=encodings[group],
+                        consolidated=True,
                     )
                 else:
                     ds[group].to_zarr(
@@ -191,6 +256,7 @@ class ZarrWriter(Writer):
                         group=cdf_group,
                         append_dim=append_dim,
                         encoding=encodings[group],
+                        consolidated=True,
                     )
 
         logger.info(f'Finished writing Zarr array to {self.path}')
@@ -264,6 +330,7 @@ class ZarrWriter(Writer):
                     corrected_group = ZarrWriter.open_zarr_group(temp_path, 'local', None)
 
                     self.overwrite = True
+                    self.__correct_ct = corrected_group['/'].attrs.get('date_created', None)
 
                     self.write(corrected_group)
             else:
