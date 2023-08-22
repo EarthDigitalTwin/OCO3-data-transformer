@@ -19,7 +19,7 @@ from sam_extract.targets import FILL_VALUE as TARGET_FILL
 logger = logging.getLogger(__name__)
 
 # TEMPORARY: If installed xr module is a version built from pydata/xarray#8016
-TEMP_XARRAY_8016 = tuple([int(n) for n in xr.__version__.split('.')[:3]]) >= (2023, 8, 1)
+TEMP_XARRAY_8016 = tuple([int(n) for n in xr.__version__.split('.')[:3]]) >= (2023, 8, 0)
 
 APPEND_WARNING = [
     '',
@@ -101,6 +101,8 @@ class ZarrWriter(Writer):
 
         if not TEMP_XARRAY_8016:
             logger.warning('Currently installed version of xarray does not support write_empty_chunks')
+        else:
+            logger.debug('Currently installed version of xarray supports write_empty_chunks')
 
         exists = self._exists()
         dynamic_attrs = None
