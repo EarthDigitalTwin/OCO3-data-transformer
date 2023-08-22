@@ -28,6 +28,8 @@ from yaml.scanner import ScannerError
 from sam_extract.exceptions import *
 from sam_extract.readers import GranuleReader
 from sam_extract.writers import ZarrWriter
+from sam_extract.targets import extract_id, determine_id_type
+from sam_extract.targets import FILL_VALUE as TARGET_FILL
 
 try:
     from yaml import CLoader as Loader
@@ -112,17 +114,6 @@ NEAREST_IF_NOT_ENOUGH = True
 # If true, expand bounding polys by half of a grid pixel in each directing before determining indices. Useful for SAMs
 # That lie entirely within a pixel
 EXPAND_INDEX_BOUNDS = True
-
-
-TARGET_TYPES = dict(
-    fossil=1,
-    ecostress=2,
-    sif=3,
-    volcano=4,
-    tccon=5,
-    other=6,
-    fill=127
-)
 
 
 def __validate_files(files):
@@ -328,8 +319,8 @@ def mask_data(sams, targets, grid_ds, cfg):
     logger.info('Producing geo mask from SAM polys')
 
     geo_mask = np.full((len(longitudes), len(latitudes)), False)
-    # tids = np.empty((len(longitudes), len(latitudes)), dtype='<U64')  # , dtype='object')
-    # tns = np.empty((len(longitudes), len(latitudes)), dtype='<U64')  # , dtype='object')
+    target_ids = np.full((len(longitudes), len(latitudes)), TARGET_FILL, dtype='int')
+    target_types = np.full((len(longitudes), len(latitudes)), TARGET_FILL, dtype='byte')
 
     lon_len = longitudes[1] - longitudes[0]
     lat_len = latitudes[1] - latitudes[0]
@@ -385,11 +376,13 @@ def mask_data(sams, targets, grid_ds, cfg):
                         geo_mask[lon_i][lat_i] = True
                         valid_points += 1
 
-                        # if tids[lon_i][lat_i] == '':
-                        #     tids[lon_i][lat_i] = tid
-                        #
-                        # if tns[lon_i][lat_i] == '':
-                        #     tns[lon_i][lat_i] = tn
+                        id_type = determine_id_type(tid)
+
+                        if target_ids[lon_i][lat_i] == TARGET_FILL:
+                            target_ids[lon_i][lat_i] = extract_id(tid, id_type)
+
+                        if target_types[lon_i][lat_i] == TARGET_FILL:
+                            target_types[lon_i][lat_i] = id_type
 
         logger.debug(f'Finished applying polys in ({bounds}) to geo mask. Added {valid_points:,} valid points')
 
@@ -401,49 +394,46 @@ def mask_data(sams, targets, grid_ds, cfg):
         for var in grid_ds[group].data_vars:
             grid_ds[group][var] = grid_ds[group][var].where(mask)
 
-    # logger.info('Adding target id and name variables to dataset')
-    #
-    # tid_attrs = targets[0].target_id.attrs
-    # tid_attrs['_FillValue'] = tid_attrs['missing_value']
-    #
-    # tn_attrs = targets[0].target_name.attrs
-    # tn_attrs['_FillValue'] = tn_attrs['missing_value']
-    #
-    # logger.debug('Filling in missing target values')
-    #
-    # tids = np.where(tids != '', tids, tid_attrs['missing_value'])
-    # tns = np.where(tns != '', tns, tn_attrs['missing_value'])
-    #
-    # tid_da = xr.DataArray(
-    #     data=np.array([tids], dtype='<U64'),
-    #     # data=np.array(tids, dtype='<U64'),
-    #     # coords={dim: grid_ds['/'].coords[dim] for dim in grid_ds['/'].coords if dim != 'time'},
-    #     coords={dim: grid_ds['/'].coords[dim] for dim in grid_ds['/'].coords},
-    #     dims=[
-    #         'time',
-    #         'longitude',
-    #         'latitude'
-    #     ],
-    #     name='target_id',
-    #     attrs=tid_attrs
-    # )
-    #
-    # tn_da = xr.DataArray(
-    #     data=np.array([tns], dtype='<U64'),
-    #     # data=np.array(tns, dtype='<U64'),
-    #     # coords={dim: grid_ds['/'].coords[dim] for dim in grid_ds['/'].coords if dim != 'time'},
-    #     coords={dim: grid_ds['/'].coords[dim] for dim in grid_ds['/'].coords},
-    #     dims=[
-    #         'time',
-    #         'longitude',
-    #         'latitude'
-    #     ],
-    #     name='target_name',
-    #     attrs=tn_attrs
-    # )
-    #
-    # grid_ds['/']['target_id'] = tid_da
-    # grid_ds['/']['target_name'] = tn_da
+    logger.info('Adding target id and name variables to dataset')
+
+    target_id_attrs = dict(
+        units='none',
+        long_name='OCO-3 Target (or SAM) ID numerical component',
+        comment='ID number is derived for target types ECOSTRESS and SIF as they are non-numerical. Special value of 0 '
+                'is used for non-numerical ids for other types'
+    )
+
+    target_type_attrs = dict(
+        units='none',
+        long_name='OCO-3 Target (or SAM) ID target type: 1=fossil, 2=ecostress, 3=sif, 4=volcano, 5=tccon, 6=other',
+    )
+
+    target_ids_da = xr.DataArray(
+        data=np.array([target_ids], dtype='int'),
+        coords={dim: grid_ds['/'].coords[dim] for dim in grid_ds['/'].coords},
+        dims=[
+            'time',
+            'longitude',
+            'latitude'
+        ],
+        name='target_id',
+        attrs=target_id_attrs
+    )
+
+    target_types_da = xr.DataArray(
+        data=np.array([target_types], dtype='byte'),
+        coords={dim: grid_ds['/'].coords[dim] for dim in grid_ds['/'].coords},
+        dims=[
+            'time',
+            'longitude',
+            'latitude'
+        ],
+        name='target_type',
+        attrs=target_type_attrs
+    )
+
+    grid_ds['/']['target_id'] = target_ids_da
+    grid_ds['/']['target_type'] = target_types_da
 
     return grid_ds
 

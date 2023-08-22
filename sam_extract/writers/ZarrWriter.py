@@ -14,6 +14,7 @@ from xarray import Dataset
 
 from sam_extract.writers import Writer
 from sam_extract.writers.Writer import FIXED_ATTRIBUTES
+from sam_extract.targets import FILL_VALUE as TARGET_FILL
 
 logger = logging.getLogger(__name__)
 
@@ -176,6 +177,9 @@ class ZarrWriter(Writer):
                 } for vname in ds[group].data_vars
             } for group in ds}
 
+            encodings['/']['target_id']['_FillValue'] = TARGET_FILL
+            encodings['/']['target_type']['_FillValue'] = TARGET_FILL
+
             if not TEMP_XARRAY_8016:
                 for grp in ds:
                     for vname in ds[grp].data_vars:
@@ -189,9 +193,6 @@ class ZarrWriter(Writer):
                 #  (continued) Awaiting new release
                 for ln in APPEND_WARNING:
                     logger.warning(ln)
-
-            # logger.debug('Appending to store, clearing encoding dicts and removing _FillValue attrs for target id & '
-            #              'name variables')
 
             encodings = {group: None for group in Writer.GROUP_KEYS}
 
