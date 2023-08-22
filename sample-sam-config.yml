@@ -6,7 +6,10 @@ output:  # required; one-of
 #      accessKeyID: foo
 #      secretAccessKey: bar
   local: file:///Users/rileykk/oco3/oco-sam-extract/
-  naming:
+  naming:   # Filename of output Zarr root
+    pre_qf: la_sams_sample_pre_qf_1km_linear.zarr # oco3_sam_l3_global_pre_qf.zarr
+    post_qf: la_sams_sample_post_qf_1km_linear.zarr # oco3_sam_l3_global_post_qf.zarr
+  title:    # Dataset title in metadata, uses output.naming values (w/o '.zarr') if omitted
     pre_qf: la_sams_sample_pre_qf_1km_linear.zarr # oco3_sam_l3_global_pre_qf.zarr
     post_qf: la_sams_sample_post_qf_1km_linear.zarr # oco3_sam_l3_global_post_qf.zarr
 input: # required; one of
