@@ -188,11 +188,6 @@ class ZarrWriter(Writer):
                         encodings[grp][vname]['write_empty_chunks'] = False
         else:
             if not TEMP_XARRAY_8016:
-                # TODO: Is there a way to ensure write_empty_chunks=false when appending to existing zarr groups?
-                #  (continued) It cannot be done here and xarray doesn't preserve its value
-                #  (continued)  https://github.com/pydata/xarray/issues/8009
-                #  (continued) Fixed in https://github.com/pydata/xarray/pull/8016
-                #  (continued) Awaiting new release
                 for ln in APPEND_WARNING:
                     logger.warning(ln)
 

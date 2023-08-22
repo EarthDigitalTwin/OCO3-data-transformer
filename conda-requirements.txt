@@ -1,6 +1,7 @@
 python>=3.9
 # xarray
 xarray>=2023.8.0
+numpy
 dask
 netCDF4
 bottleneck

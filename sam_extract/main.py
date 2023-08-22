@@ -486,8 +486,8 @@ def process_input(input_file,
             sam = False
 
             start = None
-            for i, v in enumerate(mode_array.to_numpy()):
-                if v.item() == 4:
+            for i, mode in enumerate(mode_array.to_numpy()):
+                if mode.item() == 4:
                     if not sam:
                         sam = True
                         start = i
@@ -601,9 +601,9 @@ def process_input(input_file,
             return ret_pre_qf, ret_post_qf, True, path
     except ReaderException:
         return None, None, False, path
-    except Exception as e:
+    except Exception as err:
         logger.error(f'Process task for {path} failed')
-        logger.exception(e)
+        logger.exception(err)
         raise
 
 
@@ -687,7 +687,7 @@ def process_inputs(in_files, cfg):
             zarr_writer.write(
                 merged_pre,
                 attrs=dict(
-                    title='TBD_pre_qf',
+                    title=cfg['output']['title']['pre_qf'],
                     quality_flag_filtered='no'
                 )
             )
@@ -708,7 +708,7 @@ def process_inputs(in_files, cfg):
             zarr_writer.write(
                 merged_post,
                 attrs=dict(
-                    title='TBD_post_qf',
+                    title=cfg['output']['title']['post_qf'],
                     quality_flag_filtered='yes'
                 )
             )
@@ -727,8 +727,8 @@ class ProcessThread(threading.Thread):
         try:
             if self._target is not None:
                 self._target(*self._args, **self._kwargs)
-        except BaseException as e:
-            self.exc = e
+        except BaseException as err:
+            self.exc = err
         finally:
             del self._target, self._args, self._kwargs
 
@@ -804,8 +804,6 @@ def main(cfg):
                 logger.error('An exception has occurred, requeueing input message')
                 channel.basic_nack(delivery_tag=method_frame.delivery_tag)
                 raise
-            # TODO: Improve exceptions. Custom wrapper classes: Bad msg (drop) [eg, invalid or nonexistent path, bad
-            #  input fmt], Transient (requeue) [transient errors], Unrecoverable (requeue) [kill the whole thing]
 
         queue_config = cfg['input']['queue']
 
@@ -921,6 +919,20 @@ def parse_args():
 
         if 'naming' not in output:
             raise ValueError('Must specify naming for output')
+        else:
+            assert 'pre_qf' in output['naming'], 'Must specify pre_qf name (output.naming.pre_qf)'
+            assert 'post_qf' in output['naming'], 'Must specify post_qf name (output.naming.post_qf)'
+
+        if 'title' not in output:
+            title = dict(
+                pre_qf=output['naming']['pre_qf'].split('.zarr')[0],
+                post_qf=output['naming']['post_qf'].split('.zarr')[0],
+            )
+
+            config_dict['output']['title'] = title
+        else:
+            assert 'pre_qf' in output['title'], 'Must specify pre_qf title (output.title.pre_qf)'
+            assert 'post_qf' in output['title'], 'Must specify post_qf title (output.title.post_qf)'
 
         if 'queue' in inp and 'files' in inp:
             raise ValueError('Must specify either files or queue, not both')
