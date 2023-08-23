@@ -76,11 +76,13 @@ class GranuleReader:
         except FileNotFoundError:
             logger.error(f'Input file {path} does not exist')
             raise ReaderException(f'Input file {path} does not exist')
-        except OSError:
+        except OSError as err:
             logger.error('Invalid group name')
+            logger.exception(err)
             raise ReaderException('Invalid group name')
-        except Exception:
+        except Exception as err:
             logger.error('Something went wrong!')
+            logger.exception(err)
             raise ReaderException('Something went wrong!')
 
         logger.info(f'Granule at {path} loaded successfully; now dropping dimensions provided')
@@ -147,6 +149,7 @@ class GranuleReader:
 
         try:
             client.download_fileobj(url.hostname, url.path[1:], fp)
+            fp.flush()
         except ClientError as e:
             logger.error(f'Cannot download file {url.geturl()} from S3. {str(e)}')
             raise ReaderException(f'Cannot download file {url.geturl()} from S3. {str(e)}')
