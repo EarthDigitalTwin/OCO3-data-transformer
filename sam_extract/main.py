@@ -141,7 +141,7 @@ def fit_data_to_grid(sams, cfg):
     lons = interp_ds['/'].longitude.to_numpy()
     time = np.array([datetime(*interp_ds['/'].date[0].to_numpy()[:3].astype(int)).timestamp()])
 
-    points = list(zip(lons, lats))
+    points = list(zip(lats, lons))
 
     # Dimensions that will not be interpolated and fit to grid
     drop_dims = {
@@ -227,12 +227,12 @@ def fit_data_to_grid(sams, cfg):
                 in_grp[grp][var_name].to_numpy(),
                 (lon_grid, lat_grid),
                 method=m,
-                fill_value=in_grp[grp][var_name].attrs['missing_value'])]
+                fill_value=in_grp[grp][var_name].attrs['missing_value']).transpose()]
 
     for group in interp_ds:
         gridded_ds[group] = xr.Dataset(
             data_vars={
-                var_name: (('time', 'longitude', 'latitude'),
+                var_name: (('time', 'latitude', 'longitude'),
                            interpolate(interp_ds, group, var_name, method))
                 for var_name in interp_ds[group].data_vars
             },
@@ -318,9 +318,9 @@ def mask_data(sams, targets, grid_ds, cfg):
 
     logger.info('Producing geo mask from SAM polys')
 
-    geo_mask = np.full((len(longitudes), len(latitudes)), False)
-    target_ids = np.full((len(longitudes), len(latitudes)), TARGET_FILL, dtype='int')
-    target_types = np.full((len(longitudes), len(latitudes)), TARGET_FILL, dtype='byte')
+    geo_mask = np.full((len(latitudes), len(longitudes)), False)
+    target_ids = np.full((len(latitudes), len(longitudes)), TARGET_FILL, dtype='int')
+    target_types = np.full((len(latitudes), len(longitudes)), TARGET_FILL, dtype='byte')
 
     lon_len = longitudes[1] - longitudes[0]
     lat_len = latitudes[1] - latitudes[0]
@@ -363,7 +363,7 @@ def mask_data(sams, targets, grid_ds, cfg):
                     lon_i = tuple(lon_i)
                     lat_i = tuple(lat_i)
 
-                    if geo_mask[lon_i][lat_i]:
+                    if geo_mask[lat_i][lon_i]:
                         continue
 
                     lon = longitudes[lon_i]
@@ -373,16 +373,16 @@ def mask_data(sams, targets, grid_ds, cfg):
                     valid = grid_poly.intersects(poly)
 
                     if valid:
-                        geo_mask[lon_i][lat_i] = True
+                        geo_mask[lat_i][lon_i] = True
                         valid_points += 1
 
                         id_type = determine_id_type(tid)
 
-                        if target_ids[lon_i][lat_i] == TARGET_FILL:
-                            target_ids[lon_i][lat_i] = extract_id(tid, id_type)
+                        if target_ids[lat_i][lon_i] == TARGET_FILL:
+                            target_ids[lat_i][lon_i] = extract_id(tid, id_type)
 
-                        if target_types[lon_i][lat_i] == TARGET_FILL:
-                            target_types[lon_i][lat_i] = id_type
+                        if target_types[lat_i][lon_i] == TARGET_FILL:
+                            target_types[lat_i][lon_i] = id_type
 
         logger.debug(f'Finished applying polys in ({bounds}) to geo mask. Added {valid_points:,} valid points')
 
@@ -413,8 +413,8 @@ def mask_data(sams, targets, grid_ds, cfg):
         coords={dim: grid_ds['/'].coords[dim] for dim in grid_ds['/'].coords},
         dims=[
             'time',
-            'longitude',
-            'latitude'
+            'latitude',
+            'longitude'
         ],
         name='target_id',
         attrs=target_id_attrs
@@ -425,8 +425,8 @@ def mask_data(sams, targets, grid_ds, cfg):
         coords={dim: grid_ds['/'].coords[dim] for dim in grid_ds['/'].coords},
         dims=[
             'time',
-            'longitude',
-            'latitude'
+            'latitude',
+            'longitude'
         ],
         name='target_type',
         attrs=target_type_attrs
