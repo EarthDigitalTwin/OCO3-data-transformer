@@ -141,7 +141,7 @@ def fit_data_to_grid(sams, cfg):
     lons = interp_ds['/'].longitude.to_numpy()
     time = np.array([datetime(*interp_ds['/'].date[0].to_numpy()[:3].astype(int)).timestamp()])
 
-    points = list(zip(lats, lons))
+    points = list(zip(lons, lats))
 
     # Dimensions that will not be interpolated and fit to grid
     drop_dims = {
