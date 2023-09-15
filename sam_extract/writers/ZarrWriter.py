@@ -33,6 +33,7 @@ APPEND_WARNING = [
 ]
 
 ISO_8601 = "%Y-%m-%dT%H:%M:%S%zZ"
+TIME_CHUNKING = (4000,) # 3650 days in OCO-3's 10-year nominal mission, rounded up to nearest thousand
 
 
 class ZarrWriter(Writer):
@@ -179,6 +180,9 @@ class ZarrWriter(Writer):
                 } for vname in ds[group].data_vars
             } for group in ds}
 
+            for group in ds:
+                encodings[group]['time'] = {'chunks': TIME_CHUNKING}
+
             encodings['/']['target_id']['_FillValue'] = TARGET_FILL
             encodings['/']['target_type']['_FillValue'] = TARGET_FILL
 
@@ -198,6 +202,8 @@ class ZarrWriter(Writer):
         for group in ds:
             for var in ds[group].data_vars:
                 ds[group][var] = ds[group][var].chunk(self.__chunking)
+
+            ds[group]['time'].chunk(TIME_CHUNKING)
 
         logger.info('Outputting Zarr array')
 
