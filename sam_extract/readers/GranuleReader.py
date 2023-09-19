@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import os
 import tempfile
@@ -137,8 +138,6 @@ class GranuleReader:
             try:
                 client = session.client(
                     's3',
-                    # aws_access_key_id=auth['accessKeyID'],
-                    # aws_secret_access_key=auth['secretAccessKey'],
                     region_name=region,
                     **client_auth_kwargs
                 )
@@ -157,6 +156,40 @@ class GranuleReader:
         logger.info(
             f'Downloaded file from S3 bucket {url.hostname}, key {url.path[1:]} to {fp.name}'
         )
+
+        with open(fp.name, 'rb') as hash_fp:
+            md5 = hashlib.md5(hash_fp.read()).hexdigest()
+            logger.debug(f'MD5 checksum for {fp.name}: {md5}')
+
+        expected_length = None
+
+        try:
+            head = client.head_object(Bucket=url.hostname, Key=url.path[1:])
+            checksums = {}
+
+            expected_length = head['ContentLength']
+
+            for field in head:
+                if field.startswith('Checksum'):
+                    checksums[field.lstrip('Checksu,')] = head[field]
+
+            if len(checksums) > 0:
+                for alg in checksums:
+                    logger.debug(f'{alg} checksum: {checksums[alg]}')
+            else:
+                logger.debug('No checksums provided from S3')
+
+            logger.debug(f'Expected size of downloaded granule: {expected_length:,} bytes')
+        except KeyError:
+            logger.debug(f'Couldn\'t parse object HEAD for {url.geturl()}')
+        except Exception:
+            logger.debug(f'HEAD failed, could not determine metadata for {url.geturl()}')
+
+        logger.debug(f'Size of downloaded file {fp.name}: {os.path.getsize(fp.name):,} bytes')
+
+        if expected_length is not None and expected_length != os.path.getsize(fp.name):
+            logger.warning(f'Size of downloaded file differs from expected size from S3. '
+                           f'{expected_length:,} (expected) != {os.path.getsize(fp.name):,} (downloaded)')
 
         return fp
 
