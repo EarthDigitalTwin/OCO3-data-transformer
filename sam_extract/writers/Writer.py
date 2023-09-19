@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 FIXED_ATTRIBUTES = {
     'pipeline_version': sam_extract.__version__,
     'institution': 'Jet Propulsion Laboratory',
-    'source': 'Derived from the OCO3_L2_Lite_FP_10.4r dataset',
+    'source': 'Derived from the OCO3_L2_Lite_FP_10.4r dataset from GES-DISC '
+              '(https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_FP_10.4r/summary?keywords=oco3)',
     'references': '10.5194/amt-12-2341-2019, '
                   '10.1016/j.rse.2020.112032, '
                   '10.1016/j.rse.2021.112314',
