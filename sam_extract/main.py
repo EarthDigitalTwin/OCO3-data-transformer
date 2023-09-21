@@ -116,6 +116,27 @@ NEAREST_IF_NOT_ENOUGH = True
 EXPAND_INDEX_BOUNDS = True
 
 
+GRID_LOCK = threading.Lock()
+GRID: Tuple[np.ndarray, np.ndarray] | None = None
+
+
+def get_grid(cfg) -> Tuple[np.ndarray, np.ndarray]:
+    global GRID
+
+    with GRID_LOCK:
+        if GRID is not None:
+            return GRID
+
+        logger.debug('Building coordinate meshes')
+
+        lon_grid, lat_grid = np.mgrid[-180:180:complex(0, cfg['grid']['longitude']),
+                                      -90:90:complex(0, cfg['grid']['latitude'])].astype(np.dtype('float32'))
+
+        GRID = (lon_grid, lat_grid)
+
+        return GRID
+
+
 def __validate_files(files):
     FILES_SCHEMA.validate(files)
 
@@ -161,10 +182,7 @@ def fit_data_to_grid(sams, cfg):
         if group in interp_ds:
             interp_ds[group] = interp_ds[group].drop_vars(drop_dims[group], errors='ignore')
 
-    logger.debug('Building coordinate meshes')
-
-    lon_grid, lat_grid = np.mgrid[-180:180:complex(0, cfg['grid']['longitude']),
-                                  -90:90:complex(0, cfg['grid']['latitude'])].astype(np.dtype('float32'))
+    lon_grid, lat_grid = get_grid(cfg)
 
     logger.debug('Building attribute and coordinate dictionaries')
 
