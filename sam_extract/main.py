@@ -116,25 +116,55 @@ NEAREST_IF_NOT_ENOUGH = True
 EXPAND_INDEX_BOUNDS = True
 
 
-GRID_LOCK = threading.Lock()
+XI_LOCK = threading.Lock()
 GRID: Tuple[np.ndarray, np.ndarray] | None = None
+XI: Tuple[np.ndarray, np.ndarray, np.ndarray] | None = None
 
 
-def get_grid(cfg) -> Tuple[np.ndarray, np.ndarray]:
+def get_xi(cfg) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    A lot of space is wasted by generating the xi parameter for scipy's griddata individually for each
+    worker thread, here we try to make a single, global instance of the XI param since it will be identical
+    for each thread.
+
+    :param cfg: Runtime config dictionary
+    :return: Tuple: xi, longitude coordinate array, latitude coordinate array
+    """
     global GRID
+    global XI
 
-    with GRID_LOCK:
-        if GRID is not None:
-            return GRID
+    with XI_LOCK:
+        if XI is not None:
+            return XI
 
         logger.debug('Building coordinate meshes')
 
         lon_grid, lat_grid = np.mgrid[-180:180:complex(0, cfg['grid']['longitude']),
                                       -90:90:complex(0, cfg['grid']['latitude'])].astype(np.dtype('float32'))
 
-        GRID = (lon_grid, lat_grid)
+        # scipy seems to do this internally if we give xi as a tuple, negating any memory savings
+        # lets do this in advance so the process isn't repeated
 
-        return GRID
+        logger.debug(f'Lat/lon grids: {lon_grid.shape}, {lat_grid.shape}')
+
+        xi = (lon_grid, lat_grid)
+
+        p = list(np.broadcast_arrays(*xi))
+        points = np.empty(p[0].shape + (len(xi),), dtype=float)
+
+        logger.debug(f'Points nd array shape: {points.shape}')
+
+        for j, item in enumerate(p):
+            points[...,j] = item
+
+        GRID = xi
+
+        # XI = (points.reshape(-1, points.shape[-1]), lon_grid.transpose()[0], lat_grid[0])
+        XI = (points, lon_grid.transpose()[0], lat_grid[0])
+
+        logger.debug(f'Xi nd array: {XI[0].shape}')
+
+        return XI
 
 
 def __validate_files(files):
@@ -182,7 +212,7 @@ def fit_data_to_grid(sams, cfg):
         if group in interp_ds:
             interp_ds[group] = interp_ds[group].drop_vars(drop_dims[group], errors='ignore')
 
-    lon_grid, lat_grid = get_grid(cfg)
+    xi, lon_coord, lat_coord = get_xi(cfg)
 
     logger.debug('Building attribute and coordinate dictionaries')
 
@@ -213,8 +243,8 @@ def fit_data_to_grid(sams, cfg):
     }
 
     coords = {
-        'longitude': ('longitude', lon_grid.transpose()[0], lon_attrs),
-        'latitude': ('latitude', lat_grid[0], lat_attrs),
+        'longitude': ('longitude', lon_coord, lon_attrs),
+        'latitude': ('latitude', lat_coord, lat_attrs),
         'time': ('time', time, time_attrs)
     }
 
@@ -241,11 +271,17 @@ def fit_data_to_grid(sams, cfg):
 
     def interpolate(in_grp, grp, var_name, m):
         logger.info(f'Interpolating variable {var_name} in group {grp}')
-        return [griddata(points,
-                in_grp[grp][var_name].to_numpy(),
-                (lon_grid, lat_grid),
-                method=m,
-                fill_value=in_grp[grp][var_name].attrs['missing_value']).transpose()]
+
+        grid = griddata(
+            points,
+            in_grp[grp][var_name].to_numpy(),
+            # GRID,
+            xi,
+            method=m,
+            fill_value=in_grp[grp][var_name].attrs['missing_value']
+        ).transpose()
+
+        return [grid]
 
     for group in interp_ds:
         gridded_ds[group] = xr.Dataset(
