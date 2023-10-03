@@ -1,6 +1,7 @@
 import argparse
+import gc
 import logging
-import os.path
+import os
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -117,8 +118,45 @@ EXPAND_INDEX_BOUNDS = True
 
 
 XI_LOCK = threading.Lock()
-GRID: Tuple[np.ndarray, np.ndarray] | None = None
 XI: Tuple[np.ndarray, np.ndarray, np.ndarray] | None = None
+XI_DIR: TemporaryDirectory | None = None
+
+
+INTERP_MAX_PARALLEL = int(os.environ.get('INTERP_MAX_PARALLEL', 2))
+INTERP_SEMA = threading.BoundedSemaphore(value=INTERP_MAX_PARALLEL)
+
+
+def _unload_np_to_disk(path: str, a: np.ndarray):
+    """
+    Map a numpy array to disk, so it can be unloaded from memory.
+
+    Usage:
+    a = _unload_np_to_disk(f, a)
+
+    At high grid resolutions, this pipeline can consume excessive memory. This can be used to pull np arrays
+    from memory when they're not in use / when they don't need to be in memory.
+
+    :param path: Path to where the array is to be stored
+    :param a: The array
+    :return: The array but as a memory-mapped array
+    """
+    mm = np.memmap(
+        path,
+        dtype=a.dtype,
+        mode='w+',
+        shape=a.shape
+    )
+    mm[:] = a[:]
+    mm.flush()
+
+    logger.debug(f'Unloaded np ndarray of shape {a.shape} and type {a.dtype} to file at {path}')
+
+    return np.memmap(
+        path,
+        dtype=a.dtype,
+        mode='r',
+        shape=a.shape
+    )
 
 
 def get_xi(cfg) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -130,14 +168,16 @@ def get_xi(cfg) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     :param cfg: Runtime config dictionary
     :return: Tuple: xi, longitude coordinate array, latitude coordinate array
     """
-    global GRID
-    global XI
+    global XI, XI_DIR
 
     with XI_LOCK:
         if XI is not None:
             return XI
 
         logger.debug('Building coordinate meshes')
+
+        if XI_DIR is None:
+            XI_DIR = TemporaryDirectory(prefix='oco-sam-extract-', suffix='-grid-coords', ignore_cleanup_errors=True)
 
         lon_grid, lat_grid = np.mgrid[-180:180:complex(0, cfg['grid']['longitude']),
                                       -90:90:complex(0, cfg['grid']['latitude'])].astype(np.dtype('float32'))
@@ -150,18 +190,40 @@ def get_xi(cfg) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         xi = (lon_grid, lat_grid)
 
         p = list(np.broadcast_arrays(*xi))
-        points = np.empty(p[0].shape + (len(xi),), dtype=float)
+        points = np.empty(p[0].shape + (len(xi),), dtype=np.dtype('float32'))
 
         logger.debug(f'Points nd array shape: {points.shape}')
 
         for j, item in enumerate(p):
             points[...,j] = item
 
-        GRID = xi
+        temp_dir = XI_DIR.name
 
-        # XI = (points.reshape(-1, points.shape[-1]), lon_grid.transpose()[0], lat_grid[0])
-        XI = (points, lon_grid.transpose()[0], lat_grid[0])
+        f_xi = os.path.join(temp_dir, 'xi.npy')
+        f_lat = os.path.join(temp_dir, 'lat.npy')
+        f_lon = os.path.join(temp_dir, 'lon.npy')
 
+        logger.debug('Mapping shared coordinate arrays to disk')
+
+        lats = lat_grid[0]
+        lons = lon_grid.transpose()[0]
+
+        xi_mm  = _unload_np_to_disk(f_xi,  points)
+        lat_mm = _unload_np_to_disk(f_lat, lats)
+        lon_mm = _unload_np_to_disk(f_lon, lons)
+
+        XI = (xi_mm, lon_mm, lat_mm)
+
+        lon_grid = None
+        lat_grid = None
+        lats = None
+        lons = None
+        xi = None
+        p = None
+        points = None
+
+        collected = gc.collect()
+        logger.debug(f'GC collected {collected:,} objects to free post-xi gen')
         logger.debug(f'Xi nd array: {XI[0].shape}')
 
         return XI
@@ -269,13 +331,12 @@ def fit_data_to_grid(sams, cfg):
     else:
         method = desired_method
 
-    def interpolate(in_grp, grp, var_name, m):
+    def interpolate(in_grp, grp: str, var_name, m):
         logger.info(f'Interpolating variable {var_name} in group {grp}')
 
         grid = griddata(
             points,
             in_grp[grp][var_name].to_numpy(),
-            # GRID,
             xi,
             method=m,
             fill_value=in_grp[grp][var_name].attrs['missing_value']
@@ -284,14 +345,19 @@ def fit_data_to_grid(sams, cfg):
         return [grid]
 
     for group in interp_ds:
-        gridded_ds[group] = xr.Dataset(
-            data_vars={
-                var_name: (('time', 'latitude', 'longitude'),
-                           interpolate(interp_ds, group, var_name, method))
-                for var_name in interp_ds[group].data_vars
-            },
-            coords=coords,
-        )
+        with INTERP_SEMA:
+            logger.debug(f'Acquired semaphore {repr(INTERP_SEMA)}')
+
+            gridded_ds[group] = xr.Dataset(
+                data_vars={
+                    var_name: (('time', 'latitude', 'longitude'),
+                               interpolate(interp_ds, group, var_name, method))
+                    for var_name in interp_ds[group].data_vars
+                },
+                coords=coords,
+            )
+
+        logger.debug(f'Released semaphore {repr(INTERP_SEMA)}')
 
         for var in gridded_ds[group]:
             gridded_ds[group][var].attrs = interp_ds[group][var].attrs
@@ -837,6 +903,8 @@ def main(cfg):
                 logger.info(f'Pipeline completed in {datetime.now() - pipeline_start_time}')
                 channel.basic_ack(delivery_tag=method_frame.delivery_tag)
                 logger.debug('ACKing message')
+
+                gc.collect()
             except (yaml.YAMLError, ScannerError):
                 logger.error('Invalid message received: bad yaml. Dropping it from queue')
                 channel.basic_reject(delivery_tag=method_frame.delivery_tag, requeue=False)
@@ -1039,5 +1107,8 @@ if __name__ == '__main__':
         logger.exception(e)
         v = 1
     finally:
+        if XI_DIR is not None:
+            XI_DIR.cleanup()
+
         logger.info(f'Exiting code {v}. Runtime={datetime.now() - start_time}')
         exit(v)
