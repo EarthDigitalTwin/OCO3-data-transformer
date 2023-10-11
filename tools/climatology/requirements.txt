@@ -1,0 +1,10 @@
+xarray>=2023.8.0
+bottleneck
+numpy
+dask
+zarr>=2.11
+boto3
+s3fs==2022.5.0
+fsspec==2022.5.0
+aiobotocore>=2.3.0,<2.4
+pandas
