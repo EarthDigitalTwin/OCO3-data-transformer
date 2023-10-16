@@ -292,10 +292,10 @@ def mask_data(sams, targets, grid_ds, cfg):
         METRICS.start_time('mask.polys.poly.zip')
 
         for lats, lons, tid, tn in zip(
-                sam['/'].vertex_latitude,
-                sam['/'].vertex_longitude,
-                target.target_id,
-                target.target_name
+                sam['/'].vertex_latitude.to_numpy(),
+                sam['/'].vertex_longitude.to_numpy(),
+                target.target_id.to_numpy(),
+                target.target_name.to_numpy()
         ):
             METRICS.start_time('mask.polys.poly.v')
             vertices = [(lons[i].item(), lats[i].item()) for i in range(len(lats))]
@@ -309,9 +309,9 @@ def mask_data(sams, targets, grid_ds, cfg):
             else:
                 p = Polygon(vertices)
 
-            tid, tn = tid.item(), tn.item()
             METRICS.end_time('mask.polys.poly.init')
 
+            tid, tn = tid, tn
 
             if isinstance(tid, np.ndarray):
                 tid = tid.item()
