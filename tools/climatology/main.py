@@ -21,7 +21,8 @@ from s3fs import S3Map, S3FileSystem
 
 XARRAY_8016 = tuple([int(n) for n in xr.__version__.split('.')[:3]]) >= (2023, 8, 0)
 TIME_CHUNKING = (4000,)
-ISO_8601 = "%Y-%m-%d"
+ISO_8601_D = "%Y-%m-%d"
+ISO_8601_DT = "%Y-%m-%dT%H:%M:%S%zZ"
 
 NP_EPOCH = np.datetime64('1970-01-01T00:00:00')
 
@@ -29,6 +30,8 @@ MAX_CONCURRENCY = min(max(1, int(os.getenv('MAX_WORKERS', 12))), 12)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] [%(name)s::%(lineno)d] %(message)s')
 logger = logging.getLogger('climatology.main')
+
+VERSION = '1.0.0'
 
 session = None
 
@@ -147,6 +150,8 @@ def main():
 
     input_ds = open_dataset(input_url, args)
 
+    orig_chunk = input_ds.xco2.data.chunksize
+
     start_date = datetime.utcfromtimestamp(
         (input_ds.time[0].to_numpy() - NP_EPOCH) / np.timedelta64(1, 's')
     )
@@ -161,9 +166,9 @@ def main():
     if args.end and args.end < end_date:
         end_date = args.end
 
-    logger.info(f'Determining date ranges between {start_date.strftime(ISO_8601)} and {end_date.strftime(ISO_8601)}')
+    logger.info(f'Determining date ranges between {start_date.strftime(ISO_8601_D)} and {end_date.strftime(ISO_8601_D)}')
 
-    freq = 'M' if args.span in ['monthly', 'seasonal'] else 'A'
+    freq = 'M' if args.span in ['monthly', 'seasonal', 'monthly-consolidated'] else 'A'
 
     pd_dates_i: pd.DatetimeIndex = pd.date_range(
         start=start_date,
@@ -196,16 +201,17 @@ def main():
 
     with TemporaryDirectory(prefix='clim-', ignore_cleanup_errors=True) as td:
         for s in time_slices:
-            sd = s.start.strftime(ISO_8601)
+            sd = s.start.strftime(ISO_8601_D)
 
             subset = input_ds.sel(time=s)
             subset = subset.drop_vars(['target_id', 'target_type'], errors='ignore')
 
-            xco2 = subset.xco2.mean(dim='time', skipna=True).expand_dims()
-            xco2_uncertainty = subset.xco2_uncertainty.mean(dim='time', skipna=True)
-            count = subset.xco2.count(dim='time')
+            xco2 = subset.xco2.mean(dim='time', skipna=True, keep_attrs=True).expand_dims()
+            xco2_uncertainty = subset.xco2_uncertainty.mean(dim='time', skipna=True, keep_attrs=True)
+            count: xr.DataArray = subset.xco2.count(dim='time')
+            count = count.astype('int')
 
-            slice_time = np.array([s.stop], dtype='<M8[ns]')
+            slice_time = np.array([s.start], dtype='<M8[ns]')
 
             slice_ds = xr.Dataset(
                 data_vars=dict(
@@ -258,7 +264,97 @@ def main():
 
             slice_datasets.append(xr.open_zarr(tmp_path))
 
+        if args.span == 'monthly-consolidated':
+            logger.info('Consolidating months')
+
+            consolidated_slices = []
+            months = {}
+
+            for i in range(1, 13):
+                months[i] = []
+
+            for s in slice_datasets:
+                slice_time = datetime.utcfromtimestamp(
+                    (s.time[0].to_numpy() - NP_EPOCH) / np.timedelta64(1, 's')
+                )
+
+                months[slice_time.month].append(s)
+
+            for month in months:
+                slices = months[month]
+
+                if len(slices) == 0:
+                    continue
+
+                dt = datetime(1970, month, 1, 0, 0, 0)
+                dt = np.array([dt], dtype='<M8[ns]')
+
+                slices = xr.concat(slices, dim='time')
+
+                xco2 = slices.xco2.mean(dim='time', skipna=True, keep_attrs=True).expand_dims()
+                xco2_uncertainty = slices.xco2_uncertainty.mean(dim='time', skipna=True, keep_attrs=True)
+                count = slices.valid_count.sum(dim='time').astype('int')
+                n_days = slices.n_days.sum(dim='time')
+
+                month_ds = xr.Dataset(
+                    data_vars=dict(
+                        xco2=xco2,
+                        xco2_uncertainty=xco2_uncertainty,
+                        valid_count=count,
+                    ),
+                    coords=dict(
+                        longitude=slices.coords['longitude'],
+                        latitude=slices.coords['latitude'],
+                    )
+                ).expand_dims({"time": 1}).assign_coords({"time": dt})
+
+                month_ds['n_days'] = n_days
+
+                consolidated_slices.append(month_ds)
+
+            slice_datasets = consolidated_slices
+
         clim_ds = xr.concat(slice_datasets, dim='time').sortby('time')
+
+        clim_ds.attrs.update(input_ds.attrs)
+
+        if args.span == 'annual':
+            comment_avg_string = 'annually'
+        elif args.span == 'seasonal':
+            comment_avg_string = 'seasonally'
+        elif args.span == 'monthly':
+            comment_avg_string = 'monthly'
+        else:
+            comment_avg_string = 'monthly and consolidated to a single year'
+
+        clim_ds.attrs.update(dict(
+            coverage_start=start_date.strftime(ISO_8601_DT),
+            coverage_end=end_date.strftime(ISO_8601_DT),
+            date_created=datetime.utcnow().strftime(ISO_8601_DT),
+            source=f'Produced from averaging the {input_ds.attrs["title"]} dataset, itself '
+                   f'd{input_ds.attrs["comment"][1:]}',
+            title=f'{input_ds.attrs["title"]}_clim',
+            comment=f'Gridded CO2 column-average data averaged {comment_avg_string}',
+            averaging_span=args.span,
+            source_pipeline_version=input_ds.attrs['pipeline_version'],
+            climatology_tool_version=VERSION
+        ))
+
+        del clim_ds.attrs['date_updated']
+        del clim_ds.attrs['pipeline_version']
+
+        clim_ds.valid_count.attrs.update(dict(
+            long_name='valid_days_per_pixel',
+            comment='Number of valid (non-NaN) days that was used to compute the means of each pixel of the xco2 and '
+                    'xco2_uncertainty variables',
+            units='number of days'
+        ))
+
+        clim_ds.n_days.attrs.update(dict(
+            long_name='number_of_source_days',
+            comment='Total number of source days per span of climatology data',
+            units='number of days'
+        ))
 
         output_ext = args.output.split('.')[-1].rstrip('/')
 
@@ -284,8 +380,14 @@ def main():
                 store = S3Map(root=args.output, s3=s3, check=False)
 
             if args.rechunk:
-                for var in clim_ds.data_vars:
-                    clim_ds[var] = clim_ds[var].chunk(args.rechunk)
+                output_chunk = args.rechunk
+            else:
+                output_chunk = orig_chunk
+
+            logger.info(f'Setting output chunks {output_chunk}')
+
+            for var in clim_ds.data_vars:
+                clim_ds[var] = clim_ds[var].chunk(output_chunk)
 
             compressor = zarr.Blosc(cname='blosclz', clevel=9)
 
@@ -374,7 +476,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     def parse_iso(s):
-        return datetime.strptime(s, ISO_8601)
+        return datetime.strptime(s, ISO_8601_D)
 
     parser.add_argument(
         '-i', '--input',
@@ -425,8 +527,9 @@ def parse_args():
         '--span',
         required=False,
         default='monthly',
-        choices=['monthly', 'seasonal', 'annual'],
-        help='The span of time to average out for each step of climatology',
+        choices=['monthly', 'seasonal', 'annual', 'monthly-consolidated'],
+        help='The span of time to average out for each step of climatology. \'monthly-consolidated\' will consolidate '
+             'each month\'s data and map them to 1970-mm-01.',
         dest='span'
     )
 
