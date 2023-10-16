@@ -12,6 +12,7 @@ import xarray as xr
 import zarr
 from xarray import Dataset
 
+from sam_extract.metrics import get_metrics
 from sam_extract.writers import Writer
 from sam_extract.writers.Writer import FIXED_ATTRIBUTES
 from sam_extract.targets import FILL_VALUE as TARGET_FILL
@@ -34,6 +35,8 @@ APPEND_WARNING = [
 
 ISO_8601 = "%Y-%m-%dT%H:%M:%S%zZ"
 TIME_CHUNKING = (4000,) # 3650 days in OCO-3's 10-year nominal mission, rounded up to nearest thousand
+
+METRICS = get_metrics()
 
 
 class ZarrWriter(Writer):

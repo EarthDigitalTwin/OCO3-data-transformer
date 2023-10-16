@@ -5,11 +5,11 @@ from typing import Dict
 from urllib.parse import urlparse
 
 import boto3
+import sam_extract
 from botocore.config import Config
 from botocore.exceptions import ClientError
+from sam_extract.metrics import get_metrics
 from xarray import Dataset
-
-import sam_extract
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +31,9 @@ FIXED_ATTRIBUTES = {
                 'Nga Chung <Nga.T.Chung@jpl.nasa.gov>; '
                 'Abhishek Chatterjee <Abhishek.Chatterjee@jpl.nasa.gov>',
 }
+
+
+METRICS = get_metrics()
 
 
 class Writer(ABC):
@@ -63,6 +66,8 @@ class Writer(ABC):
         if self.store == 'local':
             return exists(urlparse(self.path).path)
         else:
+            METRICS.start_time('writer.exists.s3')
+
             url = urlparse(self.path)
 
             bucket = url.netloc
@@ -106,6 +111,8 @@ class Writer(ABC):
                 logger.error('Something went wrong!')
                 logger.exception(e)
                 raise
+            finally:
+                METRICS.end_time('writer.exists.s3')
 
     @abstractmethod
     def write(self, ds: Dict[str, Dataset]):

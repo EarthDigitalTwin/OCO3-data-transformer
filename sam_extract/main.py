@@ -167,8 +167,12 @@ def fit_data_to_grid(sams, cfg):
 
     logger.debug('Building coordinate meshes')
 
+    METRICS.start_time('interp.mesh.build')
+
     lon_grid, lat_grid = np.mgrid[-180:180:complex(0, cfg['grid']['longitude']),
                                   -90:90:complex(0, cfg['grid']['latitude'])].astype(np.dtype('float32'))
+
+    METRICS.end_time('interp.mesh.build')
 
     logger.debug('Building attribute and coordinate dictionaries')
 
@@ -227,11 +231,19 @@ def fit_data_to_grid(sams, cfg):
 
     def interpolate(in_grp, grp, var_name, m):
         logger.info(f'Interpolating variable {var_name} in group {grp}')
-        return [griddata(points,
-                in_grp[grp][var_name].to_numpy(),
-                (lon_grid, lat_grid),
-                method=m,
-                fill_value=in_grp[grp][var_name].attrs['missing_value']).transpose()]
+
+        METRICS.start_time('interp.griddata')
+
+        gridded = griddata(
+            points,
+            in_grp[grp][var_name].to_numpy(),
+            (lon_grid, lat_grid),
+            method=m,
+            fill_value=in_grp[grp][var_name].attrs['missing_value']).transpose()
+
+        METRICS.end_time('interp.griddata')
+
+        return [gridded]
 
     for group in interp_ds:
         gridded_ds[group] = xr.Dataset(
@@ -289,7 +301,7 @@ def mask_data(sams, targets, grid_ds, cfg):
 
         footprint_polygons = []
 
-        METRICS.start_time('mask.polys.poly.zip')
+        METRICS.start_time('mask.polys.enum.poly')
 
         for lats, lons, tid, tn in zip(
                 sam['/'].vertex_latitude.to_numpy(),
@@ -297,19 +309,19 @@ def mask_data(sams, targets, grid_ds, cfg):
                 target.target_id.to_numpy(),
                 target.target_name.to_numpy()
         ):
-            METRICS.start_time('mask.polys.poly.v')
+            METRICS.start_time('mask.polys.enum.poly.v')
             vertices = [(lons[i].item(), lats[i].item()) for i in range(len(lats))]
             vertices.append((lons[0].item(), lats[0].item()))
-            METRICS.end_time('mask.polys.poly.v')
+            METRICS.end_time('mask.polys.enum.poly.v')
 
-            METRICS.start_time('mask.polys.poly.init')
+            METRICS.start_time('mask.polys.enum.poly.init')
 
             if scaling != 1.0:
                 p: Polygon = scale(Polygon(vertices), scaling, scaling)
             else:
                 p = Polygon(vertices)
 
-            METRICS.end_time('mask.polys.poly.init')
+            METRICS.end_time('mask.polys.enum.poly.init')
 
             tid, tn = tid, tn
 
@@ -322,16 +334,16 @@ def mask_data(sams, targets, grid_ds, cfg):
             target_dict[p.wkt] = (tid, tn)
             footprint_polygons.append(p)
 
-        METRICS.end_time('mask.polys.poly.zip')
+        METRICS.end_time('mask.polys.enum.poly')
 
-        METRICS.start_time('mask.polys.union')
+        METRICS.start_time('mask.polys.enum.union')
 
         if scaling != 1.0:
             bounding_poly = unary_union(footprint_polygons)
         else:
             bounding_poly = MultiPolygon(footprint_polygons)
 
-        METRICS.end_time('mask.polys.union')
+        METRICS.end_time('mask.polys.enum.union')
 
         logger.debug(f'Created poly with bbox {bounding_poly.bounds}')
 
@@ -348,10 +360,14 @@ def mask_data(sams, targets, grid_ds, cfg):
     lon_len = longitudes[1] - longitudes[0]
     lat_len = latitudes[1] - latitudes[0]
 
+    METRICS.start_time('mask.apply.enum')
+
     for i, (bounds, polys) in enumerate(sam_polys):
         indices = []
 
-        logger.debug(f'Determining coordinates from {len(polys)} sub-polygons in bounds {bounds}')
+        logger.debug(f'Determining valid indices from {len(polys)} sub-polygons in bounds {bounds}')
+
+        METRICS.start_time('mask.apply.indices')
 
         for poly in polys:
             minx, miny, maxx, maxy = poly.bounds
@@ -370,6 +386,8 @@ def mask_data(sams, targets, grid_ds, cfg):
                 poly
             ))
 
+        METRICS.end_time('mask.apply.indices')
+
         n_lats = sum([len(ind[0]) for ind in indices])
         n_lons = sum([len(ind[1]) for ind in indices])
         n_pts = sum([len(ind[0]) * len(ind[1]) for ind in indices])
@@ -379,6 +397,8 @@ def mask_data(sams, targets, grid_ds, cfg):
                     f'longitudes. {n_pts:,} total points. [{i+1}/{len(sam_polys)}]')
 
         valid_points = 0
+
+        METRICS.start_time('mask.apply.check')
 
         for lat_indices, lon_indices, (tid, tn), poly in indices:
             for lon_i in lon_indices:
@@ -393,7 +413,11 @@ def mask_data(sams, targets, grid_ds, cfg):
                     lat = latitudes[lat_i]
                     grid_poly = box(lon - lon_len, lat - lat_len, lon + lon_len, lat + lat_len)
 
+                    METRICS.start_time('mask.apply.check.intersect')
+
                     valid = grid_poly.intersects(poly)
+
+                    METRICS.end_time('mask.apply.check.intersect')
 
                     if valid:
                         geo_mask[lat_i][lon_i] = True
@@ -407,15 +431,23 @@ def mask_data(sams, targets, grid_ds, cfg):
                         if target_types[lat_i][lon_i] == TARGET_FILL:
                             target_types[lat_i][lon_i] = id_type
 
+        METRICS.end_time('mask.apply.check')
+
         logger.debug(f'Finished applying polys in ({bounds}) to geo mask. Added {valid_points:,} valid points')
+
+    METRICS.end_time('mask.apply.enum')
 
     mask = np.array([geo_mask])
 
     logger.info('Applying mask to dataset')
 
+    METRICS.start_time('mask.apply')
+
     for group in grid_ds:
         for var in grid_ds[group].data_vars:
             grid_ds[group][var] = grid_ds[group][var].where(mask)
+
+    METRICS.end_time('mask.apply')
 
     logger.info('Adding target id and name variables to dataset')
 
@@ -802,6 +834,8 @@ def main(cfg):
                         channel.connection.process_data_events()
 
                 thread.join()
+
+                METRICS.done()
 
                 logger.info(f'Pipeline completed in {datetime.now() - pipeline_start_time}')
                 channel.basic_ack(delivery_tag=method_frame.delivery_tag)

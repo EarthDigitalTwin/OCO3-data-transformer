@@ -15,6 +15,7 @@ import xarray as xr
 from botocore.exceptions import ClientError
 
 from sam_extract.exceptions import ReaderException
+from sam_extract.metrics import get_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,8 @@ BOTO_SESSION = None
 BOTO_LOCK = threading.Lock()
 
 CHECKED_URS = []
+
+METRICS = get_metrics()
 
 
 class GranuleReader:
@@ -66,6 +69,8 @@ class GranuleReader:
             raise ValueError(f'Invalid URL scheme: {url.scheme}. Expected file or S3')
 
         try:
+            METRICS.start_time('reader.open')
+
             # Open the input datasets but do not mask out missing values yet
             ds_dict = {
                 '/': xr.open_dataset(path, mask_and_scale=False),
@@ -85,6 +90,8 @@ class GranuleReader:
             logger.error('Something went wrong!')
             logger.exception(err)
             raise ReaderException('Something went wrong!')
+        finally:
+            METRICS.end_time('reader.open')
 
         logger.info(f'Granule at {path} loaded successfully; now dropping dimensions provided')
 
@@ -96,10 +103,14 @@ class GranuleReader:
             if group not in ds_dict and '/' + group in ds_dict:
                 group = '/' + group
 
+            METRICS.start_time('reader.drop')
+
             try:
                 ds_dict[group] = ds_dict[group].drop_vars(var)
             except ValueError:
                 logger.warning(f'Variable to drop {"/".join((group, var))} is not present in the dataset; ignoring')
+
+            METRICS.end_time('reader.drop')
 
         for group in ds_dict:
             for var in ds_dict[group].data_vars:
@@ -117,6 +128,8 @@ class GranuleReader:
 
         if 'urs' in auth:
             auth = GranuleReader._get_temporary_creds(auth['urs'])
+
+        METRICS.start_time('aws.session')
 
         with BOTO_LOCK:
             global BOTO_SESSION
@@ -145,17 +158,24 @@ class GranuleReader:
                 logger.critical('Could not create boto client!')
                 logger.exception(e)
                 raise
+            finally:
+                METRICS.end_time('aws.session')
 
         try:
+            METRICS.start_time('aws.s3.download_fileobj')
             client.download_fileobj(url.hostname, url.path[1:], fp)
             fp.flush()
         except ClientError as e:
             logger.error(f'Cannot download file {url.geturl()} from S3. {str(e)}')
             raise ReaderException(f'Cannot download file {url.geturl()} from S3. {str(e)}')
+        finally:
+            METRICS.end_time('aws.s3.download_fileobj')
 
         logger.info(
             f'Downloaded file from S3 bucket {url.hostname}, key {url.path[1:]} to {fp.name}'
         )
+
+        METRICS.start_time('aws.s3.post_checks')
 
         with open(fp.name, 'rb') as hash_fp:
             md5 = hashlib.md5(hash_fp.read()).hexdigest()
@@ -190,6 +210,8 @@ class GranuleReader:
         if expected_length is not None and expected_length != os.path.getsize(fp.name):
             logger.warning(f'Size of downloaded file differs from expected size from S3. '
                            f'{expected_length:,} (expected) != {os.path.getsize(fp.name):,} (downloaded)')
+
+        METRICS.end_time('aws.s3.post_checks')
 
         return fp
 
