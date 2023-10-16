@@ -665,9 +665,6 @@ def process_inputs(in_files, cfg):
         pool = pool[0]
 
         with pool:
-            for t in pool._threads:
-                print(t.daemon)
-
             processed_groups_pre = []
             processed_groups_post = []
             failed_inputs = []
