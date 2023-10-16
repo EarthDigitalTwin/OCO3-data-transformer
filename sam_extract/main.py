@@ -26,6 +26,7 @@ from yaml import load
 from yaml.scanner import ScannerError
 
 from sam_extract.exceptions import *
+from sam_extract.metrics import get_metrics
 from sam_extract.readers import GranuleReader
 from sam_extract.writers import ZarrWriter
 from sam_extract.targets import extract_id, determine_id_type
@@ -114,6 +115,9 @@ NEAREST_IF_NOT_ENOUGH = True
 # If true, expand bounding polys by half of a grid pixel in each directing before determining indices. Useful for SAMs
 # That lie entirely within a pixel
 EXPAND_INDEX_BOUNDS = True
+
+
+METRICS = get_metrics()
 
 
 def __validate_files(files):
@@ -277,11 +281,15 @@ def mask_data(sams, targets, grid_ds, cfg):
 
     target_dict = {}
 
+    METRICS.start_time('mask.polys.enum')
+
     for i, (sam, target) in enumerate(zip(sams, targets)):
         logger.info(f'Creating bounding polys for SAM of {len(sam["/"].vertex_latitude):,} footprints '
                     f'[{i+1}/{len(sams)}]')
 
         footprint_polygons = []
+
+        METRICS.start_time('mask.polys.poly.zip')
 
         for lats, lons, tid, tn in zip(
                 sam['/'].vertex_latitude,
@@ -289,14 +297,21 @@ def mask_data(sams, targets, grid_ds, cfg):
                 target.target_id,
                 target.target_name
         ):
+            METRICS.start_time('mask.polys.poly.v')
             vertices = [(lons[i].item(), lats[i].item()) for i in range(len(lats))]
             vertices.append((lons[0].item(), lats[0].item()))
+            METRICS.end_time('mask.polys.poly.v')
+
+            METRICS.start_time('mask.polys.poly.init')
+
             if scaling != 1.0:
                 p: Polygon = scale(Polygon(vertices), scaling, scaling)
             else:
                 p = Polygon(vertices)
 
             tid, tn = tid.item(), tn.item()
+            METRICS.end_time('mask.polys.poly.init')
+
 
             if isinstance(tid, np.ndarray):
                 tid = tid.item()
@@ -307,14 +322,22 @@ def mask_data(sams, targets, grid_ds, cfg):
             target_dict[p.wkt] = (tid, tn)
             footprint_polygons.append(p)
 
+        METRICS.end_time('mask.polys.poly.zip')
+
+        METRICS.start_time('mask.polys.union')
+
         if scaling != 1.0:
             bounding_poly = unary_union(footprint_polygons)
         else:
             bounding_poly = MultiPolygon(footprint_polygons)
 
+        METRICS.end_time('mask.polys.union')
+
         logger.debug(f'Created poly with bbox {bounding_poly.bounds}')
 
         sam_polys.append((bounding_poly.bounds, footprint_polygons))
+
+    METRICS.end_time('mask.polys.enum')
 
     logger.info('Producing geo mask from SAM polys')
 
@@ -985,5 +1008,8 @@ if __name__ == '__main__':
         logger.exception(e)
         v = 1
     finally:
+        if METRICS:
+            METRICS.done()
+
         logger.info(f'Exiting code {v}. Runtime={datetime.now() - start_time}')
         exit(v)
