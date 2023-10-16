@@ -284,10 +284,10 @@ def mask_data(sams, targets, grid_ds, cfg):
         footprint_polygons = []
 
         for lats, lons, tid, tn in zip(
-                sam['/'].vertex_latitude,
-                sam['/'].vertex_longitude,
-                target.target_id,
-                target.target_name
+                sam['/'].vertex_latitude.to_numpy(),
+                sam['/'].vertex_longitude.to_numpy(),
+                target.target_id.to_numpy(),
+                target.target_name.to_numpy()
         ):
             vertices = [(lons[i].item(), lats[i].item()) for i in range(len(lats))]
             vertices.append((lons[0].item(), lats[0].item()))
@@ -296,7 +296,7 @@ def mask_data(sams, targets, grid_ds, cfg):
             else:
                 p = Polygon(vertices)
 
-            tid, tn = tid.item(), tn.item()
+            tid, tn = tid, tn
 
             if isinstance(tid, np.ndarray):
                 tid = tid.item()
