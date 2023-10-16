@@ -641,7 +641,33 @@ def process_inputs(in_files, cfg):
 
         process = partial(process_input, cfg=cfg, temp_dir=td, exclude_groups=exclude)
 
-        with ThreadPoolExecutor(max_workers=cfg.get('max-workers'), thread_name_prefix='process_worker') as pool:
+        pool = []
+
+        class CustomTPE(ThreadPoolExecutor):
+            def __init__(self, max_workers=None, thread_name_prefix='', initializer=None, initargs=()):
+                ThreadPoolExecutor.__init__(self, max_workers, thread_name_prefix, initializer, initargs)
+
+            def ensure(self):
+                while len(self._threads) < self._max_workers:
+                    self._adjust_thread_count()
+
+        def _create_thread_pool(ret):
+            tpe = CustomTPE(max_workers=cfg.get('max-workers'), thread_name_prefix='process_worker')
+            tpe.ensure()
+
+            ret.append(tpe)
+
+        _t = threading.Thread(target=_create_thread_pool, name='thread-pool-init', args=(pool,), daemon=True)
+
+        _t.start()
+        _t.join()
+
+        pool = pool[0]
+
+        with pool:
+            for t in pool._threads:
+                print(t.daemon)
+
             processed_groups_pre = []
             processed_groups_post = []
             failed_inputs = []
