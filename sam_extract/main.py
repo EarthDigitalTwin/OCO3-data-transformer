@@ -143,6 +143,35 @@ status = {
 
 STATUS_LOCK = threading.Lock()
 
+
+def update_progress(key, val):
+    with STATUS_LOCK:
+        if isinstance(key, list) or isinstance(key, tuple):
+            for k, v in zip(key, val):
+                status['progress'][k] = v
+        else:
+            status['progress'][key] = val
+
+
+def update_worker(stage, qf=None):
+    worker = threading.current_thread().name
+
+    if stage is None and qf is None:
+        worker_status = "free"
+        qf = None
+    else:
+        worker_status = "running"
+
+    with STATUS_LOCK:
+        if worker not in status['workers']:
+            status['workers'][worker] = dict(status=worker_status, stage=stage, qf=qf)
+        else:
+            status['workers'][worker]["status"] = worker_status
+            status['workers'][worker]["stage"] = stage
+            if qf is not None or worker_status == 'free':
+                status['workers'][worker]["qf"] = qf
+
+
 flask_app = None
 
 if os.getenv('MONITOR') is not None:
@@ -163,6 +192,11 @@ if os.getenv('MONITOR') is not None:
         name='monitor-flask',
         daemon=True
     ).start()
+else:
+    def get_status():
+        with STATUS_LOCK:
+            return status
+
 
 
 """
@@ -218,6 +252,7 @@ def fit_data_to_grid(sams, cfg):
     logger.debug('Building coordinate meshes')
 
     METRICS.start_time('interp.mesh.build')
+    update_worker('building_mesh')
 
     lon_grid, lat_grid = np.mgrid[-180:180:complex(0, cfg['grid']['longitude']),
                                   -90:90:complex(0, cfg['grid']['latitude'])].astype(np.dtype('float32'))
@@ -283,6 +318,7 @@ def fit_data_to_grid(sams, cfg):
         logger.info(f'Interpolating variable {var_name} in group {grp}')
 
         METRICS.start_time('interp.griddata')
+        update_worker(f'interpolating_{grp}{var_name}')
 
         gridded = griddata(
             points,
@@ -344,6 +380,7 @@ def mask_data(sams, targets, grid_ds, cfg):
     target_dict = {}
 
     METRICS.start_time('mask.polys.enum')
+    update_worker('building_mask_polygons')
 
     for i, (sam, target) in enumerate(zip(sams, targets)):
         logger.info(f'Creating bounding polys for SAM of {len(sam["/"].vertex_latitude):,} footprints '
@@ -411,6 +448,7 @@ def mask_data(sams, targets, grid_ds, cfg):
     lat_len = latitudes[1] - latitudes[0]
 
     METRICS.start_time('mask.apply.enum')
+    update_worker('producing_geo_mask')
 
     for i, (bounds, polys) in enumerate(sam_polys):
         indices = []
@@ -492,6 +530,7 @@ def mask_data(sams, targets, grid_ds, cfg):
     logger.info('Applying mask to dataset')
 
     METRICS.start_time('mask.apply')
+    update_worker('applying_geo_mask')
 
     for group in grid_ds:
         for var in grid_ds[group].data_vars:
@@ -550,6 +589,10 @@ def process_input(input_file,
                   exclude_groups: Optional[List[str]] = None):
     additional_params = {'drop_dims': cfg['drop-dims']}
 
+    update_worker('init')
+    with STATUS_LOCK:
+        status['progress']['numInProgress'] += 1
+
     if exclude_groups is None:
         exclude_groups = []
 
@@ -581,11 +624,15 @@ def process_input(input_file,
     logger.info(f'Processing input at {path}')
     logger.info('Opening granule')
 
+    update_worker('opening_granule')
+
     try:
         with GranuleReader(path, **additional_params) as ds:
             mode_array = ds['/Sounding']['operation_mode']
 
             logger.info('Splitting into individual SAM groups')
+
+            update_worker('separating_sam_groups')
 
             sam_slices = []
             sam = False
@@ -611,6 +658,8 @@ def process_input(input_file,
             extracted_targets_post_qf = []
 
             logger.info('Filtering out bad quality soundings in SAM ranges')
+
+            update_worker('filtering_sam_groups')
 
             for s in sam_slices:
                 sam_group = {group: ds[group].isel(sounding_id=s) for group in ds if group not in exclude_groups}
@@ -655,6 +704,8 @@ def process_input(input_file,
             if output_pre_qf:
                 logger.info('Fitting unfiltered SAM data to output grid')
 
+                update_worker(None, qf='pre')
+
                 gridded_groups_pre_qf = mask_data(
                     extracted_sams_pre_qf, extracted_targets_pre_qf,
                     fit_data_to_grid(
@@ -669,6 +720,8 @@ def process_input(input_file,
 
                     logger.info('Outputting unfiltered SAM product slice to temporary Zarr array')
 
+                    update_worker('writing_slice')
+
                     writer = ZarrWriter(temp_path_pre, chunking, overwrite=True, verify=False)
                     writer.write(gridded_groups_pre_qf)
 
@@ -679,6 +732,8 @@ def process_input(input_file,
                     ret_pre_qf = None
 
             logger.info('Fitting filtered SAM data to output grid')
+
+            update_worker(None, qf='post')
 
             gridded_groups_post_qf = mask_data(
                 extracted_sams_post_qf, extracted_targets_post_qf,
@@ -693,6 +748,8 @@ def process_input(input_file,
                 temp_path_post = os.path.join(temp_dir, 'post_qf', os.path.basename(input_file)) + '.zarr'
 
                 logger.info('Outputting filtered SAM product slice to temporary Zarr array')
+
+                update_worker('writing_slice')
 
                 writer = ZarrWriter(temp_path_post, chunking, overwrite=True, verify=False)
                 writer.write(gridded_groups_post_qf)
@@ -710,6 +767,11 @@ def process_input(input_file,
         logger.error(f'Process task for {path} failed')
         logger.exception(err)
         raise
+    finally:
+        update_worker(None)
+        with STATUS_LOCK:
+            status['progress']['numRemaining'] -= 1
+            status['progress']['numInProgress'] -= 1
 
 
 def merge_groups(groups):
@@ -741,6 +803,10 @@ def process_inputs(in_files, cfg):
 
         return path_root, additional_params
 
+    update_progress(
+        ['numRemaining', 'numTotal', 'numInProgress'], [len(in_files), len(in_files), 0]
+    )
+
     with TemporaryDirectory(prefix='oco-sam-extract-', suffix='-zarr-scratch', ignore_cleanup_errors=True) as td:
         exclude = cfg['exclude-groups']
 
@@ -750,6 +816,8 @@ def process_inputs(in_files, cfg):
             processed_groups_pre = []
             processed_groups_post = []
             failed_inputs = []
+
+            update_progress('stage', 'processing_inputs')
 
             for result_pre, result_post, success, path in pool.map(process, in_files):
                 if success:
@@ -783,6 +851,8 @@ def process_inputs(in_files, cfg):
         if merged_pre is not None:
             logger.info('Merged processed pre_qf data')
 
+            update_progress('stage', 'writing_pre_qf')
+
             zarr_writer = ZarrWriter(
                 os.path.join(output_root, cfg['output']['naming']['pre_qf']),
                 chunking,  # (5, 250, 250),
@@ -803,6 +873,8 @@ def process_inputs(in_files, cfg):
 
         if merged_post is not None:
             logger.info('Merged processed post_qf data')
+
+            update_progress('stage', 'writing_post_qf')
 
             zarr_writer = ZarrWriter(
                 os.path.join(output_root, cfg['output']['naming']['post_qf']),
@@ -886,6 +958,11 @@ def main(cfg):
                 thread.join()
 
                 METRICS.done()
+
+                update_progress(
+                    ['numRemaining', 'numTotal', 'numInProgress', 'stage'],
+                    [0, 0, 0, 'waiting']
+                )
 
                 logger.info(f'Pipeline completed in {datetime.now() - pipeline_start_time}')
                 channel.basic_ack(delivery_tag=method_frame.delivery_tag)
@@ -1094,9 +1171,6 @@ if __name__ == '__main__':
     finally:
         if METRICS:
             METRICS.done()
-
-        if flask_app:
-            pass
 
         logger.info(f'Exiting code {v}. Runtime={datetime.now() - start_time}')
         exit(v)
