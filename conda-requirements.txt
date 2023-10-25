@@ -1,5 +1,4 @@
 python>=3.9
-# xarray
 xarray>=2023.8.0
 numpy
 dask
@@ -18,3 +17,5 @@ aiobotocore>=2.3.0,<2.4
 pika
 schema
 requests
+flask
+eventlet

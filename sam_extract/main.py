@@ -1,6 +1,6 @@
 import argparse
 import logging
-import os.path
+import os
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -9,10 +9,13 @@ from tempfile import TemporaryDirectory
 from time import sleep
 from typing import List, Optional, Tuple
 
+import eventlet
 import numpy as np
 import pika
 import xarray as xr
 import yaml
+from eventlet import wsgi
+from flask import Flask
 from pika.channel import Channel
 from pika.exceptions import AMQPChannelError, AMQPConnectionError, ConnectionClosedByBroker
 from pika.spec import Basic, BasicProperties
@@ -36,6 +39,10 @@ try:
     from yaml import CLoader as Loader
 except ImportError:
     from yaml import Loader
+
+"""
+GLOBALS & CONFIG
+"""
 
 
 logging.basicConfig(
@@ -117,7 +124,50 @@ NEAREST_IF_NOT_ENOUGH = True
 EXPAND_INDEX_BOUNDS = True
 
 
+"""
+METRICS & MONITORING
+"""
+
+
 METRICS = get_metrics()
+
+status = {
+    "progress": {
+        "numRemaining": None,
+        "numTotal": None,
+        "numInProgress": None,
+        "stage": "init"
+    },
+    "workers": {}
+}
+
+STATUS_LOCK = threading.Lock()
+
+flask_app = None
+
+if os.getenv('MONITOR') is not None:
+    flask_app = Flask(__name__)
+
+    @flask_app.route("/status", methods=["GET"])
+    def get_status():
+        with STATUS_LOCK:
+            return status
+
+    threading.Thread(
+        # target=lambda: flask_app.run(host='0.0.0.0', port=9788, threaded=True, use_reloader=False),
+        target=lambda: wsgi.server(
+            eventlet.listen(("127.0.0.1", 9788)),
+            flask_app,
+            log=logging.getLogger('sam_extract.monitor')
+        ),
+        name='monitor-flask',
+        daemon=True
+    ).start()
+
+
+"""
+PIPELINE
+"""
 
 
 def __validate_files(files):
@@ -1044,6 +1094,9 @@ if __name__ == '__main__':
     finally:
         if METRICS:
             METRICS.done()
+
+        if flask_app:
+            pass
 
         logger.info(f'Exiting code {v}. Runtime={datetime.now() - start_time}')
         exit(v)
