@@ -318,7 +318,7 @@ def fit_data_to_grid(sams, cfg):
         logger.info(f'Interpolating variable {var_name} in group {grp}')
 
         METRICS.start_time('interp.griddata')
-        update_worker(f'interpolating_{grp}{var_name}')
+        update_worker(f'interpolating_variable[ {grp}{var_name} ]')
 
         gridded = griddata(
             points,
