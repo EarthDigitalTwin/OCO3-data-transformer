@@ -3,6 +3,7 @@ import logging
 import os
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from copy import deepcopy
 from datetime import datetime
 from functools import partial
 from tempfile import TemporaryDirectory
@@ -180,7 +181,19 @@ if os.getenv('MONITOR') is not None:
     @flask_app.route("/status", methods=["GET"])
     def get_status():
         with STATUS_LOCK:
-            return status
+            s = deepcopy(status)
+
+        workers = s['workers']
+
+        for w in workers:
+            if 'qf' in workers[w]:
+                qf = workers[w].get('qf')
+                if qf is not None:
+                    workers[w]['stage'] = f"{workers[w]['stage']}:{qf}"
+
+                del workers[w]['qf']
+
+        return s
 
     threading.Thread(
         # target=lambda: flask_app.run(host='0.0.0.0', port=9788, threaded=True, use_reloader=False),
@@ -192,11 +205,6 @@ if os.getenv('MONITOR') is not None:
         name='monitor-flask',
         daemon=True
     ).start()
-else:
-    def get_status():
-        with STATUS_LOCK:
-            return status
-
 
 
 """
