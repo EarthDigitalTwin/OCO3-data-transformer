@@ -895,6 +895,13 @@ def parse_args():
         default=None
     )
 
+    parser.add_argument(
+        '--skip-netrc',
+        help='Don\'t check for a .netrc file',
+        dest='netrc',
+        action='store_false'
+    )
+
     args = parser.parse_args()
 
     with open(args.cfg) as f:
@@ -968,7 +975,8 @@ def parse_args():
         logger.exception(err)
         raise ValueError('Invalid configuration')
 
-    GranuleReader.configure_netrc(username=args.edu, password=args.edp)
+    if args.netrc:
+        GranuleReader.configure_netrc(username=args.edu, password=args.edp)
 
     return config_dict
 
