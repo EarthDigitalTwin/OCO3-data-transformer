@@ -4,6 +4,7 @@ xarray>=2023.8.0
 numpy
 dask
 netCDF4
+h5netcdf
 bottleneck
 scipy
 zarr>=2.11

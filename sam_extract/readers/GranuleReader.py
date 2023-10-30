@@ -68,11 +68,11 @@ class GranuleReader:
         try:
             # Open the input datasets but do not mask out missing values yet
             ds_dict = {
-                '/': xr.open_dataset(path, mask_and_scale=False).load(),
-                '/Meteorology': xr.open_dataset(path, group='Meteorology', mask_and_scale=False).load(),
-                '/Preprocessors': xr.open_dataset(path, group='Preprocessors', mask_and_scale=False).load(),
-                '/Retrieval': xr.open_dataset(path, group='Retrieval', mask_and_scale=False).load(),
-                '/Sounding': xr.open_dataset(path, group='Sounding', mask_and_scale=False).load(),
+                '/': xr.open_dataset(path, mask_and_scale=False, engine='h5netcdf').load(),
+                '/Meteorology': xr.open_dataset(path, group='Meteorology', mask_and_scale=False, engine='h5netcdf').load(),
+                '/Preprocessors': xr.open_dataset(path, group='Preprocessors', mask_and_scale=False, engine='h5netcdf').load(),
+                '/Retrieval': xr.open_dataset(path, group='Retrieval', mask_and_scale=False, engine='h5netcdf').load(),
+                '/Sounding': xr.open_dataset(path, group='Sounding', mask_and_scale=False, engine='h5netcdf').load(),
             }
         except FileNotFoundError:
             logger.error(f'Input file {path} does not exist')
