@@ -1,7 +1,21 @@
+# Copyright 2023 California Institute of Technology (Caltech)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 FROM continuumio/miniconda3:23.5.2-0
 
 # Install mamba because conda solve time is abysmal
-RUN conda install -n base --override-channels -c conda-forge -c defaults mamba libarchive && conda clean -afy
+RUN conda install -n base --override-channels -c conda-forge -c defaults mamba=1.5.0=py311h3072747_0 libmamba=1.5.0=h658169a_0 libmambapy=1.5.0=py311h527f279_0 libarchive=3.6.2=h039dbb9_1 && conda clean -afy
 
 
 # Copy requirements list & install them
