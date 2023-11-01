@@ -1,33 +1,42 @@
+# Copyright 2023 California Institute of Technology (Caltech)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 output:  # required; one-of
 #  s3:
 #    url: s3://sam-zarr-bucket/ # required
-#    region: us-west-2 # optional; assume us-west-2; should match input.queue.region
+#    region: us-west-2 # optional; assume us-west-2
 #    auth:
 #      accessKeyID: foo
 #      secretAccessKey: bar
-  local: file:///Users/rileykk/oco3/oco-sam-extract/
+  local: file:///tmp/oco3/
   naming:   # Filename of output Zarr root
-    pre_qf: la_sams_sample_pre_qf_1km_linear.zarr # oco3_sam_l3_global_pre_qf.zarr
-    post_qf: la_sams_sample_post_qf_1km_linear.zarr # oco3_sam_l3_global_post_qf.zarr
+    pre_qf: pre_qf_root_name.zarr
+    post_qf: post_qf_root_name.zarr
   title:    # Dataset title in metadata, uses output.naming values (w/o '.zarr') if omitted
-    pre_qf: la_sams_sample_pre_qf_1km_linear.zarr # oco3_sam_l3_global_pre_qf.zarr
-    post_qf: la_sams_sample_post_qf_1km_linear.zarr # oco3_sam_l3_global_post_qf.zarr
+    pre_qf: pre_qf_root_title
+    post_qf: post_qf_root_title
 input: # required; one of
   files:
-    - /Users/rileykk/oco3/oco-sam-extract/test_data/la/oco3_LtCO2_200303_B10400Br_220318000013s.nc4
-    - /Users/rileykk/oco3/oco-sam-extract/test_data/la/oco3_LtCO2_200505_B10400Br_220318001036s.nc4
-    - /Users/rileykk/oco3/oco-sam-extract/test_data/la/oco3_LtCO2_200527_B10400Br_220318001255s.nc4
-    #- /Users/rileykk/oco3/oco-sam-extract/test_data/la/oco3_LtCO2_200814_B10400Br_220318002549s.nc4
-    #- /Users/rileykk/oco3/oco-sam-extract/test_data/la/oco3_LtCO2_210325_B10400Br_220318010127s.nc4
-    #- /Users/rileykk/oco3/oco-sam-extract/test_data/la/oco3_LtCO2_220218_B10400Br_220505141844s.nc4
-    #- /Users/rileykk/oco3/oco-sam-extract/test_data/la/oco3_LtCO2_220813_B10400Br_221010202453s.nc4
-    #- /Users/rileykk/oco3/oco-sam-extract/test_data/la/oco3_LtCO2_221028_B10400Br_221205203441s.nc4
-#    - paths
-#    - to
-#    - files
-#    - local
-#    - or
-#    - path: s3
+    - /tmp/oco3/oco3_LtCO2_200303_B10400Br_220318000013s.nc4
+    - /tmp/oco3/oco3_LtCO2_200505_B10400Br_220318001036s.nc4
+    - /tmp/oco3/oco3_LtCO2_200527_B10400Br_220318001255s.nc4
+    - /tmp/oco3/oco3_LtCO2_200814_B10400Br_220318002549s.nc4
+    - /tmp/oco3/oco3_LtCO2_210325_B10400Br_220318010127s.nc4
+    - /tmp/oco3/oco3_LtCO2_220218_B10400Br_220505141844s.nc4
+    - /tmp/oco3/oco3_LtCO2_220813_B10400Br_221010202453s.nc4
+    - /tmp/oco3/oco3_LtCO2_221028_B10400Br_221205203441s.nc4
+#    - path: s3://bucket/key
 #      accessKeyID: foo
 #      secretAccessKey: bar
 #  queue: # RMQ queue to monitor for inputs
@@ -212,4 +221,4 @@ chunking:
   longitude: 250
   time: 5
 max-workers: 1
-mask-scaling: 1.01
+mask-scaling: 1
