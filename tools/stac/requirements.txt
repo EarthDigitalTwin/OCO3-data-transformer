@@ -14,3 +14,5 @@
 
 pyyaml
 schema
+boto3
+tqdm

@@ -37,6 +37,8 @@ python run.py \
   $([[ ! -z "$STATE_FILE" ]] && echo --state=$STATE_FILE) \
   $([[ ! -z "$GRANULE_LIMIT" ]] && echo --limit=$GRANULE_LIMIT) \
   $([[ ! -z "$LOGGING_DIR" ]] && echo --logging=$LOGGING_DIR) \
+  $([[ ! -z "$LOCAL_WRITE_DIR" ]] && echo --local-write-dir=$LOCAL_WRITE_DIR) \
+  $([[ ! -z "$PURGE_LW" ]] && echo --purge-lw) \
   $([[ ! -z "$VERBOSE" ]] && echo -v)
 
 exit_code=$?
@@ -54,6 +56,8 @@ if [ -z ${KEEP+x} ]; then
   rm *.log
 else
   echo 'Keeping logs; this should only be done for debugging purposes. unset KEEP to disable.'
+  mkdir -p saved_logs
+  mv *.log saved_logs/.
 fi
 
 echo Uploading logs to S3

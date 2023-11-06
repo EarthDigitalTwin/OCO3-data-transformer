@@ -16,13 +16,20 @@ import argparse
 import json
 import logging
 import os
+import pprint
+import re
 import shutil
 import subprocess
 import sys
+import urllib.parse
 import uuid
+from copy import deepcopy
 from datetime import datetime
 from tempfile import NamedTemporaryFile
 
+import boto3
+from tqdm import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
 from schema import Schema, SchemaError
 from yaml import dump, load
 
@@ -99,6 +106,20 @@ parser.add_argument(
     default='state.json'
 )
 
+parser.add_argument(
+    '--local-write-dir',
+    dest='lwd',
+    help='If writing to S3 and this is defined, write/append final output to this dir, copy chunks to S3, then delete '
+         'non-edge, non-coord chunks. Useful for scenarios with long write times.'
+)
+
+parser.add_argument(
+    '--purge-lw',
+    dest='keep_local',
+    action='store_false',
+    help=argparse.SUPPRESS
+)
+
 
 def limit_int(s):
     i = int(s)
@@ -160,6 +181,15 @@ logging.basicConfig(
 
 logger = logging.getLogger('oco3_driver')
 
+SUPPRESS = [
+    'botocore',
+    's3transfer',
+    'urllib3',
+]
+
+for logger_name in SUPPRESS:
+    logging.getLogger(logger_name).setLevel(logging.WARNING)
+
 dc = shutil.which('docker-compose')
 docker = shutil.which('docker')
 
@@ -168,6 +198,8 @@ if dc is None:
     raise OSError('docker-compose command could not be found in PATH')
 
 the_time = datetime.now()
+
+logger.info('Beginning CMR search')
 
 with open(f'{log_file_root}-stac-search.log', 'w') as fp:
     search_p = subprocess.Popen(
@@ -178,7 +210,7 @@ with open(f'{log_file_root}-stac-search.log', 'w') as fp:
 
 search_p.wait()
 
-logger.info(f'STAC search completed in {datetime.now() - the_time}')
+logger.info(f'CMR search completed in {datetime.now() - the_time}')
 
 subprocess.Popen(
     [dc, '-f', args.dc_search, 'down'],
@@ -262,77 +294,206 @@ with open(args.rc) as fp:
 
 pipeline_config['input']['files'] = [os.path.join('/var/inputs/', g) for g in downloaded_granules]
 
-logger.info('Starting pipeline')
+output_cfg = None
+replaced_output = False
 
-with NamedTemporaryFile(
-    mode='w', prefix='rc-', suffix='.yaml'
-) as rc_fp:
-    dump(pipeline_config, rc_fp, Dumper=Dumper, sort_keys=False)
-    rc_fp.flush()
+if args.lwd:
+    output_cfg = deepcopy(pipeline_config['output'])
 
-    the_time = datetime.now()
+    if 's3' in output_cfg:
+        del pipeline_config['output']['s3']
+        pipeline_config['output']['local'] = '/var/outputs/'
+        replaced_output = True
+        logger.info('Will write Zarr locally & copy to S3')
 
-    with open(f'{log_file_root}-pipeline.log', 'w') as log_fp:
-        pipeline_p = subprocess.Popen(
+
+def run_pipeline():
+    logger.info('Starting pipeline')
+
+    with NamedTemporaryFile(
+        mode='w', prefix='rc-', suffix='.yaml'
+    ) as rc_fp:
+        dump(pipeline_config, rc_fp, Dumper=Dumper, sort_keys=False)
+        rc_fp.flush()
+
+        the_time = datetime.now()
+
+        pipeline_logfile = f'{log_file_root}-pipeline.log'
+
+        with open(pipeline_logfile, 'w') as log_fp:
+            if not replaced_output:
+                p_args = [
+                    docker,
+                    'run',
+                    # '--rm',
+                    '--name',
+                    'oco-sam-l3',
+                    '-v',
+                    f'{rc_fp.name}:/etc/config.yaml',
+                    '-v',
+                    f'{granule_dir}:/var/inputs/',
+                    args.image,
+                    'python',
+                    '/sam_extract/main.py',
+                    '-i',
+                    '/etc/config.yaml',
+                    '--skip-netrc'
+                ]
+            else:
+                p_args = [
+                    docker,
+                    'run',
+                    # '--rm',
+                    '--name',
+                    'oco-sam-l3',
+                    '-v',
+                    f'{rc_fp.name}:/etc/config.yaml',
+                    '-v',
+                    f'{granule_dir}:/var/inputs/',
+                    '-v',
+                    f'{args.lwd}:/var/outputs/',
+                    args.image,
+                    'python',
+                    '/sam_extract/main.py',
+                    '-i',
+                    '/etc/config.yaml',
+                    '--skip-netrc'
+                ]
+
+            pipeline_p = subprocess.Popen(
+                p_args,
+                stdout=log_fp,
+                stderr=subprocess.STDOUT
+            ).wait()
+
+        logger.info(f'Pipeline completed in {datetime.now() - the_time}')
+
+    inspect_p = subprocess.Popen(
+        [
+            docker,
+            'container',
+            'inspect',
+            'oco-sam-l3',
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT
+    )
+
+    inspect_p.wait()
+
+    try:
+        data, err = inspect_p.communicate()
+        if inspect_p.returncode == 0:
+            stats = json.loads(data.decode('utf-8'))[0]
+
+            exit_code = int(stats['State']['ExitCode'])
+
+            if exit_code != 0:
+                logger.error('Pipeline failed')
+                raise OSError('Pipeline failed')
+        else:
+            logger.error(f'Inspect subprocess error {err}. Assuming pipeline failed')
+            raise OSError('Pipeline failed')
+    finally:
+        subprocess.Popen(
             [
                 docker,
-                'run',
-                # '--rm',
-                '--name',
+                'rm',
                 'oco-sam-l3',
-                '-v',
-                f'{rc_fp.name}:/etc/config.yaml',
-                '-v',
-                f'{granule_dir}:/var/inputs/',
-                args.image,
-                'python',
-                '/sam_extract/main.py',
-                '-i',
-                '/etc/config.yaml',
-                '--skip-netrc'
             ],
-            stdout=log_fp,
+            stdout=subprocess.DEVNULL,
             stderr=subprocess.STDOUT
         ).wait()
 
-    logger.info(f'Pipeline completed in {datetime.now() - the_time}')
+    return pipeline_logfile
 
-inspect_p = subprocess.Popen(
-    [
-        docker,
-        'container',
-        'inspect',
-        'oco-sam-l3',
-    ],
-    stdout=subprocess.PIPE,
-    stderr=subprocess.STDOUT
-)
 
-inspect_p.wait()
+pipeline__log = run_pipeline()
 
-try:
-    data, err = inspect_p.communicate()
-    if inspect_p.returncode == 0:
-        stats = json.loads(data.decode('utf-8'))[0]
+if replaced_output:
+    session = boto3.Session(profile_name=os.getenv('AWS_PROFILE'))
+    s3 = session.client('s3')
 
-        exit_code = int(stats['State']['ExitCode'])
+    with open(pipeline__log) as fp:
+        repaired = any(['Writing corrected group' in l for l in fp.readlines()])
 
-        if exit_code != 0:
-            logger.error('Pipeline failed')
-            raise OSError('Pipeline failed')
+    if not repaired:
+        logger.info('Copying files to S3')
+
+        output_files = [os.path.join(dp, f) for dp, dn, fn in os.walk(args.lwd) for f in fn]
+
+        s3_url = urllib.parse.urlparse(output_cfg['s3']['url'])
+
+        bucket = s3_url.netloc
+        prefix_key = s3_url.path[1:]
+
+        output_keys = [f.replace(args.lwd, prefix_key, 1).replace('//', '/') for f in output_files]
+
+        with tqdm(total=len(output_keys), desc='S3 Upload', unit=' object', ncols=120) as pb:
+            for src, dst in zip(output_files, output_keys):
+                with open(src, 'rb') as fp:
+                    object_data = fp.read()
+
+                s3.put_object(Bucket=bucket, Key=dst, Body=object_data)
+
+                pb.update()
+
+        if not args.keep_local:
+            chunk_files = [f for f in output_files if re.search('\\d+\\.\\d+\\.\\d+', f) is not None]
+
+            max_time_chunk = max([int(os.path.basename(f).split('.')[0]) for f in chunk_files])
+            to_purge = [f for f in chunk_files if int(os.path.basename(f).split('.')[0]) < max_time_chunk]
+
+            logger.info(f'Deleting {len(to_purge):,} old chunks')
+
+            for f in to_purge:
+                os.remove(f)
     else:
-        logger.error(f'Inspect subprocess error {err}. Assuming pipeline failed')
-        raise OSError('Pipeline failed')
-finally:
-    subprocess.Popen(
-        [
-            docker,
-            'rm',
-            'oco-sam-l3',
-        ],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.STDOUT
-    ).wait()
+        logger.error('Pipeline produced output that was incorrect; need to retry with source S3 as output')
+
+        replaced_output = False
+        pipeline_config['output'] = output_cfg
+
+        run_pipeline()
+
+        lwd_files = [os.path.join(dp, f) for dp, dn, fn in os.walk(args.lwd) for f in fn]
+
+        logger.info('Pipeline complete; purging local write directory')
+
+        for f in lwd_files:
+            os.remove(f)
+
+        logger.info('Pulling S3 data to local write directory')
+
+        zarr_urls = [
+            f"{output_cfg['s3']['url'].rstrip('/')}/{output_cfg['naming']['pre_qf']}",
+            f"{output_cfg['s3']['url'].rstrip('/')}/{output_cfg['naming']['post_qf']}",
+        ]
+
+        root_key = urllib.parse.urlparse(output_cfg['s3']['url'].rstrip('/')).path[1:]
+
+        with logging_redirect_tqdm():
+            with tqdm(total=float('inf'), desc='S3 Download', unit=' object') as pb:
+                for s3_url in zarr_urls:
+                    s3_url = urllib.parse.urlparse(s3_url)
+
+                    bucket = s3_url.netloc
+                    prefix_key = s3_url.path[1:]
+
+                    paginator = s3.get_paginator('list_objects_v2')
+
+                    bucket_iterator = paginator.paginate(Bucket=bucket, Prefix=prefix_key)
+
+                    logger.debug(f'paginating {bucket} w/ prefix {prefix_key}')
+
+                    for page in bucket_iterator:
+                        for obj in page.get('Contents', []):
+                            dl_path = os.path.join(args.lwd, obj['Key'].replace(root_key, '', 1).lstrip('/'))
+
+                            logger.debug(f'Download: s3://{bucket}/{obj["Key"]} -> {dl_path}')
+                            s3.download_file(bucket, obj['Key'], dl_path)
+
+                            pb.update()
 
 state['count'] += len(downloaded_granules)
 state['processed'].extend(downloaded_granules)
