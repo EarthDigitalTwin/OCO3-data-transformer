@@ -16,7 +16,6 @@ import argparse
 import json
 import logging
 import os
-import pprint
 import re
 import shutil
 import subprocess
@@ -28,9 +27,9 @@ from datetime import datetime
 from tempfile import NamedTemporaryFile
 
 import boto3
+from schema import Schema, SchemaError
 from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
-from schema import Schema, SchemaError
 from yaml import dump, load
 
 try:
