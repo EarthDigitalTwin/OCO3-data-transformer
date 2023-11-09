@@ -436,17 +436,6 @@ if replaced_output:
                 s3.put_object(Bucket=bucket, Key=dst, Body=object_data)
 
                 pb.update()
-
-        if not args.keep_local:
-            chunk_files = [f for f in output_files if re.search('\\d+\\.\\d+\\.\\d+', f) is not None]
-
-            max_time_chunk = max([int(os.path.basename(f).split('.')[0]) for f in chunk_files])
-            to_purge = [f for f in chunk_files if int(os.path.basename(f).split('.')[0]) < max_time_chunk]
-
-            logger.info(f'Deleting {len(to_purge):,} old chunks')
-
-            for f in to_purge:
-                os.remove(f)
     else:
         logger.error('Pipeline produced output that was incorrect; need to retry with source S3 as output')
 
@@ -493,6 +482,23 @@ if replaced_output:
                             s3.download_file(bucket, obj['Key'], dl_path)
 
                             pb.update()
+
+        output_files = [os.path.join(dp, f) for dp, dn, fn in os.walk(args.lwd) for f in fn]
+
+    if not args.keep_local:
+        chunk_files = [f for f in output_files if re.search('\\d+\\.\\d+\\.\\d+', f) is not None]
+
+        max_time_chunk = max([int(os.path.basename(f).split('.')[0]) for f in chunk_files])
+        to_purge = [f for f in chunk_files if int(os.path.basename(f).split('.')[0]) < max_time_chunk]
+
+        logger.info(f'Deleting {len(to_purge):,} old chunks')
+
+        for f in to_purge:
+            try:
+                os.remove(f)
+            except OSError as e:
+                logger.error(f'Failed to remove file {f}: {e}')
+
 
 state['count'] += len(downloaded_granules)
 state['processed'].extend(downloaded_granules)
