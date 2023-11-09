@@ -425,7 +425,9 @@ if replaced_output:
     if not repaired:
         logger.info('Copying files to S3')
 
-        output_files = [os.path.join(dp, f) for dp, dn, fn in os.walk(args.lwd) for f in fn]
+        output_files = [os.path.join(dp, f) for z in
+                        [output_cfg['naming']['pre_qf'], output_cfg['naming']['post_qf']]
+                        for dp, dn, fn in os.walk(os.path.join(args.lwd, z)) for f in fn]
 
         s3_url = urllib.parse.urlparse(output_cfg['s3']['url'])
 
@@ -493,7 +495,9 @@ if replaced_output:
 
                 pb.close()
 
-        output_files = [os.path.join(dp, f) for dp, dn, fn in os.walk(args.lwd) for f in fn]
+        output_files = [os.path.join(dp, f) for z in
+                        [output_cfg['naming']['pre_qf'], output_cfg['naming']['post_qf']]
+                        for dp, dn, fn in os.walk(os.path.join(args.lwd, z)) for f in fn]
 
     if not args.keep_local:
         chunk_files = [f for f in output_files if re.search('\\d+\\.\\d+\\.\\d+', f) is not None]
