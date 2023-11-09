@@ -442,6 +442,8 @@ if replaced_output:
                 s3.put_object(Bucket=bucket, Key=dst, Body=object_data)
 
                 pb.update()
+
+            pb.close()
     else:
         logger.error('Pipeline produced output that was incorrect; need to retry with source S3 as output')
 
@@ -489,13 +491,37 @@ if replaced_output:
 
                             pb.update()
 
+                pb.close()
+
         output_files = [os.path.join(dp, f) for dp, dn, fn in os.walk(args.lwd) for f in fn]
 
     if not args.keep_local:
         chunk_files = [f for f in output_files if re.search('\\d+\\.\\d+\\.\\d+', f) is not None]
 
+        logger.debug(f'There are {len(chunk_files):,} chunks out of {len(output_files):,} files')
+
         max_time_chunk = max([int(os.path.basename(f).split('.')[0]) for f in chunk_files])
+
+        logger.debug(f'Highest chunk time idx={max_time_chunk}')
+
         to_purge = [f for f in chunk_files if int(os.path.basename(f).split('.')[0]) < max_time_chunk]
+
+        if len(to_purge) == len(chunk_files):
+            logger.error('Something went wrong when computing chunks to delete: All were selected')
+            logger.error(f'There are {len(chunk_files):,} chunks out of {len(output_files):,} files')
+            logger.error(f'Highest chunk time idx={max_time_chunk}')
+
+            try:
+                with open('/tmp/chunks.json', 'w') as fp:
+                    json.dump(
+                        dict(
+                            files=sorted(output_files), chunks=sorted(chunk_files), selected_to_purge=sorted(to_purge)
+                        ), fp, indent=4
+                    )
+
+                logger.info('Dumped chunk lists to /tmp/chunks.json')
+            except:
+                pass
 
         logger.info(f'Deleting {len(to_purge):,} old chunks')
 
