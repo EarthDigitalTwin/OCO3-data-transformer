@@ -319,14 +319,19 @@ def run_pipeline():
 
         pipeline_logfile = f'{log_file_root}-pipeline.log'
 
+        user_id = os.getenv('USERID', os.getuid())
+        group_id = os.getenv('GRPID', os.getgid())
+        u_param = f'{user_id}:{group_id}'
+
         with open(pipeline_logfile, 'w') as log_fp:
             if not replaced_output:
                 p_args = [
                     docker,
                     'run',
-                    # '--rm',
                     '--name',
                     'oco-sam-l3',
+                    '-u',
+                    u_param,
                     '-v',
                     f'{rc_fp.name}:/etc/config.yaml',
                     '-v',
@@ -342,9 +347,10 @@ def run_pipeline():
                 p_args = [
                     docker,
                     'run',
-                    # '--rm',
                     '--name',
                     'oco-sam-l3',
+                    '-u',
+                    u_param,
                     '-v',
                     f'{rc_fp.name}:/etc/config.yaml',
                     '-v',
