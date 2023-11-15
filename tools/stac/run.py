@@ -22,8 +22,10 @@ import subprocess
 import sys
 import urllib.parse
 import uuid
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import deepcopy
 from datetime import datetime
+from functools import partial
 from tempfile import NamedTemporaryFile
 
 import boto3
@@ -306,7 +308,7 @@ if args.lwd:
         logger.info('Will write Zarr locally & copy to S3')
 
 
-def run_pipeline():
+def run_pipeline(rerun=False):
     logger.info('Starting pipeline')
 
     with NamedTemporaryFile(
@@ -317,7 +319,7 @@ def run_pipeline():
 
         the_time = datetime.now()
 
-        pipeline_logfile = f'{log_file_root}-pipeline.log'
+        pipeline_logfile = f'{log_file_root}-pipeline.log' if not rerun else f'{log_file_root}-pipeline-rerun.log'
 
         user_id = os.getenv('USERID', os.getuid())
         group_id = os.getenv('GRPID', os.getgid())
@@ -394,7 +396,8 @@ def run_pipeline():
             exit_code = int(stats['State']['ExitCode'])
 
             if exit_code != 0:
-                logger.error('Pipeline failed')
+                logger.error(f'Pipeline failed: {exit_code}')
+                logger.debug(json.dumps(stats, indent=4))
                 raise OSError('Pipeline failed')
         else:
             logger.error(f'Inspect subprocess error {err}. Assuming pipeline failed')
@@ -452,7 +455,7 @@ if replaced_output:
         replaced_output = False
         pipeline_config['output'] = output_cfg
 
-        run_pipeline()
+        run_pipeline(rerun=True)
 
         lwd_files = [os.path.join(dp, f) for dp, dn, fn in os.walk(args.lwd) for f in fn]
 
