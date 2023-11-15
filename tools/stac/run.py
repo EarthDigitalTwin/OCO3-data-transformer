@@ -38,6 +38,10 @@ STATE_SCHEMA = Schema({
     'processed': [str]
 })
 
+NO_NEW_DATA = 255
+FAILED_PIPELINE = 1
+FAILED_CRITICAL = 2
+
 
 def container_to_host_path(path: str, host_mount: str, container_mount: str):
     return path.replace(container_mount, host_mount, 1)
@@ -211,7 +215,7 @@ for f in cmr_results['features']:
 
 if len(dl_features) == 0:
     logger.info('No new data to process')
-    exit(0)
+    exit(NO_NEW_DATA)
 
 logger.info(f"CMR returned {len(dl_features):,} new granules to process")
 

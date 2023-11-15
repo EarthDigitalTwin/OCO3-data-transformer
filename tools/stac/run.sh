@@ -21,6 +21,16 @@ else
   echo run.env not present, using current environment
 fi
 
+# Probe if Docker daemon is running
+
+curl -s --unix-socket /var/run/docker.sock http/_ping 2>&1 >/dev/null
+daemon_up=$?
+
+if [ $daemon_up -ne 0 ]; then
+  echo "Docker is not running! Will not proceed"
+  exit 1
+fi
+
 SEARCH_YAML=${SEARCH_YAML:-dc-001-search-cmr-oco3.yaml}
 DOWNLOAD_YAML=${DOWNLOAD_YAML:-dc-002-download.yaml}
 GRANULE_LIMIT=${GRANULE_LIMIT:-50}
@@ -44,6 +54,13 @@ exit_code=$?
 dt_end=$(TZ=UTC date -Iseconds | sed 's/+.*$//')
 
 echo Script completed code $exit_code
+
+if [ $exit_code -eq 255 ]; then
+  echo 'Nothing noteworthy to log; dropping logs...'
+  rm *.log
+  exit 0
+fi
+
 echo Zipping up logs and cleaning up
 
 S3_PATH=${S3_PATH:-s3://bucket/path}
