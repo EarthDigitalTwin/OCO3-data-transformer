@@ -402,6 +402,9 @@ def mask_data(sams, targets, grid_ds, cfg):
 
     mask = np.array([geo_mask])
 
+    # TODO: Maybe the application should be moved to after target_id & type are added to grid_ds to address potential
+    #  issue with more target chunks than variable chunks
+
     logger.info('Applying mask to dataset')
 
     for group in grid_ds:
