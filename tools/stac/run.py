@@ -295,17 +295,20 @@ with open(args.rc) as fp:
 
 pipeline_config['input']['files'] = [os.path.join('/var/inputs/', g) for g in downloaded_granules]
 
-output_cfg = None
 replaced_output = False
+output_cfg = deepcopy(pipeline_config['output'])
 
-if args.lwd:
-    output_cfg = deepcopy(pipeline_config['output'])
-
-    if 's3' in output_cfg:
-        del pipeline_config['output']['s3']
-        pipeline_config['output']['local'] = '/var/outputs/'
-        replaced_output = True
-        logger.info('Will write Zarr locally & copy to S3')
+if 's3' in output_cfg and args.lwd:
+    del pipeline_config['output']['s3']
+    pipeline_config['output']['local'] = '/var/outputs/'
+    replaced_output = True
+    logger.info('Will write Zarr locally & copy to S3')
+    output_mount_dir = args.lwd
+elif 'local' in output_cfg:
+    output_mount_dir = urllib.parse.urlparse(output_cfg['local']).path
+    pipeline_config['output']['local'] = '/var/outputs/'
+else:
+    output_mount_dir = None
 
 
 def run_pipeline(rerun=False):
@@ -326,7 +329,7 @@ def run_pipeline(rerun=False):
         u_param = f'{user_id}:{group_id}'
 
         with open(pipeline_logfile, 'w') as log_fp:
-            if not replaced_output:
+            if output_mount_dir is None:
                 p_args = [
                     docker,
                     'run',
@@ -358,7 +361,7 @@ def run_pipeline(rerun=False):
                     '-v',
                     f'{granule_dir}:/var/inputs/',
                     '-v',
-                    f'{args.lwd}:/var/outputs/',
+                    f'{output_mount_dir}:/var/outputs/',
                     args.image,
                     'python',
                     '/sam_extract/main.py',
