@@ -43,6 +43,9 @@ FAILED_PIPELINE = 1
 FAILED_CRITICAL = 2
 FAILED_UNITY = 3
 
+dc = shutil.which('docker-compose')
+docker = shutil.which('docker')
+
 
 def container_to_host_path(path: str, host_mount: str, container_mount: str):
     return path.replace(container_mount, host_mount, 1)
@@ -67,20 +70,48 @@ def load_state(path: str):
     return state
 
 
-def get_exit_code(cfg_file):
-    p = subprocess.Popen([
-        dc, '-f', cfg_file, 'ps', '-a', '--format', 'json'
-    ], stdout=subprocess.PIPE)
+if os.getenv('NO_DC_JSON') is None:
+    def get_exit_code(cfg_file):
+        p = subprocess.Popen([
+            dc, '-f', cfg_file, 'ps', '-a', '--format', 'json'
+        ], stdout=subprocess.PIPE)
 
-    p.wait()
+        p.wait()
 
-    output = p.communicate()[0].decode('utf-8')
-    containers = [json.loads(o) for o in output.split('\n') if len(o) > 0]
-    service_name = list(load(open(cfg_file), Loader=Loader)['services'].keys())[0]
+        output = p.communicate()[0].decode('utf-8')
+        containers = [json.loads(o) for o in output.split('\n') if len(o) > 0]
+        service_name = list(load(open(cfg_file), Loader=Loader)['services'].keys())[0]
 
-    container = [c for c in containers if c['Service'] == service_name][0]
+        container = [c for c in containers if c['Service'] == service_name][0]
 
-    return container['ExitCode']
+        return container['ExitCode']
+else:
+    def get_exit_code(cfg_file):
+        p = subprocess.Popen([
+            dc, '-f', cfg_file, 'ps', '-q'
+        ], stdout=subprocess.PIPE)
+
+        p.wait()
+
+        output = p.communicate()[0].decode('utf-8')
+        container_id = [o for o in output.split('\n') if len(o) > 0]
+
+        if len(container_id) > 1:
+            logger.warning('More than one container id in dc service... Picking first')
+
+        container_id = container_id[0]
+
+        p = subprocess.Popen([
+            docker, 'inspect', container_id
+        ], stdout=subprocess.PIPE)
+
+        p.wait()
+
+        output = p.communicate()[0].decode('utf-8')
+
+        inspect = json.loads(output)[0]
+
+        return inspect['State']['ExitCode']
 
 
 parser = argparse.ArgumentParser()
@@ -180,6 +211,15 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger('oco3_driver')
+
+SUPPRESS = [
+    'botocore',
+    's3transfer',
+    'urllib3',
+]
+
+for logger_name in SUPPRESS:
+    logging.getLogger(logger_name).setLevel(logging.WARNING)
 
 dc = shutil.which('docker-compose')
 docker = shutil.which('docker')
