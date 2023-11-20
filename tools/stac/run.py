@@ -41,6 +41,7 @@ STATE_SCHEMA = Schema({
 NO_NEW_DATA = 255
 FAILED_PIPELINE = 1
 FAILED_CRITICAL = 2
+FAILED_UNITY = 3
 
 
 def container_to_host_path(path: str, host_mount: str, container_mount: str):
@@ -64,6 +65,22 @@ def load_state(path: str):
         state = dict(count=0, processed=[])
 
     return state
+
+
+def get_exit_code(cfg_file):
+    p = subprocess.Popen([
+        dc, '-f', cfg_file, 'ps', '-a', '--format', 'json'
+    ], stdout=subprocess.PIPE)
+
+    p.wait()
+
+    output = p.communicate()[0].decode('utf-8')
+    containers = [json.loads(o) for o in output.split('\n') if len(o) > 0]
+    service_name = list(load(open(cfg_file), Loader=Loader)['services'].keys())[0]
+
+    container = [c for c in containers if c['Service'] == service_name][0]
+
+    return container['ExitCode']
 
 
 parser = argparse.ArgumentParser()
@@ -184,11 +201,21 @@ search_p.wait()
 
 logger.info(f'STAC search completed in {datetime.now() - the_time}')
 
-subprocess.Popen(
-    [dc, '-f', args.dc_search, 'down'],
-    stdout=subprocess.DEVNULL,
-    stderr=subprocess.STDOUT
-).wait()
+try:
+    search_exit_code = get_exit_code(args.dc_search)
+except Exception as e:
+    logger.critical('Could not determine CMR search status! Exiting')
+    raise
+finally:
+    subprocess.Popen(
+        [dc, '-f', args.dc_search, 'down'],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.STDOUT
+    ).wait()
+
+if search_exit_code != 0:
+    logger.error('CMR search returned nonzero exit code, stopping...')
+    exit(FAILED_UNITY)
 
 with open(args.dc_search) as fp:
     search_config = load(fp, Loader=Loader)
@@ -232,6 +259,8 @@ with open(stac_file, 'w') as fp:
 
 the_time = datetime.now()
 
+logger.info('Staging granules...')
+
 with open(f'{log_file_root}-stac-download.log', 'w') as fp:
     stage_p = subprocess.Popen(
         [dc, '-f', args.dc_dl, 'up'],
@@ -243,11 +272,21 @@ stage_p.wait()
 
 logger.info(f'Granule staging completed in {datetime.now() - the_time}')
 
-subprocess.Popen(
-    [dc, '-f', args.dc_dl, 'down'],
-    stdout=subprocess.DEVNULL,
-    stderr=subprocess.STDOUT
-).wait()
+try:
+    download_exit_code = get_exit_code(args.dc_dl)
+except Exception as e:
+    logger.critical('Could not determine staging process status! Exiting')
+    raise
+finally:
+    subprocess.Popen(
+        [dc, '-f', args.dc_dl, 'down'],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.STDOUT
+    ).wait()
+
+if download_exit_code != 0:
+    logger.error('Granule staging returned nonzero exit code, stopping...')
+    exit(FAILED_UNITY)
 
 with open(args.dc_dl) as fp:
     dl_config = load(fp, Loader=Loader)
