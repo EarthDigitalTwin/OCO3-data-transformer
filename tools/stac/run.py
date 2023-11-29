@@ -43,9 +43,6 @@ FAILED_PIPELINE = 1
 FAILED_CRITICAL = 2
 FAILED_UNITY = 3
 
-dc = shutil.which('docker-compose')
-docker = shutil.which('docker')
-
 
 def container_to_host_path(path: str, host_mount: str, container_mount: str):
     return path.replace(container_mount, host_mount, 1)
@@ -230,6 +227,8 @@ if dc is None:
 
 the_time = datetime.now()
 
+logger.info('Beginning CMR search')
+
 with open(f'{log_file_root}-stac-search.log', 'w') as fp:
     search_p = subprocess.Popen(
         [dc, '-f', args.dc_search, 'up'],
@@ -239,7 +238,7 @@ with open(f'{log_file_root}-stac-search.log', 'w') as fp:
 
 search_p.wait()
 
-logger.info(f'STAC search completed in {datetime.now() - the_time}')
+logger.info(f'CMR search completed in {datetime.now() - the_time}')
 
 try:
     search_exit_code = get_exit_code(args.dc_search)
@@ -284,7 +283,7 @@ if len(dl_features) == 0:
     logger.info('No new data to process')
     exit(NO_NEW_DATA)
 
-logger.info(f"CMR returned {len(dl_features):,} new granules to process")
+logger.info(f"CMR returned {len(cmr_results['features']):,} features with {len(dl_features):,} new granules to process")
 
 if args.limit and len(dl_features) > args.limit:
     logger.warning(f'CMR returned more granules ({len(dl_features):,}) than the provided limit ({args.limit:,}). '
@@ -360,7 +359,6 @@ with NamedTemporaryFile(
             [
                 docker,
                 'run',
-                # '--rm',
                 '--name',
                 'oco-sam-l3',
                 '-v',
@@ -401,7 +399,8 @@ try:
         exit_code = int(stats['State']['ExitCode'])
 
         if exit_code != 0:
-            logger.error('Pipeline failed')
+            logger.error('Pipeline failed: {exit_code}')
+            logger.debug(json.dumps(stats, indent=4))
             raise OSError('Pipeline failed')
     else:
         logger.error(f'Inspect subprocess error {err}. Assuming pipeline failed')
