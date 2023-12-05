@@ -43,6 +43,21 @@ FAILED_PIPELINE = 1
 FAILED_CRITICAL = 2
 FAILED_UNITY = 3
 
+PHASE_STAC_CHECK = 1
+PHASE_POST_STAGE = 2
+PHASE_FINISH = 3
+PHASE_CLEANUP = 4
+
+try:
+    lp = os.getenv("LAMBDA_PHASE")
+    if lp is not None:
+        LAMBDA_PHASE = int(lp)
+    else:
+        LAMBDA_PHASE = None
+except ValueError:
+    print(f'Bad LAMBDA_PHASE env value: "{os.getenv("LAMBDA_PHASE")}"')
+    exit(1)
+
 
 def container_to_host_path(path: str, host_mount: str, container_mount: str):
     return path.replace(container_mount, host_mount, 1)
@@ -131,7 +146,7 @@ parser.add_argument(
     '--rc-template',
     dest='rc',
     help='Zarr generation pipeline YAML config template',
-    default='run-config.yaml'
+    default=os.getenv('LAMBDA_RC_TEMPLATE', 'run-config.yaml')
 )
 
 parser.add_argument(
@@ -145,7 +160,7 @@ parser.add_argument(
     '--state',
     dest='state',
     help='State file path. Contains granule count from last run + processed granules',
-    default='state.json'
+    default=os.getenv('LAMBDA_STATE', 'state.json')
 )
 
 
@@ -225,206 +240,237 @@ if dc is None:
     logger.error('docker-compose command could not be found in PATH')
     raise OSError('docker-compose command could not be found in PATH')
 
-the_time = datetime.now()
 
-logger.info('Beginning CMR search')
+def main():
+    the_time = datetime.now()
+    state = load_state(args.state)
 
-with open(f'{log_file_root}-stac-search.log', 'w') as fp:
-    search_p = subprocess.Popen(
-        [dc, '-f', args.dc_search, 'up'],
-        stdout=fp,
-        stderr=subprocess.STDOUT
-    )
+    if LAMBDA_PHASE is None:
+        logger.info('Beginning CMR search')
 
-search_p.wait()
+        with open(f'{log_file_root}-stac-search.log', 'w') as fp:
+            search_p = subprocess.Popen(
+                [dc, '-f', args.dc_search, 'up'],
+                stdout=fp,
+                stderr=subprocess.STDOUT
+            )
 
-logger.info(f'CMR search completed in {datetime.now() - the_time}')
+        search_p.wait()
 
-try:
-    search_exit_code = get_exit_code(args.dc_search)
-except Exception as e:
-    logger.critical('Could not determine CMR search status! Exiting')
-    raise
-finally:
-    subprocess.Popen(
-        [dc, '-f', args.dc_search, 'down'],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.STDOUT
-    ).wait()
+        logger.info(f'CMR search completed in {datetime.now() - the_time}')
 
-if search_exit_code != 0:
-    logger.error('CMR search returned nonzero exit code, stopping...')
-    exit(FAILED_UNITY)
+        try:
+            search_exit_code = get_exit_code(args.dc_search)
+        except Exception as e:
+            logger.critical('Could not determine CMR search status! Exiting')
+            raise
+        finally:
+            subprocess.Popen(
+                [dc, '-f', args.dc_search, 'down'],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.STDOUT
+            ).wait()
 
-with open(args.dc_search) as fp:
-    search_config = load(fp, Loader=Loader)
+        if search_exit_code != 0:
+            logger.error('CMR search returned nonzero exit code, stopping...')
+            exit(FAILED_UNITY)
 
-stac_file = container_to_host_path(
-    search_config['services']['cumulus_granules_search']['environment']['OUTPUT_FILE'],
-    *search_config['services']['cumulus_granules_search']['volumes'][0].split(':')[:2]
-)
+    if LAMBDA_PHASE is None or LAMBDA_PHASE == PHASE_STAC_CHECK:
+        with open(args.dc_search) as fp:
+            search_config = load(fp, Loader=Loader)
 
-with open(stac_file) as fp:
-    cmr_results = json.load(fp)
+        stac_file = container_to_host_path(
+            search_config['services']['cumulus_granules_search']['environment']['OUTPUT_FILE'],
+            *search_config['services']['cumulus_granules_search']['volumes'][0].split(':')[:2]
+        )
 
-logger.info('Comparing CMR results to state')
+        with open(stac_file) as fp:
+            cmr_results = json.load(fp)
 
-state = load_state(args.state)
+        logger.info('Comparing CMR results to state')
 
-dl_features = []
+        dl_features = []
 
-for f in cmr_results['features']:
-    filename = f['assets']['data']['href'].split('/')[-1]
+        for f in cmr_results['features']:
+            filename = f['assets']['data']['href'].split('/')[-1]
 
-    if filename not in state['processed']:
-        dl_features.append(f)
+            if filename not in state['processed']:
+                dl_features.append(f)
 
-if len(dl_features) == 0:
-    logger.info('No new data to process')
-    exit(NO_NEW_DATA)
+        if len(dl_features) == 0:
+            logger.info('No new data to process')
+            exit(NO_NEW_DATA)
 
-logger.info(f"CMR returned {len(cmr_results['features']):,} features with {len(dl_features):,} new granules to process")
+        logger.info(f"CMR returned {len(cmr_results['features']):,} features with {len(dl_features):,} new granules to process")
 
-if args.limit and len(dl_features) > args.limit:
-    logger.warning(f'CMR returned more granules ({len(dl_features):,}) than the provided limit ({args.limit:,}). '
-                   f'Truncating list of granules to process.')
+        if args.limit and len(dl_features) > args.limit:
+            logger.warning(f'CMR returned more granules ({len(dl_features):,}) than the provided limit ({args.limit:,}). '
+                           f'Truncating list of granules to process.')
 
-    dl_features = dl_features[:args.limit]
+            dl_features = dl_features[:args.limit]
 
-cmr_results['features'] = dl_features
+        cmr_results['features'] = dl_features
 
-with open(stac_file, 'w') as fp:
-    json.dump(cmr_results, fp, indent=4)
-
-the_time = datetime.now()
-
-logger.info('Staging granules...')
-
-with open(f'{log_file_root}-stac-download.log', 'w') as fp:
-    stage_p = subprocess.Popen(
-        [dc, '-f', args.dc_dl, 'up'],
-        stdout=fp,
-        stderr=subprocess.STDOUT
-    )
-
-stage_p.wait()
-
-logger.info(f'Granule staging completed in {datetime.now() - the_time}')
-
-try:
-    download_exit_code = get_exit_code(args.dc_dl)
-except Exception as e:
-    logger.critical('Could not determine staging process status! Exiting')
-    raise
-finally:
-    subprocess.Popen(
-        [dc, '-f', args.dc_dl, 'down'],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.STDOUT
-    ).wait()
-
-if download_exit_code != 0:
-    logger.error('Granule staging returned nonzero exit code, stopping...')
-    exit(FAILED_UNITY)
-
-with open(args.dc_dl) as fp:
-    dl_config = load(fp, Loader=Loader)
-
-granule_dir = container_to_host_path(
-    dl_config['services']['cumulus_granules_download']['environment']['DOWNLOAD_DIR'],
-    *dl_config['services']['cumulus_granules_download']['volumes'][0].split(':')[:2]
-)
-
-with open(os.path.join(granule_dir, 'downloaded_feature_collection.json')) as fp:
-    downloaded_granules = [feature['assets']['data']['href'].lstrip('./') for feature in json.load(fp)['features']]
-    downloaded_granules.sort()
-
-with open(args.rc) as fp:
-    pipeline_config = load(fp, Loader=Loader)
-
-pipeline_config['input']['files'] = [os.path.join('/var/inputs/', g) for g in downloaded_granules]
-
-logger.info('Starting pipeline')
-
-with NamedTemporaryFile(
-    mode='w', prefix='rc-', suffix='.yaml'
-) as rc_fp:
-    dump(pipeline_config, rc_fp, Dumper=Dumper, sort_keys=False)
-    rc_fp.flush()
+        with open(stac_file, 'w') as fp:
+            json.dump(cmr_results, fp, indent=4)
 
     the_time = datetime.now()
 
-    with open(f'{log_file_root}-pipeline.log', 'w') as log_fp:
-        pipeline_p = subprocess.Popen(
+    if LAMBDA_PHASE is None:
+        logger.info('Staging granules...')
+
+        with open(f'{log_file_root}-stac-download.log', 'w') as fp:
+            stage_p = subprocess.Popen(
+                [dc, '-f', args.dc_dl, 'up'],
+                stdout=fp,
+                stderr=subprocess.STDOUT
+            )
+
+        stage_p.wait()
+
+        logger.info(f'Granule staging completed in {datetime.now() - the_time}')
+
+        try:
+            download_exit_code = get_exit_code(args.dc_dl)
+        except Exception as e:
+            logger.critical('Could not determine staging process status! Exiting')
+            raise
+        finally:
+            subprocess.Popen(
+                [dc, '-f', args.dc_dl, 'down'],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.STDOUT
+            ).wait()
+
+        if download_exit_code != 0:
+            logger.error('Granule staging returned nonzero exit code, stopping...')
+            exit(FAILED_UNITY)
+
+    if LAMBDA_PHASE is None or LAMBDA_PHASE == PHASE_POST_STAGE:
+        with open(args.dc_dl) as fp:
+            dl_config = load(fp, Loader=Loader)
+
+        granule_dir = container_to_host_path(
+            dl_config['services']['cumulus_granules_download']['environment']['DOWNLOAD_DIR'],
+            *dl_config['services']['cumulus_granules_download']['volumes'][0].split(':')[:2]
+        )
+
+        with open(os.path.join(granule_dir, 'downloaded_feature_collection.json')) as fp:
+            downloaded_granules = [feature['assets']['data']['href'].lstrip('./') for feature in json.load(fp)['features']]
+            downloaded_granules.sort()
+
+        with open(args.rc) as fp:
+            pipeline_config = load(fp, Loader=Loader)
+
+        pipeline_config['input']['files'] = [os.path.join('/var/inputs/', g) for g in downloaded_granules]
+
+        if LAMBDA_PHASE is not None:
+            with open('/etc/pipeline-rc.yaml', 'w') as fp:
+                dump(pipeline_config, fp, Dumper=Dumper, sort_keys=False)
+
+            with open('/etc/staging.json', 'w') as fp:
+                json.dumps(dict(granule_dir=granule_dir, granules=downloaded_granules))
+
+            return args.image
+
+    if LAMBDA_PHASE is None:
+        logger.info('Starting pipeline')
+
+        with NamedTemporaryFile(
+            mode='w', prefix='rc-', suffix='.yaml'
+        ) as rc_fp:
+            dump(pipeline_config, rc_fp, Dumper=Dumper, sort_keys=False)
+            rc_fp.flush()
+
+            the_time = datetime.now()
+
+            with open(f'{log_file_root}-pipeline.log', 'w') as log_fp:
+                pipeline_p = subprocess.Popen(
+                    [
+                        docker,
+                        'run',
+                        '--name',
+                        'oco-sam-l3',
+                        '-v',
+                        f'{rc_fp.name}:/etc/config.yaml',
+                        '-v',
+                        f'{granule_dir}:/var/inputs/',
+                        args.image,
+                        'python',
+                        '/sam_extract/main.py',
+                        '-i',
+                        '/etc/config.yaml',
+                        '--skip-netrc'
+                    ],
+                    stdout=log_fp,
+                    stderr=subprocess.STDOUT
+                ).wait()
+
+            logger.info(f'Pipeline completed in {datetime.now() - the_time}')
+
+        inspect_p = subprocess.Popen(
             [
                 docker,
-                'run',
-                '--name',
+                'container',
+                'inspect',
                 'oco-sam-l3',
-                '-v',
-                f'{rc_fp.name}:/etc/config.yaml',
-                '-v',
-                f'{granule_dir}:/var/inputs/',
-                args.image,
-                'python',
-                '/sam_extract/main.py',
-                '-i',
-                '/etc/config.yaml',
-                '--skip-netrc'
             ],
-            stdout=log_fp,
+            stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT
-        ).wait()
+        )
 
-    logger.info(f'Pipeline completed in {datetime.now() - the_time}')
+        inspect_p.wait()
 
-inspect_p = subprocess.Popen(
-    [
-        docker,
-        'container',
-        'inspect',
-        'oco-sam-l3',
-    ],
-    stdout=subprocess.PIPE,
-    stderr=subprocess.STDOUT
-)
+        try:
+            data, err = inspect_p.communicate()
+            if inspect_p.returncode == 0:
+                stats = json.loads(data.decode('utf-8'))[0]
 
-inspect_p.wait()
+                exit_code = int(stats['State']['ExitCode'])
 
-try:
-    data, err = inspect_p.communicate()
-    if inspect_p.returncode == 0:
-        stats = json.loads(data.decode('utf-8'))[0]
+                if exit_code != 0:
+                    logger.error('Pipeline failed: {exit_code}')
+                    logger.debug(json.dumps(stats, indent=4))
+                    raise OSError('Pipeline failed')
+            else:
+                logger.error(f'Inspect subprocess error {err}. Assuming pipeline failed')
+                raise OSError('Pipeline failed')
+        finally:
+            subprocess.Popen(
+                [
+                    docker,
+                    'rm',
+                    'oco-sam-l3',
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.STDOUT
+            ).wait()
 
-        exit_code = int(stats['State']['ExitCode'])
+    if LAMBDA_PHASE is None or LAMBDA_PHASE == PHASE_FINISH:
+        if LAMBDA_PHASE is not None:
+            with open('/etc/staging.json') as fp:
+                s = json.load(fp)
 
-        if exit_code != 0:
-            logger.error('Pipeline failed: {exit_code}')
-            logger.debug(json.dumps(stats, indent=4))
-            raise OSError('Pipeline failed')
-    else:
-        logger.error(f'Inspect subprocess error {err}. Assuming pipeline failed')
-        raise OSError('Pipeline failed')
-finally:
-    subprocess.Popen(
-        [
-            docker,
-            'rm',
-            'oco-sam-l3',
-        ],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.STDOUT
-    ).wait()
+                downloaded_granules = s['granules']
+                granule_dir = s['granule_dir']
 
-state['count'] += len(downloaded_granules)
-state['processed'].extend(downloaded_granules)
+        state['count'] += len(downloaded_granules)
+        state['processed'].extend(downloaded_granules)
 
-logger.info('Cleaning up & updating state')
+        logger.info('Cleaning up & updating state')
 
-for g in [os.path.join(granule_dir, g) for g in downloaded_granules]:
-    os.remove(g)
+        for g in [os.path.join(granule_dir, g) for g in downloaded_granules]:
+            os.remove(g)
 
-with open(args.state, 'w') as fp:
-    json.dump(state, fp, indent=4)
+        with open(args.state, 'w') as fp:
+            json.dump(state, fp, indent=4)
 
-logger.info(f'Script completed in {datetime.now() - start_time}')
+        if LAMBDA_PHASE is not None:
+            os.remove('/etc/staging.json')
+            os.remove('/etc/pipeline-rc.yaml')
+
+    logger.info(f'Script completed in {datetime.now() - start_time}')
+
+
+if __name__ == '__main__':
+    main()
