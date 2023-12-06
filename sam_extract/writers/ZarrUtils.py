@@ -68,6 +68,10 @@ def create_backup(src_path: str, store_type: Literal['local', 's3'], store_param
     dst_basename = f'{".".join(src_basename.split(".")[:-1])}-{backup_id}.zarr'
 
     if store_type == 'local':
+        src_path = urlparse(src_path).path
+
+        logger.info(f'Copying {src_path} to {join(src_dirname, dst_basename)}')
+
         copytree(src_path, join(src_dirname, dst_basename))
 
         return join(src_dirname, dst_basename)
@@ -134,6 +138,9 @@ def delete_backup(path: str, store_type: Literal['local', 's3'], store_params: d
 
     if store_type == 'local':
         try:
+            path = urlparse(path).path.rstrip('/')
+
+            logger.info(f'Recursively deleting {path}')
             rmtree(path)
         except Exception as e:
             logger.exception(e)
