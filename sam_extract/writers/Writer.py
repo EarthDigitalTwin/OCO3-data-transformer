@@ -73,7 +73,7 @@ class Writer(ABC):
             raise ValueError(f"Invalid URL scheme provided for output: {url.scheme}. Must be either file:// (explicit "
                              f"or implicit) or s3://")
 
-    def _exists(self) -> bool:
+    def exists(self) -> bool:
         if self.store == 'local':
             return exists(urlparse(self.path).path)
         else:

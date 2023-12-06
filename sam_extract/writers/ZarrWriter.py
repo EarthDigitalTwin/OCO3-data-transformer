@@ -28,6 +28,7 @@ from xarray import Dataset
 
 from sam_extract.writers import Writer
 from sam_extract.writers.Writer import FIXED_ATTRIBUTES
+from sam_extract.writers import ZARR_REPAIR_FILE
 from sam_extract.targets import FILL_VALUE as TARGET_FILL
 
 logger = logging.getLogger(__name__)
@@ -119,7 +120,7 @@ class ZarrWriter(Writer):
         else:
             logger.debug('Currently installed version of xarray supports write_empty_chunks')
 
-        exists = self._exists()
+        exists = self.exists()
         dynamic_attrs = None
         now = datetime.utcnow().strftime(ISO_8601)
 

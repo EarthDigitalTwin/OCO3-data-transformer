@@ -13,12 +13,14 @@
 # limitations under the License.
 
 import argparse
+import json
 import logging
 import os.path
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from functools import partial
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from time import sleep
 from typing import List, Optional, Tuple
@@ -42,6 +44,7 @@ from yaml.scanner import ScannerError
 from sam_extract.exceptions import *
 from sam_extract.readers import GranuleReader
 from sam_extract.writers import ZarrWriter
+from sam_extract.writers import ZARR_REPAIR_FILE, PW_STATE_DIR
 from sam_extract.targets import extract_id, determine_id_type
 from sam_extract.targets import FILL_VALUE as TARGET_FILL
 
@@ -692,16 +695,38 @@ def process_inputs(in_files, cfg):
 
         chunking: Tuple[int, int, int] = cfg['chunking']['config']
 
+        zarr_writer_pre = ZarrWriter(
+            os.path.join(output_root, cfg['output']['naming']['pre_qf']),
+            chunking,  # (5, 250, 250),
+            overwrite=False,
+            **output_kwargs
+        )
+
+        zarr_writer_post = ZarrWriter(
+            os.path.join(output_root, cfg['output']['naming']['post_qf']),
+            chunking,  # (5, 250, 250),
+            overwrite=False,
+            **output_kwargs
+        )
+
+        Path(PW_STATE_DIR).mkdir(parents=True, exist_ok=True)
+
+        repair_file_data = {
+            'time_pre': len(ZarrWriter.open_zarr_group(
+                                zarr_writer_pre.path, zarr_writer_pre.store, zarr_writer_pre.store_params, root=True
+                            )['/'].time) if zarr_writer_pre.exists() else 0,
+            'time_post': len(ZarrWriter.open_zarr_group(
+                                zarr_writer_post.path, zarr_writer_post.store, zarr_writer_post.store_params, root=True
+                            )['/'].time) if zarr_writer_post.exists() else 0,
+        }
+
+        with open(ZARR_REPAIR_FILE, 'w') as fp:
+            json.dump(repair_file_data, fp)
+
         if merged_pre is not None:
             logger.info('Merged processed pre_qf data')
 
-            zarr_writer = ZarrWriter(
-                os.path.join(output_root, cfg['output']['naming']['pre_qf']),
-                chunking,  # (5, 250, 250),
-                overwrite=False,
-                **output_kwargs
-            )
-            zarr_writer.write(
+            zarr_writer_pre.write(
                 merged_pre,
                 attrs=dict(
                     title=cfg['output']['title']['pre_qf'],
@@ -716,13 +741,7 @@ def process_inputs(in_files, cfg):
         if merged_post is not None:
             logger.info('Merged processed post_qf data')
 
-            zarr_writer = ZarrWriter(
-                os.path.join(output_root, cfg['output']['naming']['post_qf']),
-                chunking,  # (5, 250, 250),
-                overwrite=False,
-                **output_kwargs
-            )
-            zarr_writer.write(
+            zarr_writer_post.write(
                 merged_post,
                 attrs=dict(
                     title=cfg['output']['title']['post_qf'],
@@ -733,6 +752,11 @@ def process_inputs(in_files, cfg):
             logger.info('No post_qf data generated, all SAMs on these days may have been filtered out for bad qf')
 
         logger.info(f'Cleaning up temporary directory at {td}')
+
+        try:
+            os.remove(ZARR_REPAIR_FILE)
+        except:
+            logger.warning('Could not remove Zarr write status file')
 
 
 class ProcessThread(threading.Thread):
