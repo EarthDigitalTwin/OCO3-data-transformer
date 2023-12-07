@@ -218,7 +218,9 @@ class ZarrWriter(Writer):
                 encodings[group]['time'] = {'chunks': TIME_CHUNKING}
 
             encodings['/']['target_id']['_FillValue'] = TARGET_FILL
+            encodings['/']['target_id']['dtype'] = 'int32'
             encodings['/']['target_type']['_FillValue'] = TARGET_FILL
+            encodings['/']['target_type']['dtype'] = 'int8'
 
             if not TEMP_XARRAY_8016:
                 for grp in ds:

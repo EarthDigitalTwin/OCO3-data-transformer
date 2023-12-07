@@ -63,12 +63,12 @@ def create_backup(src_path: str, store_type: Literal['local', 's3'], store_param
     src_path = src_path.rstrip('/')
 
     src_basename = basename(src_path)
-    src_dirname = dirname(src_path)
 
     dst_basename = f'{".".join(src_basename.split(".")[:-1])}-{backup_id}.zarr'
 
     if store_type == 'local':
         src_path = urlparse(src_path).path
+        src_dirname = dirname(src_path)
 
         logger.info(f'Copying {src_path} to {join(src_dirname, dst_basename)}')
 
