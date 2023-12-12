@@ -55,7 +55,7 @@ class AWSConfig:
         return kwargs
 
 
-def create_backup(src_path: str, store_type: Literal['local', 's3'], store_params: dict = None) -> str:
+def create_backup(src_path: str, store_type: Literal['local', 's3'], store_params: dict = None) -> str | None:
     backup_id = str(uuid4())
 
     logger.info(f'Creating backup {backup_id}')
@@ -65,6 +65,14 @@ def create_backup(src_path: str, store_type: Literal['local', 's3'], store_param
     src_basename = basename(src_path)
 
     dst_basename = f'{".".join(src_basename.split(".")[:-1])}-{backup_id}.zarr'
+
+    try:
+        # Check that the path we're deleting is actually Zarr data
+        ZarrWriter.open_zarr_group(src_path, store_type, store_params, root=True)
+    except Exception as e:
+        logger.warning(f'Zarr group at path {src_path} could not be opened for backup. Maybe it does not exist yet. A '
+                       f'backup will not be created. Error: {repr(e)}')
+        return None
 
     if store_type == 'local':
         src_path = urlparse(src_path).path
@@ -133,7 +141,7 @@ def delete_backup(path: str, store_type: Literal['local', 's3'], store_params: d
         # Check that the path we're deleting is actually Zarr data
         ZarrWriter.open_zarr_group(path, store_type, store_params, root=True)
     except Exception as e:
-        logger.exception(e)
+        logger.warning(f'Zarr group at path {path} could not be opened. Maybe it does not exist. Error: {repr(e)}')
         return False
 
     if store_type == 'local':
