@@ -44,7 +44,7 @@ from yaml.scanner import ScannerError
 from sam_extract.exceptions import *
 from sam_extract.readers import GranuleReader
 from sam_extract.writers import ZarrWriter
-from sam_extract.writers import ZARR_REPAIR_FILE, PW_STATE_DIR
+from sam_extract.writers import ZARR_REPAIR_FILE, PW_STATE_DIR, backup_zarr, delete_zarr_backup
 from sam_extract.targets import extract_id, determine_id_type
 from sam_extract.targets import FILL_VALUE as TARGET_FILL
 
@@ -690,6 +690,7 @@ def process_inputs(in_files, cfg):
                 logger.error(f' - {failed}')
 
         merged_pre = merge_groups(processed_groups_pre)
+        merged_post = merge_groups(processed_groups_post)
 
         output_root, output_kwargs = output_cfg(cfg)
 
@@ -709,16 +710,19 @@ def process_inputs(in_files, cfg):
             **output_kwargs
         )
 
+        if merged_pre is not None:
+            backup_pre = backup_zarr(zarr_writer_pre.path, zarr_writer_pre.store, zarr_writer_pre.store_params)
+        else:
+            backup_pre = None
+
+        if merged_post is not None:
+            backup_post = backup_zarr(zarr_writer_post.path, zarr_writer_post.store, zarr_writer_post.store_params)
+        else:
+            backup_post = None
+
         Path(PW_STATE_DIR).mkdir(parents=True, exist_ok=True)
 
-        repair_file_data = {
-            'time_pre': len(ZarrWriter.open_zarr_group(
-                                zarr_writer_pre.path, zarr_writer_pre.store, zarr_writer_pre.store_params, root=True
-                            )['/'].time) if zarr_writer_pre.exists() else 0,
-            'time_post': len(ZarrWriter.open_zarr_group(
-                                zarr_writer_post.path, zarr_writer_post.store, zarr_writer_post.store_params, root=True
-                            )['/'].time) if zarr_writer_post.exists() else 0,
-        }
+        repair_file_data = dict(pre_qf_backup=backup_pre, post_qf_backup=backup_post)
 
         with open(ZARR_REPAIR_FILE, 'w') as fp:
             json.dump(repair_file_data, fp)
@@ -735,8 +739,6 @@ def process_inputs(in_files, cfg):
             )
         else:
             logger.info('No pre_qf data generated')
-
-        merged_post = merge_groups(processed_groups_post)
 
         if merged_post is not None:
             logger.info('Merged processed post_qf data')
@@ -757,6 +759,12 @@ def process_inputs(in_files, cfg):
             os.remove(ZARR_REPAIR_FILE)
         except:
             logger.warning('Could not remove Zarr write status file')
+
+        if not delete_zarr_backup(backup_pre, zarr_writer_pre.store, zarr_writer_pre.store_params):
+            logger.warning(f'Unable to remove backup for pre_qf zarr data at {backup_pre}')
+
+        if not delete_zarr_backup(backup_post, zarr_writer_post.store, zarr_writer_post.store_params):
+            logger.warning(f'Unable to remove backup for post_qf zarr data at {backup_post}')
 
 
 class ProcessThread(threading.Thread):
