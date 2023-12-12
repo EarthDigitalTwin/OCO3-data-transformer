@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import logging
 import os.path
 from datetime import datetime
 from itertools import chain
 from tempfile import TemporaryDirectory
-from typing import Dict, Tuple, Literal
+from typing import Dict, Tuple
 from urllib.parse import urlparse
 
 import numpy as np
@@ -27,7 +26,6 @@ import xarray as xr
 import zarr
 from sam_extract.targets import FILL_VALUE as TARGET_FILL
 from sam_extract.writers import Writer
-from sam_extract.writers import ZARR_REPAIR_FILE
 from sam_extract.writers.Writer import FIXED_ATTRIBUTES
 from xarray import Dataset
 
@@ -108,25 +106,6 @@ class ZarrWriter(Writer):
                     pass
 
             return groups
-
-    @staticmethod
-    def __mod_repair_file(action: Literal['update', 'delete'], key: str, value: str | None = None):
-        try:
-            with open(ZARR_REPAIR_FILE) as fp:
-                rfd = json.load(fp)
-        except FileNotFoundError:
-            rfd = {}
-
-        if action == 'delete':
-            try:
-                del rfd[key]
-            except KeyError:
-                pass
-        elif action == 'update':
-            rfd[key] = value
-
-        with open(ZARR_REPAIR_FILE, 'w') as fp:
-            json.dump(rfd, fp)
 
     def write(self, ds: Dict[str, Dataset], attrs: Dict[str, str] | None = None):
         logger.info(f'Writing SAM group to Zarr array at {self.path}')
@@ -369,36 +348,9 @@ class ZarrWriter(Writer):
 
                     corrected_group = ZarrWriter.open_zarr_group(temp_path, 'local', None)
 
-                    from sam_extract.writers import backup_zarr, delete_zarr_backup
-
-                    backup_path = backup_zarr(self.path, self.store, self.store_params)
-                    pre_qf = attrs['quality_flag_filtered'] == 'no'
-
-                    ZarrWriter.__mod_repair_file(
-                        'update',
-                        'path_pre' if pre_qf else 'path_post',
-                        self.path
-                    )
-                    ZarrWriter.__mod_repair_file(
-                        'update',
-                        'backup_path_pre' if pre_qf else 'backup_path_post',
-                        backup_path
-                    )
-
                     self.overwrite = True
                     self.__correct_ct = corrected_group['/'].attrs.get('date_created', None)
 
                     self.write(corrected_group)
-
-                    delete_zarr_backup(backup_path, self.store, self.store_params)
-
-                    ZarrWriter.__mod_repair_file(
-                        'delete',
-                        'path_pre' if pre_qf else 'path_post',
-                    )
-                    ZarrWriter.__mod_repair_file(
-                        'delete',
-                        'backup_path_pre' if pre_qf else 'backup_path_post',
-                    )
             else:
                 logger.info('Appended Zarr array looks good')
