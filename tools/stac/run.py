@@ -42,6 +42,7 @@ NO_NEW_DATA = 255
 FAILED_PIPELINE = 1
 FAILED_CRITICAL = 2
 FAILED_UNITY = 3
+FAILED_GENERAL = 4
 
 PHASE_STAC_CHECK = 1
 PHASE_POST_STAGE = 2
@@ -200,7 +201,6 @@ run_id = str(uuid.uuid4())
 
 log_formatter = logging.Formatter('%(asctime)s [%(levelname)s] [%(name)s::%(lineno)d] %(message)s')
 log_level = logging.DEBUG if args.verbose else logging.INFO
-# log_file_root = f'{datetime.utcnow().strftime("%Y-%m-%d")}-{run_id}'
 log_file_root = f'{datetime.utcnow().strftime("%Y-%m-%dT%H%M%SZ")}'
 log_handlers = []
 
@@ -273,7 +273,7 @@ def main():
 
         if search_exit_code != 0:
             logger.error('CMR search returned nonzero exit code, stopping...')
-            exit(FAILED_UNITY)
+            return FAILED_UNITY
 
     if LAMBDA_PHASE is None or LAMBDA_PHASE == PHASE_STAC_CHECK:
         with open(args.dc_search) as fp:
@@ -299,7 +299,7 @@ def main():
 
         if len(dl_features) == 0:
             logger.info('No new data to process')
-            exit(NO_NEW_DATA)
+            return NO_NEW_DATA
 
         logger.info(f"CMR returned {len(cmr_results['features']):,} features with {len(dl_features):,} new granules to process")
 
@@ -344,7 +344,7 @@ def main():
 
         if download_exit_code != 0:
             logger.error('Granule staging returned nonzero exit code, stopping...')
-            exit(FAILED_UNITY)
+            return FAILED_UNITY
 
     if LAMBDA_PHASE is None or LAMBDA_PHASE == PHASE_POST_STAGE:
         with open(args.dc_dl) as fp:
@@ -372,79 +372,78 @@ def main():
                 json.dumps(dict(granule_dir=granule_dir, granules=downloaded_granules))
 
             return args.image
+        else:
+            logger.info('Starting pipeline')
 
-    if LAMBDA_PHASE is None:
-        logger.info('Starting pipeline')
+            with NamedTemporaryFile(
+                mode='w', prefix='rc-', suffix='.yaml'
+            ) as rc_fp:
+                dump(pipeline_config, rc_fp, Dumper=Dumper, sort_keys=False)
+                rc_fp.flush()
 
-        with NamedTemporaryFile(
-            mode='w', prefix='rc-', suffix='.yaml'
-        ) as rc_fp:
-            dump(pipeline_config, rc_fp, Dumper=Dumper, sort_keys=False)
-            rc_fp.flush()
+                the_time = datetime.now()
 
-            the_time = datetime.now()
+                with open(f'{log_file_root}-pipeline.log', 'w') as log_fp:
+                    pipeline_p = subprocess.Popen(
+                        [
+                            docker,
+                            'run',
+                            '--name',
+                            'oco-sam-l3',
+                            '-v',
+                            f'{rc_fp.name}:/etc/config.yaml',
+                            '-v',
+                            f'{granule_dir}:/var/inputs/',
+                            args.image,
+                            'python',
+                            '/sam_extract/main.py',
+                            '-i',
+                            '/etc/config.yaml',
+                            '--skip-netrc'
+                        ],
+                        stdout=log_fp,
+                        stderr=subprocess.STDOUT
+                    ).wait()
 
-            with open(f'{log_file_root}-pipeline.log', 'w') as log_fp:
-                pipeline_p = subprocess.Popen(
-                    [
-                        docker,
-                        'run',
-                        '--name',
-                        'oco-sam-l3',
-                        '-v',
-                        f'{rc_fp.name}:/etc/config.yaml',
-                        '-v',
-                        f'{granule_dir}:/var/inputs/',
-                        args.image,
-                        'python',
-                        '/sam_extract/main.py',
-                        '-i',
-                        '/etc/config.yaml',
-                        '--skip-netrc'
-                    ],
-                    stdout=log_fp,
-                    stderr=subprocess.STDOUT
-                ).wait()
+                logger.info(f'Pipeline completed in {datetime.now() - the_time}')
 
-            logger.info(f'Pipeline completed in {datetime.now() - the_time}')
-
-        inspect_p = subprocess.Popen(
-            [
-                docker,
-                'container',
-                'inspect',
-                'oco-sam-l3',
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT
-        )
-
-        inspect_p.wait()
-
-        try:
-            data, err = inspect_p.communicate()
-            if inspect_p.returncode == 0:
-                stats = json.loads(data.decode('utf-8'))[0]
-
-                exit_code = int(stats['State']['ExitCode'])
-
-                if exit_code != 0:
-                    logger.error('Pipeline failed: {exit_code}')
-                    logger.debug(json.dumps(stats, indent=4))
-                    raise OSError('Pipeline failed')
-            else:
-                logger.error(f'Inspect subprocess error {err}. Assuming pipeline failed')
-                raise OSError('Pipeline failed')
-        finally:
-            subprocess.Popen(
+            inspect_p = subprocess.Popen(
                 [
                     docker,
-                    'rm',
+                    'container',
+                    'inspect',
                     'oco-sam-l3',
                 ],
-                stdout=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT
-            ).wait()
+            )
+
+            inspect_p.wait()
+
+            try:
+                data, err = inspect_p.communicate()
+                if inspect_p.returncode == 0:
+                    stats = json.loads(data.decode('utf-8'))[0]
+
+                    exit_code = int(stats['State']['ExitCode'])
+
+                    if exit_code != 0:
+                        logger.error('Pipeline failed: {exit_code}')
+                        logger.debug(json.dumps(stats, indent=4))
+                        raise OSError('Pipeline failed')
+                else:
+                    logger.error(f'Inspect subprocess error {err}. Assuming pipeline failed')
+                    raise OSError('Pipeline failed')
+            finally:
+                subprocess.Popen(
+                    [
+                        docker,
+                        'rm',
+                        'oco-sam-l3',
+                    ],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.STDOUT
+                ).wait()
 
     if LAMBDA_PHASE is None or LAMBDA_PHASE == PHASE_FINISH:
         if LAMBDA_PHASE is not None:
@@ -472,5 +471,27 @@ def main():
     logger.info(f'Script completed in {datetime.now() - start_time}')
 
 
+def lambda_handler(event, context):
+    print('Lambda!')
+
+    ret = FAILED_GENERAL
+
+    try:
+        ret = main()
+    except:
+        ret = FAILED_GENERAL
+    finally:
+        return {
+            'ExitCode': ret
+        }
+
+
 if __name__ == '__main__':
-    main()
+    ret = None
+
+    try:
+        ret = main()
+    except:
+        ret = FAILED_GENERAL
+    finally:
+        exit(ret)
