@@ -43,6 +43,9 @@ class AWSConfig:
             params.get('region', 'us-west-2')
         )
 
+    def to_store_params(self):
+        return dict(region=self.region, auth=dict(accessKeyID=self.key, secretAccessKey=self.secret))
+
     def to_client_kwargs(self):
         kwargs = dict(
             aws_access_key_id=self.key,
@@ -119,7 +122,7 @@ def create_backup(src_path: str, store_type: Literal['local', 's3'], store_param
 
         s3cp = partial(s3_copy, bucket, src_key_prefix, dst_key_prefix)
 
-        with ThreadPoolExecutor(thread_name_prefix='s3_upload_worker') as pool:
+        with ThreadPoolExecutor(thread_name_prefix='s3_copy_worker') as pool:
             futures = []
             for key in sorted(src_keys, key=lambda x: x['Key']):
                 futures.append(pool.submit(s3cp, key))

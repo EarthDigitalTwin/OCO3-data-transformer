@@ -721,7 +721,6 @@ def process_inputs(in_files, cfg):
             backup_post = None
 
         Path(PW_STATE_DIR).mkdir(parents=True, exist_ok=True)
-
         repair_file_data = dict(pre_qf_backup=backup_pre, post_qf_backup=backup_post)
 
         with open(ZARR_REPAIR_FILE, 'w') as fp:
