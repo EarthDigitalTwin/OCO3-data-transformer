@@ -241,9 +241,13 @@ if dc is None:
     raise OSError('docker-compose command could not be found in PATH')
 
 
-def main():
+def main(phase_override=None):
     the_time = datetime.now()
     state = load_state(args.state)
+    global LAMBDA_PHASE
+
+    if phase_override is not None:
+        LAMBDA_PHASE = phase_override
 
     if LAMBDA_PHASE is None:
         logger.info('Beginning CMR search')
@@ -477,7 +481,7 @@ def lambda_handler(event, context):
     ret = FAILED_GENERAL
 
     try:
-        ret = main()
+        ret = main(event.get('phase', PHASE_STAC_CHECK))
     except:
         ret = FAILED_GENERAL
     finally:
