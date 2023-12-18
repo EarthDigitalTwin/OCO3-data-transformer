@@ -33,6 +33,14 @@ except ImportError:
     from yaml import Dumper, Loader
 
 
+# Env vars for Lambda
+#
+# LAMBDA_STATE       : Path to state JSON file in mounted filesystem
+# LAMBDA_RC_TEMPLATE : Path to RC template file in mounted filesystem
+# LAMBDA_STAC_PATH   : Path to CMR search result file in mounted filesystem
+# LAMBDA_STAGE_PATH  : Path to data stage output file in mounted filesystem
+
+
 STATE_SCHEMA = Schema({
     'count': int,
     'processed': [str]
@@ -53,8 +61,10 @@ try:
     lp = os.getenv("LAMBDA_PHASE")
     if lp is not None:
         LAMBDA_PHASE = int(lp)
+        IN_LAMBDA = True
     else:
         LAMBDA_PHASE = None
+        IN_LAMBDA = False
 except ValueError:
     print(f'Bad LAMBDA_PHASE env value: "{os.getenv("LAMBDA_PHASE")}"')
     exit(1)
@@ -69,6 +79,10 @@ def load_state(path: str):
         logger.warning(f'No state file present at {path}; initializing a new one')
 
         state = dict(count=0, processed=[])
+
+        if IN_LAMBDA:
+            with open(path, 'w') as fp:
+                json.dump(state, fp)
     else:
         with open(path) as fp:
             state = json.load(fp)
@@ -154,7 +168,7 @@ parser.add_argument(
     '--pipeline-image',
     dest='image',
     help='Zarr generation pipeline Docker image',
-    required=True
+    required=os.getenv('LAMBDA_STATE') is None
 )
 
 parser.add_argument(
@@ -177,7 +191,8 @@ parser.add_argument(
     dest='limit',
     help='Max number of granules to process. Useful if storage is limited and you wish to avoid trying to stage more '
          'than can be stored',
-    type=limit_int
+    type=limit_int,
+    default=os.getenv('LAMBDA_GRANULE_LIMIT')
 )
 
 parser.add_argument(
@@ -236,7 +251,7 @@ for logger_name in SUPPRESS:
 dc = shutil.which('docker-compose')
 docker = shutil.which('docker')
 
-if dc is None:
+if dc is None and not IN_LAMBDA:
     logger.error('docker-compose command could not be found in PATH')
     raise OSError('docker-compose command could not be found in PATH')
 
@@ -244,6 +259,7 @@ if dc is None:
 def main(phase_override=None):
     the_time = datetime.now()
     state = load_state(args.state)
+    mount_dir = os.getenv('LAMBDA_MOUNT_DIR')
     global LAMBDA_PHASE
 
     if phase_override is not None:
@@ -280,13 +296,16 @@ def main(phase_override=None):
             return FAILED_UNITY
 
     if LAMBDA_PHASE is None or LAMBDA_PHASE == PHASE_STAC_CHECK:
-        with open(args.dc_search) as fp:
-            search_config = load(fp, Loader=Loader)
+        if LAMBDA_PHASE is None:
+            with open(args.dc_search) as fp:
+                search_config = load(fp, Loader=Loader)
 
-        stac_file = container_to_host_path(
-            search_config['services']['cumulus_granules_search']['environment']['OUTPUT_FILE'],
-            *search_config['services']['cumulus_granules_search']['volumes'][0].split(':')[:2]
-        )
+            stac_file = container_to_host_path(
+                search_config['services']['cumulus_granules_search']['environment']['OUTPUT_FILE'],
+                *search_config['services']['cumulus_granules_search']['volumes'][0].split(':')[:2]
+            )
+        else:
+            stac_file = os.getenv('LAMBDA_STAC_PATH')
 
         with open(stac_file) as fp:
             cmr_results = json.load(fp)
@@ -317,6 +336,9 @@ def main(phase_override=None):
 
         with open(stac_file, 'w') as fp:
             json.dump(cmr_results, fp, indent=4)
+
+        if IN_LAMBDA:
+            return 0
 
     the_time = datetime.now()
 
@@ -351,13 +373,16 @@ def main(phase_override=None):
             return FAILED_UNITY
 
     if LAMBDA_PHASE is None or LAMBDA_PHASE == PHASE_POST_STAGE:
-        with open(args.dc_dl) as fp:
-            dl_config = load(fp, Loader=Loader)
+        if not IN_LAMBDA:
+            with open(args.dc_dl) as fp:
+                dl_config = load(fp, Loader=Loader)
 
-        granule_dir = container_to_host_path(
-            dl_config['services']['cumulus_granules_download']['environment']['DOWNLOAD_DIR'],
-            *dl_config['services']['cumulus_granules_download']['volumes'][0].split(':')[:2]
-        )
+            granule_dir = container_to_host_path(
+                dl_config['services']['cumulus_granules_download']['environment']['DOWNLOAD_DIR'],
+                *dl_config['services']['cumulus_granules_download']['volumes'][0].split(':')[:2]
+            )
+        else:
+            granule_dir = os.getenv('LAMBDA_STAGE_DIR')
 
         with open(os.path.join(granule_dir, 'downloaded_feature_collection.json')) as fp:
             downloaded_granules = [feature['assets']['data']['href'].lstrip('./') for feature in json.load(fp)['features']]
@@ -369,13 +394,13 @@ def main(phase_override=None):
         pipeline_config['input']['files'] = [os.path.join('/var/inputs/', g) for g in downloaded_granules]
 
         if LAMBDA_PHASE is not None:
-            with open('/etc/pipeline-rc.yaml', 'w') as fp:
+            with open(os.path.join(mount_dir, 'pipeline-rc.yaml'), 'w') as fp:
                 dump(pipeline_config, fp, Dumper=Dumper, sort_keys=False)
 
-            with open('/etc/staging.json', 'w') as fp:
-                json.dumps(dict(granule_dir=granule_dir, granules=downloaded_granules))
+            with open(os.path.join(mount_dir, 'staging.json'), 'w') as fp:
+                json.dump(dict(granule_dir=granule_dir, granules=downloaded_granules), fp)
 
-            return args.image
+            return 0
         else:
             logger.info('Starting pipeline')
 
@@ -451,7 +476,7 @@ def main(phase_override=None):
 
     if LAMBDA_PHASE is None or LAMBDA_PHASE == PHASE_FINISH:
         if LAMBDA_PHASE is not None:
-            with open('/etc/staging.json') as fp:
+            with open(os.path.join(mount_dir, 'staging.json')) as fp:
                 s = json.load(fp)
 
                 downloaded_granules = s['granules']
@@ -465,14 +490,18 @@ def main(phase_override=None):
         for g in [os.path.join(granule_dir, g) for g in downloaded_granules]:
             os.remove(g)
 
+        os.remove(os.path.join(granule_dir, 'downloaded_feature_collection.json'))
+
         with open(args.state, 'w') as fp:
             json.dump(state, fp, indent=4)
 
         if LAMBDA_PHASE is not None:
-            os.remove('/etc/staging.json')
-            os.remove('/etc/pipeline-rc.yaml')
+            os.remove(os.path.join(mount_dir, 'staging.json'))
+            os.remove(os.path.join(mount_dir, 'pipeline-rc.yaml'))
 
     logger.info(f'Script completed in {datetime.now() - start_time}')
+
+    return 0
 
 
 def lambda_handler(event, context):
@@ -495,7 +524,9 @@ if __name__ == '__main__':
 
     try:
         ret = main()
-    except:
+    except Exception as e:
         ret = FAILED_GENERAL
+        logger.error('Caught exception:')
+        logger.exception(e)
     finally:
         exit(ret)
