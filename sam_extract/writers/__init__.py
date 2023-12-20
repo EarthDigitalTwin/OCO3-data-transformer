@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-PW_STATE_DIR = '/tmp/oco_pipeline_zarr_state'
+import os
+
+PW_STATE_DIR = os.getenv('ZARR_BACKUP_DIR', '/tmp/oco_pipeline_zarr_state')
 PW_STATE_FILE_NAME = 'ZARR_WRITE.json'
 
 from os.path import join
