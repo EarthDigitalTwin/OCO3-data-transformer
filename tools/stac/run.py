@@ -505,8 +505,6 @@ def main(phase_override=None):
 
 
 def lambda_handler(event, context):
-    print('Lambda!')
-
     ret = FAILED_GENERAL
 
     try:
