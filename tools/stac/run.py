@@ -224,20 +224,16 @@ stream_handler.setFormatter(log_formatter)
 stream_handler.setLevel(log_level)
 log_handlers.append(stream_handler)
 
+logger = logging.getLogger('oco3_driver')
+logger.setLevel(log_level)
+logger.addHandler(stream_handler)
+
 if args.logging:
     file_handler = logging.FileHandler(os.path.join(args.logging, f'{log_file_root}-driver.log'), mode='w')
     file_handler.setFormatter(log_formatter)
     file_handler.setLevel(log_level)
     log_handlers.append(file_handler)
-
-
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s [%(levelname)s] [%(name)s::%(lineno)d] %(message)s',
-    handlers=log_handlers
-)
-
-logger = logging.getLogger('oco3_driver')
+    logger.addHandler(file_handler)
 
 SUPPRESS = [
     'botocore',
@@ -247,6 +243,10 @@ SUPPRESS = [
 
 for logger_name in SUPPRESS:
     logging.getLogger(logger_name).setLevel(logging.WARNING)
+
+root_logger = logging.getLogger()
+for each in root_logger.handlers:
+    root_logger.removeHandler(each)
 
 dc = shutil.which('docker-compose')
 docker = shutil.which('docker')
@@ -474,7 +474,7 @@ def main(phase_override=None):
                     stderr=subprocess.STDOUT
                 ).wait()
 
-    if LAMBDA_PHASE is None or LAMBDA_PHASE == PHASE_FINISH:
+    if LAMBDA_PHASE is None or LAMBDA_PHASE in [PHASE_FINISH, PHASE_CLEANUP]:
         if LAMBDA_PHASE is not None:
             with open(os.path.join(mount_dir, 'staging.json')) as fp:
                 s = json.load(fp)
@@ -492,8 +492,11 @@ def main(phase_override=None):
 
         os.remove(os.path.join(granule_dir, 'downloaded_feature_collection.json'))
 
-        with open(args.state, 'w') as fp:
-            json.dump(state, fp, indent=4)
+        if LAMBDA_PHASE is None or LAMBDA_PHASE == PHASE_FINISH:
+            with open(args.state, 'w') as fp:
+                json.dump(state, fp, indent=4)
+        else:
+            logger.info('Not updating state')
 
         if LAMBDA_PHASE is not None:
             os.remove(os.path.join(mount_dir, 'staging.json'))
