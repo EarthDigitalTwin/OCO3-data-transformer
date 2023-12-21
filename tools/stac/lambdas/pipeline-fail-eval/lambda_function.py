@@ -20,6 +20,8 @@ def lambda_handler(event, context):
     backup_file_path = os.getenv('ZARR_BACKUP_FILE')
 
     if backup_file_path is not None and os.path.exists(backup_file_path):
-        return 'CRITICAL'
+        fail_type = 'CRITICAL'
+    else:
+        fail_type = 'GENERAL'
 
-    return 'GENERAL'
+    return dict(FailureType=fail_type)
