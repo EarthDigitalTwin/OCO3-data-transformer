@@ -29,5 +29,8 @@ COPY setup.py /setup.py
 # Install package
 RUN python3 setup.py install clean && conda clean -afy
 
+# Include repair tool
+COPY tools/repair /tools/repair
+
 # Run
 ENTRYPOINT ["tini", "-g", "--"]
