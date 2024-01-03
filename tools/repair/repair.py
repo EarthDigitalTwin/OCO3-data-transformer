@@ -17,6 +17,7 @@ import argparse
 import json
 import logging
 import os
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from shutil import copytree, rmtree
@@ -32,12 +33,31 @@ try:
 except ImportError:
     from yaml import Loader as Loader
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s [%(levelname)s] [%(threadName)s] [%(name)s::%(lineno)d] %(message)s'
-)
+log_formatter = logging.Formatter('%(asctime)s [%(levelname)s] [%(name)s::%(lineno)d] %(message)s')
+log_level = logging.DEBUG
+log_handlers = []
+
+stream_handler = logging.StreamHandler(stream=sys.stdout)
+stream_handler.setFormatter(log_formatter)
+stream_handler.setLevel(log_level)
+log_handlers.append(stream_handler)
 
 logger = logging.getLogger(__name__)
+logger.setLevel(log_level)
+logger.addHandler(stream_handler)
+
+SUPPRESS = [
+    'botocore',
+    's3transfer',
+    'urllib3',
+]
+
+for logger_name in SUPPRESS:
+    logging.getLogger(logger_name).setLevel(logging.WARNING)
+
+root_logger = logging.getLogger()
+for each in root_logger.handlers:
+    root_logger.removeHandler(each)
 
 
 def delete_group(
@@ -229,4 +249,8 @@ def main():
         delete_zarr_backup(post_qf_backup, store_type, aws_config.to_store_params())
 
     logger.info('Restore complete')
+
+
+if __name__ == '__main__':
+    main()
 
