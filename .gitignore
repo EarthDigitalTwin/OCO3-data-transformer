@@ -147,3 +147,4 @@ test_data/
 /s3_src_demo_post_qf/
 /s3_src_demo_pre_qf/
 /tools/stac/dc-002-download.filled.yaml
+/notebooks/zarr_demo/

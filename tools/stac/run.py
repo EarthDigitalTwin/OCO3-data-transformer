@@ -38,6 +38,11 @@ STATE_SCHEMA = Schema({
     'processed': [str]
 })
 
+NO_NEW_DATA = 255
+FAILED_PIPELINE = 1
+FAILED_CRITICAL = 2
+FAILED_UNITY = 3
+
 
 def container_to_host_path(path: str, host_mount: str, container_mount: str):
     return path.replace(container_mount, host_mount, 1)
@@ -60,6 +65,50 @@ def load_state(path: str):
         state = dict(count=0, processed=[])
 
     return state
+
+
+if os.getenv('NO_DC_JSON') is None:
+    def get_exit_code(cfg_file):
+        p = subprocess.Popen([
+            dc, '-f', cfg_file, 'ps', '-a', '--format', 'json'
+        ], stdout=subprocess.PIPE)
+
+        p.wait()
+
+        output = p.communicate()[0].decode('utf-8')
+        containers = [json.loads(o) for o in output.split('\n') if len(o) > 0]
+        service_name = list(load(open(cfg_file), Loader=Loader)['services'].keys())[0]
+
+        container = [c for c in containers if c['Service'] == service_name][0]
+
+        return container['ExitCode']
+else:
+    def get_exit_code(cfg_file):
+        p = subprocess.Popen([
+            dc, '-f', cfg_file, 'ps', '-q'
+        ], stdout=subprocess.PIPE)
+
+        p.wait()
+
+        output = p.communicate()[0].decode('utf-8')
+        container_id = [o for o in output.split('\n') if len(o) > 0]
+
+        if len(container_id) > 1:
+            logger.warning('More than one container id in dc service... Picking first')
+
+        container_id = container_id[0]
+
+        p = subprocess.Popen([
+            docker, 'inspect', container_id
+        ], stdout=subprocess.PIPE)
+
+        p.wait()
+
+        output = p.communicate()[0].decode('utf-8')
+
+        inspect = json.loads(output)[0]
+
+        return inspect['State']['ExitCode']
 
 
 parser = argparse.ArgumentParser()
@@ -160,6 +209,15 @@ logging.basicConfig(
 
 logger = logging.getLogger('oco3_driver')
 
+SUPPRESS = [
+    'botocore',
+    's3transfer',
+    'urllib3',
+]
+
+for logger_name in SUPPRESS:
+    logging.getLogger(logger_name).setLevel(logging.WARNING)
+
 dc = shutil.which('docker-compose')
 docker = shutil.which('docker')
 
@@ -168,6 +226,8 @@ if dc is None:
     raise OSError('docker-compose command could not be found in PATH')
 
 the_time = datetime.now()
+
+logger.info('Beginning CMR search')
 
 with open(f'{log_file_root}-stac-search.log', 'w') as fp:
     search_p = subprocess.Popen(
@@ -178,13 +238,23 @@ with open(f'{log_file_root}-stac-search.log', 'w') as fp:
 
 search_p.wait()
 
-logger.info(f'STAC search completed in {datetime.now() - the_time}')
+logger.info(f'CMR search completed in {datetime.now() - the_time}')
 
-subprocess.Popen(
-    [dc, '-f', args.dc_search, 'down'],
-    stdout=subprocess.DEVNULL,
-    stderr=subprocess.STDOUT
-).wait()
+try:
+    search_exit_code = get_exit_code(args.dc_search)
+except Exception as e:
+    logger.critical('Could not determine CMR search status! Exiting')
+    raise
+finally:
+    subprocess.Popen(
+        [dc, '-f', args.dc_search, 'down'],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.STDOUT
+    ).wait()
+
+if search_exit_code != 0:
+    logger.error('CMR search returned nonzero exit code, stopping...')
+    exit(FAILED_UNITY)
 
 with open(args.dc_search) as fp:
     search_config = load(fp, Loader=Loader)
@@ -211,9 +281,9 @@ for f in cmr_results['features']:
 
 if len(dl_features) == 0:
     logger.info('No new data to process')
-    exit(0)
+    exit(NO_NEW_DATA)
 
-logger.info(f"CMR returned {len(dl_features):,} new granules to process")
+logger.info(f"CMR returned {len(cmr_results['features']):,} features with {len(dl_features):,} new granules to process")
 
 if args.limit and len(dl_features) > args.limit:
     logger.warning(f'CMR returned more granules ({len(dl_features):,}) than the provided limit ({args.limit:,}). '
@@ -228,6 +298,8 @@ with open(stac_file, 'w') as fp:
 
 the_time = datetime.now()
 
+logger.info('Staging granules...')
+
 with open(f'{log_file_root}-stac-download.log', 'w') as fp:
     stage_p = subprocess.Popen(
         [dc, '-f', args.dc_dl, 'up'],
@@ -239,11 +311,21 @@ stage_p.wait()
 
 logger.info(f'Granule staging completed in {datetime.now() - the_time}')
 
-subprocess.Popen(
-    [dc, '-f', args.dc_dl, 'down'],
-    stdout=subprocess.DEVNULL,
-    stderr=subprocess.STDOUT
-).wait()
+try:
+    download_exit_code = get_exit_code(args.dc_dl)
+except Exception as e:
+    logger.critical('Could not determine staging process status! Exiting')
+    raise
+finally:
+    subprocess.Popen(
+        [dc, '-f', args.dc_dl, 'down'],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.STDOUT
+    ).wait()
+
+if download_exit_code != 0:
+    logger.error('Granule staging returned nonzero exit code, stopping...')
+    exit(FAILED_UNITY)
 
 with open(args.dc_dl) as fp:
     dl_config = load(fp, Loader=Loader)
@@ -277,7 +359,6 @@ with NamedTemporaryFile(
             [
                 docker,
                 'run',
-                # '--rm',
                 '--name',
                 'oco-sam-l3',
                 '-v',
@@ -318,7 +399,8 @@ try:
         exit_code = int(stats['State']['ExitCode'])
 
         if exit_code != 0:
-            logger.error('Pipeline failed')
+            logger.error('Pipeline failed: {exit_code}')
+            logger.debug(json.dumps(stats, indent=4))
             raise OSError('Pipeline failed')
     else:
         logger.error(f'Inspect subprocess error {err}. Assuming pipeline failed')
