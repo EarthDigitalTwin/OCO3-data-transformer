@@ -17,12 +17,14 @@ import gc
 import logging
 import os
 import threading
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from functools import partial
 from tempfile import TemporaryDirectory
 from time import sleep
 from typing import List, Optional, Tuple
+from uuid import uuid4
 
 import numpy as np
 import pika
@@ -134,6 +136,9 @@ EXPAND_INDEX_BOUNDS = True
 XI_LOCK = threading.Lock()
 XI: Tuple[np.ndarray, np.ndarray, np.ndarray] | None = None
 XI_DIR: TemporaryDirectory | None = None
+F_XI: str | None = None
+F_LAT: str | None = None
+F_LON: str | None = None
 
 
 INTERP_MAX_PARALLEL = int(os.environ.get('INTERP_MAX_PARALLEL', 2))
@@ -154,23 +159,13 @@ def _unload_np_to_disk(path: str, a: np.ndarray):
     :param a: The array
     :return: The array but as a memory-mapped array
     """
-    mm = np.memmap(
-        path,
-        dtype=a.dtype,
-        mode='w+',
-        shape=a.shape
-    )
-    mm[:] = a[:]
-    mm.flush()
+    np.save(path, a)
+    ret = np.load(path, mmap_mode='r')
 
-    logger.debug(f'Unloaded np ndarray of shape {a.shape} and type {a.dtype} to file at {path}')
+    logger.debug(f'Unloaded np ndarray of shape {a.shape} and type {a.dtype} to file at {path} '
+                 f'{sys.getsizeof(a):,} -> {sys.getsizeof(ret):,}')
 
-    return np.memmap(
-        path,
-        dtype=a.dtype,
-        mode='r',
-        shape=a.shape
-    )
+    return ret
 
 
 def get_xi(cfg) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -182,7 +177,7 @@ def get_xi(cfg) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     :param cfg: Runtime config dictionary
     :return: Tuple: xi, longitude coordinate array, latitude coordinate array
     """
-    global XI, XI_DIR
+    global XI, XI_DIR, F_XI, F_LAT, F_LON
 
     with XI_LOCK:
         if XI is not None:
@@ -213,28 +208,22 @@ def get_xi(cfg) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
 
         temp_dir = XI_DIR.name
 
-        f_xi = os.path.join(temp_dir, 'xi.npy')
-        f_lat = os.path.join(temp_dir, 'lat.npy')
-        f_lon = os.path.join(temp_dir, 'lon.npy')
+        F_XI = os.path.join(temp_dir, 'xi.npy')
+        F_LAT = os.path.join(temp_dir, 'lat.npy')
+        F_LON = os.path.join(temp_dir, 'lon.npy')
 
         logger.debug('Mapping shared coordinate arrays to disk')
 
         lats = lat_grid[0]
         lons = lon_grid.transpose()[0]
 
-        xi_mm  = _unload_np_to_disk(f_xi,  points)
-        lat_mm = _unload_np_to_disk(f_lat, lats)
-        lon_mm = _unload_np_to_disk(f_lon, lons)
+        xi_mm  = _unload_np_to_disk(F_XI,  points)
+        lat_mm = _unload_np_to_disk(F_LAT, lats)
+        lon_mm = _unload_np_to_disk(F_LON, lons)
 
         XI = (xi_mm, lon_mm, lat_mm)
 
-        lon_grid = None
-        lat_grid = None
-        lats = None
-        lons = None
-        xi = None
-        p = None
-        points = None
+        del lon_grid, lat_grid, lats, lons, xi, p, points
 
         collected = gc.collect()
         logger.debug(f'GC collected {collected:,} objects to free post-xi gen')
@@ -288,7 +277,7 @@ def fit_data_to_grid(sams, cfg):
         if group in interp_ds:
             interp_ds[group] = interp_ds[group].drop_vars(drop_dims[group], errors='ignore')
 
-    xi, lon_coord, lat_coord = get_xi(cfg)
+    _, lon_coord, lat_coord = get_xi(cfg)
 
     logger.debug('Building attribute and coordinate dictionaries')
 
@@ -348,6 +337,8 @@ def fit_data_to_grid(sams, cfg):
     def interpolate(in_grp, grp: str, var_name, m):
         logger.info(f'Interpolating variable {var_name} in group {grp}')
 
+        xi = np.load(F_XI, mmap_mode='r')
+
         grid = griddata(
             points,
             in_grp[grp][var_name].to_numpy(),
@@ -356,7 +347,22 @@ def fit_data_to_grid(sams, cfg):
             fill_value=in_grp[grp][var_name].attrs['missing_value']
         ).transpose()
 
-        return [grid]
+        try:
+            getattr(xi, '_mmap').close()
+        except:
+            pass
+        finally:
+            del xi
+
+        mm_grid = _unload_np_to_disk(
+            os.path.join(XI_DIR.name, f'interp-result-{str(uuid4())}.npy'),
+            grid
+        )
+
+        del grid
+        gc.collect()
+
+        return [mm_grid]
 
     for group in interp_ds:
         with INTERP_SEMA:
@@ -696,6 +702,10 @@ def process_input(input_file,
                     cfg
                 )
 
+                extracted_sams_pre_qf.clear()
+                extracted_targets_pre_qf.clear()
+                del extracted_sams_pre_qf, extracted_targets_pre_qf
+
                 if gridded_groups_pre_qf is not None:
                     temp_path_pre = os.path.join(temp_dir, 'pre_qf', os.path.basename(input_file)) + '.zarr'
 
@@ -721,6 +731,10 @@ def process_input(input_file,
                 cfg
             )
 
+            extracted_sams_post_qf.clear()
+            extracted_targets_post_qf.clear()
+            del extracted_sams_post_qf, extracted_targets_post_qf
+
             if gridded_groups_post_qf is not None:
                 temp_path_post = os.path.join(temp_dir, 'post_qf', os.path.basename(input_file)) + '.zarr'
 
@@ -728,6 +742,8 @@ def process_input(input_file,
 
                 writer = ZarrWriter(temp_path_post, chunking, overwrite=True, verify=False)
                 writer.write(gridded_groups_post_qf)
+
+                del gridded_groups_post_qf
 
                 ret_post_qf = ZarrWriter.open_zarr_group(temp_path_post, 'local', None)
             else:
