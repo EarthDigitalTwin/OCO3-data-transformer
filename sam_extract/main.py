@@ -25,6 +25,7 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 import pika
+import psutil
 import xarray as xr
 import yaml
 from pika.channel import Channel
@@ -1002,6 +1003,36 @@ if __name__ == '__main__':
     start_time = datetime.now()
     v = -1
 
+    DBG_MPROF = os.getenv('DBG_MPROF')
+
+    if DBG_MPROF is not None:
+        try:
+            interval = float(DBG_MPROF)
+            assert 0.1 <= interval <= 300
+        except:
+            interval = 15
+
+        process = psutil.Process(os.getpid())
+
+        start_rss = process.memory_info().rss
+        start_vms = process.memory_info().vms
+
+        profile_logger = logging.getLogger('debug_mprof')
+
+        def profile_memory():
+            while True:
+                KB_rss = int((process.memory_info().rss - start_rss) / (1024 ** 2))
+                KB_vms = int((process.memory_info().vms - start_vms) / (1024 ** 2))
+                profile_logger.debug('rss_used={0:10,d} MiB vms_used={1:10,d} MiB'.format(KB_rss, KB_vms))
+
+                sleep(interval)
+
+        threading.Thread(
+            target=profile_memory,
+            daemon=True,
+            name='mprof_thread'
+        ).start()
+
     try:
         main(parse_args())
         v = 0
@@ -1011,4 +1042,8 @@ if __name__ == '__main__':
         v = 1
     finally:
         logger.info(f'Exiting code {v}. Runtime={datetime.now() - start_time}')
+        if DBG_MPROF is not None:
+            KB_rss = int((process.memory_info().rss - start_rss) / (1024 ** 2))
+            KB_vms = int((process.memory_info().vms - start_vms) / (1024 ** 2))
+            profile_logger.debug('rss_used={0:10,d} MiB vms_used={1:10,d} MiB (final)'.format(KB_rss, KB_vms))
         exit(v)
