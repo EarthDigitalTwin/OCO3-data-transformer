@@ -13,12 +13,14 @@
 # limitations under the License.
 
 import argparse
+import json
 import logging
 import os.path
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from functools import partial
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from time import sleep
 from typing import List, Optional, Tuple
@@ -42,6 +44,7 @@ from yaml.scanner import ScannerError
 from sam_extract.exceptions import *
 from sam_extract.readers import GranuleReader
 from sam_extract.writers import ZarrWriter
+from sam_extract.writers import ZARR_REPAIR_FILE, PW_STATE_DIR, backup_zarr, delete_zarr_backup
 from sam_extract.targets import extract_id, determine_id_type
 from sam_extract.targets import FILL_VALUE as TARGET_FILL
 
@@ -687,21 +690,46 @@ def process_inputs(in_files, cfg):
                 logger.error(f' - {failed}')
 
         merged_pre = merge_groups(processed_groups_pre)
+        merged_post = merge_groups(processed_groups_post)
 
         output_root, output_kwargs = output_cfg(cfg)
 
         chunking: Tuple[int, int, int] = cfg['chunking']['config']
 
+        zarr_writer_pre = ZarrWriter(
+            os.path.join(output_root, cfg['output']['naming']['pre_qf']),
+            chunking,  # (5, 250, 250),
+            overwrite=False,
+            **output_kwargs
+        )
+
+        zarr_writer_post = ZarrWriter(
+            os.path.join(output_root, cfg['output']['naming']['post_qf']),
+            chunking,  # (5, 250, 250),
+            overwrite=False,
+            **output_kwargs
+        )
+
+        if merged_pre is not None:
+            backup_pre = backup_zarr(zarr_writer_pre.path, zarr_writer_pre.store, zarr_writer_pre.store_params)
+        else:
+            backup_pre = None
+
+        if merged_post is not None:
+            backup_post = backup_zarr(zarr_writer_post.path, zarr_writer_post.store, zarr_writer_post.store_params)
+        else:
+            backup_post = None
+
+        Path(PW_STATE_DIR).mkdir(parents=True, exist_ok=True)
+        repair_file_data = dict(pre_qf_backup=backup_pre, post_qf_backup=backup_post)
+
+        with open(ZARR_REPAIR_FILE, 'w') as fp:
+            json.dump(repair_file_data, fp)
+
         if merged_pre is not None:
             logger.info('Merged processed pre_qf data')
 
-            zarr_writer = ZarrWriter(
-                os.path.join(output_root, cfg['output']['naming']['pre_qf']),
-                chunking,  # (5, 250, 250),
-                overwrite=False,
-                **output_kwargs
-            )
-            zarr_writer.write(
+            zarr_writer_pre.write(
                 merged_pre,
                 attrs=dict(
                     title=cfg['output']['title']['pre_qf'],
@@ -711,18 +739,10 @@ def process_inputs(in_files, cfg):
         else:
             logger.info('No pre_qf data generated')
 
-        merged_post = merge_groups(processed_groups_post)
-
         if merged_post is not None:
             logger.info('Merged processed post_qf data')
 
-            zarr_writer = ZarrWriter(
-                os.path.join(output_root, cfg['output']['naming']['post_qf']),
-                chunking,  # (5, 250, 250),
-                overwrite=False,
-                **output_kwargs
-            )
-            zarr_writer.write(
+            zarr_writer_post.write(
                 merged_post,
                 attrs=dict(
                     title=cfg['output']['title']['post_qf'],
@@ -733,6 +753,25 @@ def process_inputs(in_files, cfg):
             logger.info('No post_qf data generated, all SAMs on these days may have been filtered out for bad qf')
 
         logger.info(f'Cleaning up temporary directory at {td}')
+
+        try:
+            os.remove(ZARR_REPAIR_FILE)
+        except:
+            logger.warning('Could not remove Zarr write status file')
+
+        if backup_pre is not None and not delete_zarr_backup(
+                backup_pre,
+                zarr_writer_pre.store,
+                zarr_writer_pre.store_params
+        ):
+            logger.warning(f'Unable to remove backup for pre_qf zarr data at {backup_pre}')
+
+        if backup_pre is not None and not delete_zarr_backup(
+                backup_post,
+                zarr_writer_post.store,
+                zarr_writer_post.store_params
+        ):
+            logger.warning(f'Unable to remove backup for post_qf zarr data at {backup_post}')
 
 
 class ProcessThread(threading.Thread):
