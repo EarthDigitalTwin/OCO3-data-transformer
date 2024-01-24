@@ -824,6 +824,35 @@ def process_inputs(in_files, cfg):
 
         chunking: Tuple[int, int, int] = cfg['chunking']['config']
 
+        if os.getenv('CONSOLIDATE_INTERMEDIATE') is not None:
+            merged_pre_path = os.path.join(td, 'merged_pre.zarr')
+            merged_post_path = os.path.join(td, 'merged_post.zarr')
+
+            logger.info('Consolidating merged groups to intermediate Zarr store to a) reduce dask graph complexity on '
+                        'final write and b) potentially reduce number of chunks in memory during result write')
+
+            if len(merged_pre['/']['time']) > 1:
+                ZarrWriter(merged_pre_path, chunking, overwrite=True, verify=False).write(merged_pre)
+                merged_pre = ZarrWriter.open_zarr_group(merged_pre_path, 'local', None)
+                processed_groups_pre.clear()
+                try:
+                    rmtree(os.path.join(td, 'pre_qf'))
+                except:
+                    pass
+            else:
+                logger.info('Not consolidating intermediate Zarr stores for pre_qf as there is only one')
+
+            if len(merged_post['/']['time']) > 1:
+                ZarrWriter(merged_post_path, chunking, overwrite=True, verify=False).write(merged_post)
+                merged_post = ZarrWriter.open_zarr_group(merged_post_path, 'local', None)
+                processed_groups_post.clear()
+                try:
+                    rmtree(os.path.join(td, 'post_qf'))
+                except:
+                    pass
+            else:
+                logger.info('Not consolidating intermediate Zarr stores for post_qf as there is only one')
+
         output_root, output_kwargs = output_cfg(cfg)
 
         zarr_writer_pre = ZarrWriter(
