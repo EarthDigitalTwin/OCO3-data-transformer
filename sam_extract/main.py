@@ -143,7 +143,7 @@ F_LAT: str | None = None
 F_LON: str | None = None
 
 
-INTERP_MAX_PARALLEL = int(os.environ.get('INTERP_MAX_PARALLEL', 2))
+INTERP_MAX_PARALLEL = max(int(os.environ.get('INTERP_MAX_PARALLEL', 2)), 1)
 INTERP_SEMA = threading.BoundedSemaphore(value=INTERP_MAX_PARALLEL)
 
 
