@@ -29,5 +29,11 @@ COPY setup.py /setup.py
 # Install package
 RUN python3 setup.py install clean && conda clean -afy
 
+# Include repair tool
+COPY tools/repair /tools/repair
+
+# Include sync tool
+COPY tools/s3Sync /tools/s3Sync
+
 # Run
 ENTRYPOINT ["tini", "-g", "--"]
