@@ -1,0 +1,43 @@
+# Copyright 2023 California Institute of Technology (Caltech)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+version: "3.7"
+services:
+  cumulus_granules_download:
+    image: ghcr.io/unity-sds/unity-data-services:5.3.2
+    volumes:
+      - /tmp:/etc/granules
+    command: ["DOWNLOAD"]
+    environment:
+
+      PYTHONUNBUFFERED: 1
+
+      STAC_JSON: '/etc/granules/cmr-results.json'
+      DOWNLOAD_DIR: '/etc/granules/dl'
+      GRANULES_DOWNLOAD_TYPE: 'DAAC'
+
+      PARALLEL_COUNT: '10'
+
+      DOWNLOAD_RETRY_WAIT_TIME: '30'
+      DOWNLOAD_RETRY_TIMES: '5'
+
+      EDL_USERNAME: ''
+      EDL_PASSWORD: ''
+      EDL_PASSWORD_TYPE: 'BASE64'
+      EDL_BASE_URL: 'https://urs.earthdata.nasa.gov/'
+      LOG_LEVEL: '10'
+    networks:
+      - internal
+networks:
+  internal:

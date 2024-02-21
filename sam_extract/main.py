@@ -143,7 +143,7 @@ F_LAT: str | None = None
 F_LON: str | None = None
 
 
-INTERP_MAX_PARALLEL = int(os.environ.get('INTERP_MAX_PARALLEL', 2))
+INTERP_MAX_PARALLEL = max(int(os.environ.get('INTERP_MAX_PARALLEL', 2)), 1)
 INTERP_SEMA = threading.BoundedSemaphore(value=INTERP_MAX_PARALLEL)
 
 
@@ -211,7 +211,7 @@ def get_xi(cfg) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         logger.debug(f'Points nd array shape: {points.shape}')
 
         for j, item in enumerate(p):
-            points[...,j] = item
+            points[..., j] = item
 
         temp_dir = XI_DIR.name
 
