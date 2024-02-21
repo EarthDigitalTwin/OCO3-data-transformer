@@ -13,12 +13,17 @@
 # limitations under the License.
 
 import argparse
+import gc
+import json
 import logging
-import os.path
+import os
+import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from functools import partial
+from pathlib import Path
+from shutil import rmtree
 from tempfile import TemporaryDirectory
 from time import sleep
 from typing import List, Optional, Tuple
@@ -30,6 +35,13 @@ import yaml
 from pika.channel import Channel
 from pika.exceptions import AMQPChannelError, AMQPConnectionError, ConnectionClosedByBroker
 from pika.spec import Basic, BasicProperties
+from sam_extract.exceptions import *
+from sam_extract.metrics import get_metrics
+from sam_extract.readers import GranuleReader
+from sam_extract.targets import FILL_VALUE as TARGET_FILL
+from sam_extract.targets import extract_id, determine_id_type
+from sam_extract.writers import ZARR_REPAIR_FILE, PW_STATE_DIR, backup_zarr, delete_zarr_backup
+from sam_extract.writers import ZarrWriter
 from schema import Optional as Opt
 from schema import Schema, Or, SchemaError
 from scipy.interpolate import griddata
@@ -38,13 +50,6 @@ from shapely.geometry import Polygon, box, MultiPolygon
 from shapely.ops import unary_union
 from yaml import load
 from yaml.scanner import ScannerError
-
-from sam_extract.exceptions import *
-from sam_extract.metrics import get_metrics
-from sam_extract.readers import GranuleReader
-from sam_extract.writers import ZarrWriter
-from sam_extract.targets import extract_id, determine_id_type
-from sam_extract.targets import FILL_VALUE as TARGET_FILL
 
 try:
     from yaml import CLoader as Loader
@@ -134,6 +139,114 @@ EXPAND_INDEX_BOUNDS = True
 METRICS = get_metrics()
 
 
+XI_LOCK = threading.Lock()
+XI: Tuple[np.ndarray, np.ndarray, np.ndarray] | None = None
+XI_DIR: TemporaryDirectory | None = None
+F_XI: str | None = None
+F_LAT: str | None = None
+F_LON: str | None = None
+
+
+INTERP_MAX_PARALLEL = max(int(os.environ.get('INTERP_MAX_PARALLEL', 2)), 1)
+INTERP_SEMA = threading.BoundedSemaphore(value=INTERP_MAX_PARALLEL)
+
+
+def _unload_np_to_disk(path: str, a: np.ndarray, compress=False):
+    """
+    Map a numpy array to disk, so it can be unloaded from memory.
+
+    Usage:
+    a = _unload_np_to_disk(f, a)
+
+    At high grid resolutions, this pipeline can consume excessive memory. This can be used to pull np arrays
+    from memory when they're not in use / when they don't need to be in memory.
+
+    :param path: Path to where the array is to be stored
+    :param a: The array
+    :return: The array but as a memory-mapped array
+    """
+
+    if compress:
+        np.savez_compressed(path, a=a)
+        ret = np.load(path, mmap_mode='r')['a']
+    else:
+        np.save(path, a)
+        ret = np.load(path, mmap_mode='r')
+
+    logger.debug(f'Unloaded np ndarray of shape {a.shape} and type {a.dtype} to file at {path} '
+                 f'{sys.getsizeof(a):,} -> {sys.getsizeof(ret):,}')
+
+    return ret
+
+
+def get_xi(cfg) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    A lot of space is wasted by generating the xi parameter for scipy's griddata individually for each
+    worker thread, here we try to make a single, global instance of the XI param since it will be identical
+    for each thread.
+
+    :param cfg: Runtime config dictionary
+    :return: Tuple: xi, longitude coordinate array, latitude coordinate array
+    """
+    global XI, XI_DIR, F_XI, F_LAT, F_LON
+
+    with XI_LOCK:
+        if XI is not None:
+            return XI
+
+        METRICS.start_time('interp.mesh.build')
+
+        logger.debug('Building coordinate meshes')
+
+        if XI_DIR is None:
+            XI_DIR = TemporaryDirectory(prefix='oco-sam-extract-', suffix='-grid-coords', ignore_cleanup_errors=True)
+
+        lon_grid, lat_grid = np.mgrid[-180:180:complex(0, cfg['grid']['longitude']),
+                                      -90:90:complex(0, cfg['grid']['latitude'])].astype(np.dtype('float32'))
+
+        # scipy seems to do this internally if we give xi as a tuple, negating any memory savings
+        # lets do this in advance so the process isn't repeated
+
+        logger.debug(f'Lat/lon grids: {lon_grid.shape}, {lat_grid.shape}')
+
+        xi = (lon_grid, lat_grid)
+
+        p = list(np.broadcast_arrays(*xi))
+        points = np.empty(p[0].shape + (len(xi),), dtype=np.dtype('float32'))
+
+        logger.debug(f'Points nd array shape: {points.shape}')
+
+        for j, item in enumerate(p):
+            points[..., j] = item
+
+        temp_dir = XI_DIR.name
+
+        F_XI = os.path.join(temp_dir, 'xi.npy')
+        F_LAT = os.path.join(temp_dir, 'lat.npy')
+        F_LON = os.path.join(temp_dir, 'lon.npy')
+
+        logger.debug('Mapping shared coordinate arrays to disk')
+
+        lats = lat_grid[0]
+        lons = lon_grid.transpose()[0]
+
+        xi_mm  = _unload_np_to_disk(F_XI,  points)
+        lat_mm = _unload_np_to_disk(F_LAT, lats)
+        lon_mm = _unload_np_to_disk(F_LON, lons)
+
+        XI = (xi_mm, lon_mm, lat_mm)
+
+        del lon_grid, lat_grid, lats, lons, xi, p, points
+
+        collected = gc.collect()
+        logger.debug(f'GC collected {collected:,} objects to free post-xi gen')
+        logger.debug(f'Xi nd array: {XI[0].shape}')
+
+        METRICS.end_time('interp.mesh.build')
+
+        return XI
+
+
 def __validate_files(files):
     FILES_SCHEMA.validate(files)
 
@@ -181,12 +294,9 @@ def fit_data_to_grid(sams, cfg):
 
     logger.debug('Building coordinate meshes')
 
-    METRICS.start_time('interp.mesh.build')
+    _, lon_coord, lat_coord = get_xi(cfg)
 
-    lon_grid, lat_grid = np.mgrid[-180:180:complex(0, cfg['grid']['longitude']),
-                                  -90:90:complex(0, cfg['grid']['latitude'])].astype(np.dtype('float32'))
 
-    METRICS.end_time('interp.mesh.build')
 
     logger.debug('Building attribute and coordinate dictionaries')
 
@@ -217,8 +327,8 @@ def fit_data_to_grid(sams, cfg):
     }
 
     coords = {
-        'longitude': ('longitude', lon_grid.transpose()[0], lon_attrs),
-        'latitude': ('latitude', lat_grid[0], lat_attrs),
+        'longitude': ('longitude', lon_coord, lon_attrs),
+        'latitude': ('latitude', lat_coord, lat_attrs),
         'time': ('time', time, time_attrs)
     }
 
@@ -243,31 +353,46 @@ def fit_data_to_grid(sams, cfg):
     else:
         method = desired_method
 
-    def interpolate(in_grp, grp, var_name, m):
+    def interpolate(in_grp, grp: str, var_name, m):
         logger.info(f'Interpolating variable {var_name} in group {grp}')
 
         METRICS.start_time('interp.griddata')
 
-        gridded = griddata(
+        xi = np.load(F_XI, mmap_mode='r')
+
+        grid = griddata(
             points,
             in_grp[grp][var_name].to_numpy(),
-            (lon_grid, lat_grid),
+            xi,
             method=m,
-            fill_value=in_grp[grp][var_name].attrs['missing_value']).transpose()
+            fill_value=in_grp[grp][var_name].attrs['missing_value']
+        ).transpose()
+
+        try:
+            getattr(xi, '_mmap').close()
+        except:
+            pass
+        finally:
+            del xi
 
         METRICS.end_time('interp.griddata')
 
-        return [gridded]
+        return [grid]
 
     for group in interp_ds:
-        gridded_ds[group] = xr.Dataset(
-            data_vars={
-                var_name: (('time', 'latitude', 'longitude'),
-                           interpolate(interp_ds, group, var_name, method))
-                for var_name in interp_ds[group].data_vars
-            },
-            coords=coords,
-        )
+        with INTERP_SEMA:
+            logger.debug(f'Acquired semaphore {repr(INTERP_SEMA)}')
+
+            gridded_ds[group] = xr.Dataset(
+                data_vars={
+                    var_name: (('time', 'latitude', 'longitude'),
+                               interpolate(interp_ds, group, var_name, method))
+                    for var_name in interp_ds[group].data_vars
+                },
+                coords=coords,
+            )
+
+        logger.debug(f'Released semaphore {repr(INTERP_SEMA)}')
 
         for var in gridded_ds[group]:
             gridded_ds[group][var].attrs = interp_ds[group][var].attrs
@@ -453,6 +578,9 @@ def mask_data(sams, targets, grid_ds, cfg):
 
     mask = np.array([geo_mask])
 
+    # TODO: Maybe the application should be moved to after target_id & type are added to grid_ds to address potential
+    #  issue with more target chunks than variable chunks
+
     logger.info('Applying mask to dataset')
 
     METRICS.start_time('mask.apply')
@@ -628,6 +756,10 @@ def process_input(input_file,
                     cfg
                 )
 
+                extracted_sams_pre_qf.clear()
+                extracted_targets_pre_qf.clear()
+                del extracted_sams_pre_qf, extracted_targets_pre_qf
+
                 if gridded_groups_pre_qf is not None:
                     temp_path_pre = os.path.join(temp_dir, 'pre_qf', os.path.basename(input_file)) + '.zarr'
 
@@ -652,6 +784,10 @@ def process_input(input_file,
                 ),
                 cfg
             )
+
+            extracted_sams_post_qf.clear()
+            extracted_targets_post_qf.clear()
+            del extracted_sams_post_qf, extracted_targets_post_qf
 
             if gridded_groups_post_qf is not None:
                 temp_path_post = os.path.join(temp_dir, 'post_qf', os.path.basename(input_file)) + '.zarr'
@@ -739,21 +875,46 @@ def process_inputs(in_files, cfg):
                 logger.error(f' - {failed}')
 
         merged_pre = merge_groups(processed_groups_pre)
+        merged_post = merge_groups(processed_groups_post)
+
+        chunking: Tuple[int, int, int] = cfg['chunking']['config']
 
         output_root, output_kwargs = output_cfg(cfg)
 
-        chunking: Tuple[int, int, int] = cfg['chunking']['config']
+        zarr_writer_pre = ZarrWriter(
+            os.path.join(output_root, cfg['output']['naming']['pre_qf']),
+            chunking,  # (5, 250, 250),
+            overwrite=False,
+            **output_kwargs
+        )
+
+        zarr_writer_post = ZarrWriter(
+            os.path.join(output_root, cfg['output']['naming']['post_qf']),
+            chunking,  # (5, 250, 250),
+            overwrite=False,
+            **output_kwargs
+        )
+
+        if merged_pre is not None:
+            backup_pre = backup_zarr(zarr_writer_pre.path, zarr_writer_pre.store, zarr_writer_pre.store_params)
+        else:
+            backup_pre = None
+
+        if merged_post is not None:
+            backup_post = backup_zarr(zarr_writer_post.path, zarr_writer_post.store, zarr_writer_post.store_params)
+        else:
+            backup_post = None
+
+        Path(PW_STATE_DIR).mkdir(parents=True, exist_ok=True)
+        repair_file_data = dict(pre_qf_backup=backup_pre, post_qf_backup=backup_post)
+
+        with open(ZARR_REPAIR_FILE, 'w') as fp:
+            json.dump(repair_file_data, fp)
 
         if merged_pre is not None:
             logger.info('Merged processed pre_qf data')
 
-            zarr_writer = ZarrWriter(
-                os.path.join(output_root, cfg['output']['naming']['pre_qf']),
-                chunking,  # (5, 250, 250),
-                overwrite=False,
-                **output_kwargs
-            )
-            zarr_writer.write(
+            zarr_writer_pre.write(
                 merged_pre,
                 attrs=dict(
                     title=cfg['output']['title']['pre_qf'],
@@ -763,18 +924,10 @@ def process_inputs(in_files, cfg):
         else:
             logger.info('No pre_qf data generated')
 
-        merged_post = merge_groups(processed_groups_post)
-
         if merged_post is not None:
             logger.info('Merged processed post_qf data')
 
-            zarr_writer = ZarrWriter(
-                os.path.join(output_root, cfg['output']['naming']['post_qf']),
-                chunking,  # (5, 250, 250),
-                overwrite=False,
-                **output_kwargs
-            )
-            zarr_writer.write(
+            zarr_writer_post.write(
                 merged_post,
                 attrs=dict(
                     title=cfg['output']['title']['post_qf'],
@@ -785,6 +938,25 @@ def process_inputs(in_files, cfg):
             logger.info('No post_qf data generated, all SAMs on these days may have been filtered out for bad qf')
 
         logger.info(f'Cleaning up temporary directory at {td}')
+
+        try:
+            os.remove(ZARR_REPAIR_FILE)
+        except:
+            logger.warning('Could not remove Zarr write status file')
+
+        if backup_pre is not None and not delete_zarr_backup(
+                backup_pre,
+                zarr_writer_pre.store,
+                zarr_writer_pre.store_params
+        ):
+            logger.warning(f'Unable to remove backup for pre_qf zarr data at {backup_pre}')
+
+        if backup_pre is not None and not delete_zarr_backup(
+                backup_post,
+                zarr_writer_post.store,
+                zarr_writer_post.store_params
+        ):
+            logger.warning(f'Unable to remove backup for post_qf zarr data at {backup_post}')
 
 
 class ProcessThread(threading.Thread):
@@ -854,6 +1026,8 @@ def main(cfg):
                 logger.info(f'Pipeline completed in {datetime.now() - pipeline_start_time}')
                 channel.basic_ack(delivery_tag=method_frame.delivery_tag)
                 logger.debug('ACKing message')
+
+                gc.collect()
             except (yaml.YAMLError, ScannerError):
                 logger.error('Invalid message received: bad yaml. Dropping it from queue')
                 channel.basic_reject(delivery_tag=method_frame.delivery_tag, requeue=False)
@@ -1064,6 +1238,9 @@ if __name__ == '__main__':
         logger.exception(e)
         v = 1
     finally:
+        if XI_DIR is not None:
+            XI_DIR.cleanup()
+
         if METRICS:
             METRICS.done()
 

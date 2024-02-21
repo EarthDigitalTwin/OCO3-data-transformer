@@ -288,14 +288,14 @@ docker build . -t <tag>
 docker run <desired docker options> -v <path to config yaml>:/oco3/run-config.yml <tag> python /sam_extract/main.py -i /oco3/run-config.yml
 ```
 
-## Deployment
+## Deployment - Local
 
-This script can be deployed as a cronjob by making use of the scripts in the `tools/stac` directory.
+This script can be deployed as a cronjob by making use of the scripts in the `tools/deploy` directory.
 
 The scripts will use [Unity SDS Data Services](https://github.com/unity-sds/unity-data-services) to search for and stage new input granules, invoke the pipeline, 
 capture, zip, and upload log files to S3, and (eventually) publish a notification to AWS SNS in the event of a failure.
 
-Base configuration can be set by exporting the following environment variables in the file `tools/stac/run.env`.
+Base configuration can be set by exporting the following environment variables in the file `tools/deploy/run.env`.
 
 - `SEARCH_YAML`: Granule search Docker Compose config file, if not set, use the one provided
 - `DOWNLOAD_YAML`: Granule stage Docker Compose config file, if not set, use the one provided
@@ -318,13 +318,17 @@ Prerequisites to run:
 
 Note: AWS resources are recommended but not strictly required; the scripts will print errors if not configured, but this shouldn't impact successful running of the script.
 
-With this, simply set up a cronjob to run the script `run.sh` from the `tools/stac` directory
+With this, simply set up a cronjob to run the script `run.sh` from the `tools/deploy` directory
 
 Eg:
 
 ```cronexp
-0 */3 * * * cd /repo/tools/stac && /repo/tools/stac/run.sh
+0 */3 * * * cd /repo/tools/deploy && /repo/tools/deploy/run.sh
 ```
+
+## Deployment - AWS
+
+See the [deployment README](/tools/deploy/README.md) for more information on how to deploy to Amazon Web Services using serverless compute resources.
 
 ## Support
 

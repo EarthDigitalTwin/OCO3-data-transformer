@@ -1,0 +1,203 @@
+# Copyright 2023 California Institute of Technology (Caltech)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+output:
+#  s3:
+#    url: s3://bucket/path
+#    region: us-west-2
+#    auth:
+#      accessKeyID: <secret>
+#      secretAccessKey: <secret>
+  local: file:///tmp/oco3/
+  naming:
+    pre_qf: output_zarr_name_pre_qf.zarr
+    post_qf: output_zarr_name_post_qf.zarr
+  title:
+    pre_qf: OUTPUT_ZARR_TITLE_PRE_QF
+    post_qf: OUTPUT_ZARR_TITLE_POST_QF
+input:
+  files: []
+drop-dims:
+  - group: /Meteorology
+    name: psurf_apriori_sco2
+  - group: /Meteorology
+    name: psurf_apriori_wco2
+  - group: /Meteorology
+    name: windspeed_u_met
+  - group: /Meteorology
+    name: windspeed_v_met
+  - group: /Preprocessors
+    name: xco2_weak_idp
+  - group: /Preprocessors
+    name: xco2_strong_idp
+  - group: /Preprocessors
+    name: max_declocking_o2a
+  - group: /Preprocessors
+    name: csstd_ratio_wco2
+  - group: /Preprocessors
+    name: dp_abp
+  - group: /Preprocessors
+    name: co2_ratio
+  - group: /Retrieval
+    name: surface_type
+  - group: /Retrieval
+    name: psurf
+  - group: /Retrieval
+    name: SigmaB
+  - group: /Retrieval
+    name: windspeed
+  - group: /Retrieval
+    name: windspeed_apriori
+  - group: /Retrieval
+    name: psurf_apriori
+  - group: /Retrieval
+    name: t700
+  - group: /Retrieval
+    name: fs
+  - group: /Retrieval
+    name: fs_rel
+  - group: /Retrieval
+    name: tcwv
+  - group: /Retrieval
+    name: tcwv_apriori
+  - group: /Retrieval
+    name: tcwv_uncertainty
+  - group: /Retrieval
+    name: dp
+  - group: /Retrieval
+    name: dp_o2a
+  - group: /Retrieval
+    name: dp_sco2
+  - group: /Retrieval
+    name: dpfrac
+  - group: /Retrieval
+    name: s31
+  - group: /Retrieval
+    name: s32
+  - group: /Retrieval
+    name: co2_grad_del
+  - group: /Retrieval
+    name: dws
+  - group: /Retrieval
+    name: aod_fine
+  - group: /Retrieval
+    name: eof2_2_rel
+  - group: /Retrieval
+    name: aod_dust
+  - group: /Retrieval
+    name: aod_bc
+  - group: /Retrieval
+    name: aod_oc
+  - group: /Retrieval
+    name: aod_seasalt
+  - group: /Retrieval
+    name: aod_sulfate
+  - group: /Retrieval
+    name: aod_strataer
+  - group: /Retrieval
+    name: aod_water
+  - group: /Retrieval
+    name: aod_ice
+  - group: /Retrieval
+    name: aod_total
+  - group: /Retrieval
+    name: ice_height
+  - group: /Retrieval
+    name: dust_height
+  - group: /Retrieval
+    name: h2o_scale
+  - group: /Retrieval
+    name: deltaT
+  - group: /Retrieval
+    name: albedo_o2a
+  - group: /Retrieval
+    name: albedo_wco2
+  - group: /Retrieval
+    name: albedo_sco2
+  - group: /Retrieval
+    name: albedo_slope_o2a
+  - group: /Retrieval
+    name: albedo_slope_wco2
+  - group: /Retrieval
+    name: albedo_slope_sco2
+  - group: /Retrieval
+    name: chi2_o2a
+  - group: /Retrieval
+    name: chi2_wco2
+  - group: /Retrieval
+    name: chi2_sco2
+  - group: /Retrieval
+    name: rms_rel_o2a
+  - group: /Retrieval
+    name: rms_rel_wco2
+  - group: /Retrieval
+    name: rms_rel_sco2
+  - group: /Retrieval
+    name: iterations
+  - group: /Retrieval
+    name: diverging_steps
+  - group: /Retrieval
+    name: dof_co2
+  - group: /Retrieval
+    name: xco2_zlo_bias
+  - group: /Sounding
+    name: solar_azimuth_angle
+  - group: /Sounding
+    name: sensor_azimuth_angle
+  - group: /Sounding
+    name: pma_elevation_angle
+  - group: /Sounding
+    name: pma_azimuth_angle
+  - group: /Sounding
+    name: polarization_angle
+  - group: /Sounding
+    name: att_data_source
+  - group: /Sounding
+    name: land_fraction
+  - group: /Sounding
+    name: glint_angle
+  - group: /Sounding
+    name: airmass
+  - group: /Sounding
+    name: snr_o2a
+  - group: /Sounding
+    name: snr_wco2
+  - group: /Sounding
+    name: snr_sco2
+  - group: /Sounding
+    name: footprint
+  - group: /Sounding
+    name: land_water_indicator
+  - group: /Sounding
+    name: altitude
+  - group: /Sounding
+    name: altitude_stddev
+  - group: /Sounding
+    name: zlo_wco2
+exclude-groups:
+  - /Preprocessors
+  - /Meteorology
+  - /Sounding
+  - /Retrieval
+grid:
+  latitude: 18000
+  longitude: 36000
+  method: linear
+  resolution_attr: 1km
+chunking:
+  latitude: 250
+  longitude: 250
+  time: 5
+max-workers: 4
+mask-scaling: 1.00
