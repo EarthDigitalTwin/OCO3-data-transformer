@@ -24,12 +24,12 @@ import numpy as np
 import s3fs
 import xarray as xr
 import zarr
-from xarray import Dataset
 
 from sam_extract.metrics import get_metrics
 from sam_extract.writers import Writer
 from sam_extract.writers.Writer import FIXED_ATTRIBUTES
 from sam_extract.targets import FILL_VALUE as TARGET_FILL
+from xarray import Dataset
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ APPEND_WARNING = [
 ]
 
 ISO_8601 = "%Y-%m-%dT%H:%M:%S%zZ"
-TIME_CHUNKING = (4000,) # 3650 days in OCO-3's 10-year nominal mission, rounded up to nearest thousand
+TIME_CHUNKING = (4000,)  # 3650 days in OCO-3's 10-year nominal mission, rounded up to nearest thousand
 
 METRICS = get_metrics()
 
@@ -122,7 +122,7 @@ class ZarrWriter(Writer):
         else:
             logger.debug('Currently installed version of xarray supports write_empty_chunks')
 
-        exists = self._exists()
+        exists = self.exists()
         dynamic_attrs = None
         now = datetime.utcnow().strftime(ISO_8601)
 
@@ -201,7 +201,9 @@ class ZarrWriter(Writer):
                 encodings[group]['time'] = {'chunks': TIME_CHUNKING}
 
             encodings['/']['target_id']['_FillValue'] = TARGET_FILL
+            encodings['/']['target_id']['dtype'] = 'int32'
             encodings['/']['target_type']['_FillValue'] = TARGET_FILL
+            encodings['/']['target_type']['dtype'] = 'int8'
 
             if not TEMP_XARRAY_8016:
                 for grp in ds:

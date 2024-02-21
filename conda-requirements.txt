@@ -19,7 +19,7 @@ dask
 netCDF4
 h5netcdf
 bottleneck
-scipy
+scipy<1.12.0
 zarr>=2.11
 shapely
 pyyaml

@@ -1,9 +1,0 @@
-{
-    "_ARRAY_DIMENSIONS": [
-        "time",
-        "longitude",
-        "latitude"
-    ],
-    "long_name": "Raw value of Retrieved XCO2",
-    "units": "ppm"
-}
