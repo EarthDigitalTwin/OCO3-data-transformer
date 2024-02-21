@@ -146,5 +146,9 @@ test_data/
 /demo_repeat_slice_pre_qf/
 /s3_src_demo_post_qf/
 /s3_src_demo_pre_qf/
-/tools/stac/dc-002-download.filled.yaml
+/tools/deploy/dc-002-download.filled.yaml
 /notebooks/zarr_demo/
+
+/tools/deploy/package/
+/tools/deploy/terraform/.terraform.lock.hcl
+/tools/deploy/terraform/.terraform/
