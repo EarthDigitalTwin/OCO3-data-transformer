@@ -211,7 +211,7 @@ def get_xi(cfg) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         logger.debug(f'Points nd array shape: {points.shape}')
 
         for j, item in enumerate(p):
-            points[...,j] = item
+            points[..., j] = item
 
         temp_dir = XI_DIR.name
 
