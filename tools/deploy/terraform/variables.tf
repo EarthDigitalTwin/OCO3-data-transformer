@@ -288,7 +288,7 @@ variable "image_tag" {
   }
 
   validation {
-    condition     = element(sort([substr(var.image_tag, 0, 10), "2024.01.25"]), 0) == "2024.01.25"
+    condition     = element(sort([substr(var.image_tag, 0, 10), "2024.02.26"]), 0) == "2024.02.26"
     error_message = "Docker image tag is too old"
   }
 }
