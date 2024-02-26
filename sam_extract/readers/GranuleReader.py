@@ -119,8 +119,6 @@ class GranuleReader:
             for var in ds_dict[group].data_vars:
                 ds_dict[group][var].attrs['_FillValue'] = float('nan')
 
-        logger.info('Dropped all requested variables')
-
         return ds_dict
 
     @staticmethod
@@ -195,9 +193,9 @@ class GranuleReader:
 
             logger.debug(f'Expected size of downloaded granule: {expected_length:,} bytes')
         except KeyError:
-            logger.debug(f'Couldn\'t parse object HEAD for {url.geturl()}')
+            logger.warning(f'Couldn\'t parse object HEAD for {url.geturl()}')
         except Exception:
-            logger.debug(f'HEAD failed, could not determine metadata for {url.geturl()}')
+            logger.warning(f'HEAD failed, could not determine metadata for {url.geturl()}')
 
         logger.debug(f'Size of downloaded file {fp.name}: {os.path.getsize(fp.name):,} bytes')
 

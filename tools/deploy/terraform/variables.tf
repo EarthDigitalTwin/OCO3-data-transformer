@@ -293,6 +293,12 @@ variable "image_tag" {
   }
 }
 
+variable "verbose" {
+  type        = bool
+  description = "Process step logging verbosity"
+  default     = false
+}
+
 variable "testing" {
   description = "Is this plan/apply for testing?"
   type        = bool

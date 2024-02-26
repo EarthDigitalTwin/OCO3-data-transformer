@@ -558,8 +558,11 @@ locals {
   })
 
   batch_definition_containerprops_process = jsonencode({
-    image            = local.image
-    command          = ["python", "/sam_extract/main.py", "-i", "/var/pipeline-rc.yaml", "--skip-netrc"]
+    image = local.image
+    command = concat(
+      ["python", "/sam_extract/main.py", "-i", "/var/pipeline-rc.yaml", "--skip-netrc"],
+      var.verbose ? ["-v"] : []
+    )
     jobRoleArn       = data.aws_iam_role.iam_task_role.arn
     executionRoleArn = data.aws_iam_role.iam_task_execution_role.arn
     volumes = [
@@ -574,7 +577,30 @@ locals {
         }
       }
     ]
-    environment = jsondecode("[%{if var.mprof_interval != -1}{\"name\": \"DBG_MPROF\", \"value\": \"${var.mprof_interval}\"},%{endif}%{if var.interpolate_max_parallel != -1}{\"name\": \"INTERP_MAX_PARALLEL\", \"value\": \"${var.interpolate_max_parallel}\"},%{endif}{\"name\": \"USING_EFS\", \"value\": \"true\"},{\"name\": \"ZARR_BACKUP_DIR\", \"value\": \"/var/oco_pipeline_zarr_state\"}]")
+    environment = concat(
+      [
+        {
+          name  = "USING_EFS"
+          value = "true"
+        },
+        {
+          name  = "ZARR_BACKUP_DIR"
+          value = "/var/oco_pipeline_zarr_state"
+        }
+      ],
+      var.mprof_interval != -1 ? [
+        {
+          name  = "DBG_MPROF"
+          value = tostring(var.mprof_interval)
+        }
+      ] : [],
+      var.interpolate_max_parallel != -1 ? [
+        {
+          name  = "INTERP_MAX_PARALLEL"
+          value = tostring(var.interpolate_max_parallel)
+        }
+      ] : []
+    )
     mountPoints = [
       {
         containerPath = "/var"
