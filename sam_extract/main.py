@@ -1113,6 +1113,7 @@ def parse_args():
     args = parser.parse_args()
 
     log_level = logging.DEBUG if args.verbose else logging.INFO
+    logger.setLevel(log_level)
 
     for handler in logging.getLogger().handlers:
         handler.setLevel(log_level)
