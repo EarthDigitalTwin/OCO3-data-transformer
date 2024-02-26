@@ -18,6 +18,7 @@ import json
 import logging
 import os
 import sys
+import tarfile
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from shutil import copytree, rmtree
@@ -71,7 +72,18 @@ def delete_group(
 
     try:
         # Check that the path we're deleting is actually Zarr data
-        ZarrWriter.open_zarr_group(path, store_type, store_params.to_store_params(), root=True)
+        if not path.endswith('.tar'):
+            ZarrWriter.open_zarr_group(path, store_type, store_params, root=True)
+        else:
+            likely_zarr = False
+            with tarfile.open(path, 'r') as tar:
+                for f in tar.getnames():
+                    if os.path.basename(f) == '.zgroup':
+                        likely_zarr = True
+                        break
+            if not likely_zarr:
+                logger.error(f'Backup archive file at {path} does not appear to be a Zarr group')
+                return False
     except Exception as e:
         logger.warning(f'Zarr group at path {path} could not be opened. Maybe it does not exist. Error: {repr(e)}')
         return False
@@ -80,8 +92,12 @@ def delete_group(
         try:
             path = urlparse(path).path.rstrip('/')
 
-            logger.info(f'Recursively deleting {path}')
-            rmtree(path)
+            if not path.endswith('.tar'):
+                logger.info(f'Recursively deleting {path}')
+                rmtree(path)
+            else:
+                logger.info(f'Deleting {path}')
+                os.remove(path)
         except Exception as e:
             logger.exception(e)
             return False
@@ -130,8 +146,15 @@ def restore_backup(
     dst_path = dst_path.rstrip('/')
 
     if store_type == 'local':
-        logger.info(f'Copying files on local fs')
-        copytree(src_path, dst_path)
+        if not src_path.endswith('.tar'):
+            logger.info(f'Copying files on local fs')
+            copytree(src_path, dst_path)
+        else:
+            logger.info(f'Extracting {src_path}')
+            dst_path = os.path.dirname(urlparse(dst_path).path)
+
+            with tarfile.open(src_path, 'r') as tar:
+                tar.extractall(path=dst_path)
     elif store_type == 's3':
         src_parsed = urlparse(src_path)
 
@@ -176,7 +199,7 @@ def restore_backup(
             for f in futures:
                 f.result()
 
-        return True
+    return True
 
 
 def main():
@@ -243,10 +266,18 @@ def main():
     logger.info('Data restored successfully; removing old backups')
 
     if pre_qf_backup is not None:
-        delete_zarr_backup(pre_qf_backup, store_type, aws_config.to_store_params())
+        if aws_config is not None:
+            store_params = aws_config.to_store_params()
+        else:
+            store_params = {}
+        delete_zarr_backup(pre_qf_backup, store_type, store_params)
 
     if post_qf_backup is not None:
-        delete_zarr_backup(post_qf_backup, store_type, aws_config.to_store_params())
+        if aws_config is not None:
+            store_params = aws_config.to_store_params()
+        else:
+            store_params = {}
+        delete_zarr_backup(post_qf_backup, store_type, store_params)
 
     logger.info('Restore complete')
 
