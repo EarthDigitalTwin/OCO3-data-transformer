@@ -590,7 +590,7 @@ locals {
       ],
       var.mprof_interval != -1 ? [
         {
-          name  = "DBG_MPROF"
+          name  = "DEBUG_MPROF"
           value = tostring(var.mprof_interval)
         }
       ] : [],
