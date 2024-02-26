@@ -1111,13 +1111,16 @@ def parse_args():
         action='store_true'
     )
 
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
 
     log_level = logging.DEBUG if args.verbose else logging.INFO
     logger.setLevel(log_level)
 
     for handler in logging.getLogger().handlers:
         handler.setLevel(log_level)
+
+    if len(unknown) > 0:
+        logger.warning(f'Unknown commands provided: {unknown}')
 
     with open(args.cfg) as f:
         config_dict = load(f, Loader=Loader)
