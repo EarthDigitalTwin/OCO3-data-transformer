@@ -14,6 +14,8 @@
 
 
 import logging
+import os
+import tarfile
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from os.path import basename, dirname, join
@@ -82,9 +84,23 @@ def create_backup(src_path: str, store_type: Literal['local', 's3'], store_param
         src_path = urlparse(src_path).path
         src_dirname = dirname(src_path)
 
+        efs = os.getenv('USING_EFS') is not None
+
+        if efs:
+            dst_basename = f'{dst_basename}.tar'
+
         logger.info(f'Copying {src_path} to {join(src_dirname, dst_basename)}')
 
-        copytree(src_path, join(src_dirname, dst_basename))
+        if efs:
+            files = [join(dp, f) for dp, dn, filenames in os.walk(src_path) for f in filenames]
+
+            with tarfile.open(join(src_dirname, dst_basename), 'w') as tar:
+                for f in files:
+                    arc_f = f.removeprefix(src_dirname).lstrip('/')
+                    logger.debug(f'a {arc_f}')
+                    tar.add(f, arcname=arc_f)
+        else:
+            copytree(src_path, join(src_dirname, dst_basename))
 
         return join(src_dirname, dst_basename)
     elif store_type == 's3':
@@ -143,7 +159,18 @@ def delete_backup(path: str, store_type: Literal['local', 's3'], store_params: d
 
     try:
         # Check that the path we're deleting is actually Zarr data
-        ZarrWriter.open_zarr_group(path, store_type, store_params, root=True)
+        if not path.endswith('.tar'):
+            ZarrWriter.open_zarr_group(path, store_type, store_params, root=True)
+        else:
+            likely_zarr = False
+            with tarfile.open(path, 'r') as tar:
+                for f in tar.getnames():
+                    if basename(f) == '.zgroup':
+                        likely_zarr = True
+                        break
+            if not likely_zarr:
+                logger.error(f'Backup archive file at {path} does not appear to be a Zarr group')
+                return False
     except Exception as e:
         logger.warning(f'Zarr group at path {path} could not be opened. Maybe it does not exist. Error: {repr(e)}')
         return False
@@ -152,8 +179,12 @@ def delete_backup(path: str, store_type: Literal['local', 's3'], store_params: d
         try:
             path = urlparse(path).path.rstrip('/')
 
-            logger.info(f'Recursively deleting {path}')
-            rmtree(path)
+            if not path.endswith('.tar'):
+                logger.info(f'Recursively deleting {path}')
+                rmtree(path)
+            else:
+                logger.info(f'Deleting {path}')
+                os.remove(path)
         except Exception as e:
             logger.exception(e)
             return False

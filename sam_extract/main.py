@@ -19,11 +19,10 @@ import logging
 import os
 import sys
 import threading
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, Future
 from datetime import datetime
 from functools import partial
 from pathlib import Path
-from shutil import rmtree
 from tempfile import TemporaryDirectory
 from time import sleep
 from typing import List, Optional, Tuple
@@ -789,6 +788,40 @@ def process_inputs(in_files, cfg):
     with TemporaryDirectory(prefix='oco-sam-extract-', suffix='-zarr-scratch', ignore_cleanup_errors=True) as td:
         exclude = cfg['exclude-groups']
 
+        chunking: Tuple[int, int, int] = cfg['chunking']['config']
+
+        output_root, output_kwargs = output_cfg(cfg)
+
+        zarr_writer_pre = ZarrWriter(
+            os.path.join(output_root, cfg['output']['naming']['pre_qf']),
+            chunking,  # (5, 250, 250),
+            overwrite=False,
+            **output_kwargs
+        )
+
+        zarr_writer_post = ZarrWriter(
+            os.path.join(output_root, cfg['output']['naming']['post_qf']),
+            chunking,  # (5, 250, 250),
+            overwrite=False,
+            **output_kwargs
+        )
+
+        backup_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix='backup_worker')
+
+        backup_pre_future: Future = backup_executor.submit(
+            backup_zarr,
+            zarr_writer_pre.path,
+            zarr_writer_pre.store,
+            zarr_writer_pre.store_params
+        )
+
+        backup_post_future: Future = backup_executor.submit(
+            backup_zarr,
+            zarr_writer_post.path,
+            zarr_writer_post.store,
+            zarr_writer_post.store_params
+        )
+
         process = partial(process_input, cfg=cfg, temp_dir=td, exclude_groups=exclude)
 
         with ThreadPoolExecutor(max_workers=cfg.get('max-workers'), thread_name_prefix='process_worker') as pool:
@@ -822,39 +855,20 @@ def process_inputs(in_files, cfg):
         merged_pre = merge_groups(processed_groups_pre)
         merged_post = merge_groups(processed_groups_post)
 
-        chunking: Tuple[int, int, int] = cfg['chunking']['config']
+        logger.info('Data generation complete. Will proceed to final write when backups are completed...')
 
-        output_root, output_kwargs = output_cfg(cfg)
+        backup_pre = backup_pre_future.result()
+        backup_post = backup_post_future.result()
 
-        zarr_writer_pre = ZarrWriter(
-            os.path.join(output_root, cfg['output']['naming']['pre_qf']),
-            chunking,  # (5, 250, 250),
-            overwrite=False,
-            **output_kwargs
-        )
-
-        zarr_writer_post = ZarrWriter(
-            os.path.join(output_root, cfg['output']['naming']['post_qf']),
-            chunking,  # (5, 250, 250),
-            overwrite=False,
-            **output_kwargs
-        )
-
-        if merged_pre is not None:
-            backup_pre = backup_zarr(zarr_writer_pre.path, zarr_writer_pre.store, zarr_writer_pre.store_params)
-        else:
-            backup_pre = None
-
-        if merged_post is not None:
-            backup_post = backup_zarr(zarr_writer_post.path, zarr_writer_post.store, zarr_writer_post.store_params)
-        else:
-            backup_post = None
+        logger.info('Backups completed. Proceeding.')
 
         Path(PW_STATE_DIR).mkdir(parents=True, exist_ok=True)
         repair_file_data = dict(pre_qf_backup=backup_pre, post_qf_backup=backup_post)
 
         with open(ZARR_REPAIR_FILE, 'w') as fp:
             json.dump(repair_file_data, fp)
+
+        backup_executor.shutdown()
 
         if merged_pre is not None:
             logger.info('Merged processed pre_qf data')
