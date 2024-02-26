@@ -412,7 +412,7 @@ def mask_data(sams, targets, grid_ds, cfg):
     scaling = cfg.get('mask-scaling', 1)
     scaling = min(max(scaling, 1), 1.5)
 
-    logger.info(f'Footprint scaling factor: {scaling}')
+    logger.debug(f'Footprint scaling factor: {scaling}')
 
     target_dict = {}
 
@@ -616,7 +616,6 @@ def process_input(input_file,
         path = input_file
 
     logger.info(f'Processing input at {path}')
-    logger.info('Opening granule')
 
     try:
         with GranuleReader(path, **additional_params) as ds:
@@ -1105,7 +1104,20 @@ def parse_args():
         action='store_false'
     )
 
+    parser.add_argument(
+        '-v',
+        help='Verbose logging output',
+        dest='verbose',
+        action='store_true'
+    )
+
     args = parser.parse_args()
+
+    log_level = logging.DEBUG if args.verbose else logging.INFO
+    logger.setLevel(log_level)
+
+    for handler in logging.getLogger().handlers:
+        handler.setLevel(log_level)
 
     with open(args.cfg) as f:
         config_dict = load(f, Loader=Loader)
