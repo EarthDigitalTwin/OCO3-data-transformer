@@ -142,7 +142,7 @@ class ZarrWriter(Writer):
             logger.info('File exists and will be appended to')
 
             if self.final:
-                logger.info('Getting dynamic attributes from store')
+                logger.debug('Getting dynamic attributes from store')
                 zarr_group = ZarrWriter.open_zarr_group(self.path, self.store, self.store_params, root=True)
 
                 append_start = datetime.fromtimestamp(ds['/'].time.min().astype(int).item() / 1e9).strftime(ISO_8601)
@@ -162,7 +162,7 @@ class ZarrWriter(Writer):
                 )
 
         else:
-            logger.debug('Array does not exist so it will be created.')
+            logger.info('Array does not exist so it will be created.')
 
             if self.final:
                 dynamic_attrs = dict(
@@ -285,8 +285,6 @@ class ZarrWriter(Writer):
         logger.info(f'Finished writing Zarr array to {self.path}')
 
         if self.__verify and not self.overwrite:
-            logger.info('Verifying written Zarr array')
-
             good = True
 
             zarr_group = ZarrWriter.open_zarr_group(self.path, self.store, self.store_params, root=True)
@@ -306,7 +304,7 @@ class ZarrWriter(Writer):
 
                 good = False
             else:
-                logger.info('Appended zarr array is monotonically increasing along append dimension')
+                logger.debug('Appended zarr array is monotonically increasing along append dimension')
 
             dim = zarr_group['/'][self.__append_dim].to_numpy()
 
@@ -327,8 +325,7 @@ class ZarrWriter(Writer):
 
                     prev = v
 
-                logger.info(f'Dropping {len(drop)} duplicate slices')
-                logger.debug(f'Dropping slices at indices: {drop}')
+                logger.info(f'Dropping {len(drop)} duplicate slices at indices: {drop}')
 
                 for key in Writer.GROUP_KEYS:
                     if key not in zarr_group:
@@ -338,7 +335,7 @@ class ZarrWriter(Writer):
 
                 good = False
             else:
-                logger.info('Appended zarr array contains no duplicate slices along append dimension')
+                logger.debug('Appended zarr array contains no duplicate slices along append dimension')
 
             if not good:
                 logger.info('Writing corrected group')

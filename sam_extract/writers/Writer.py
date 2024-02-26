@@ -14,7 +14,7 @@
 
 import logging
 from abc import ABC, abstractmethod
-from os.path import exists
+from os.path import exists, join
 from typing import Dict
 from urllib.parse import urlparse
 
@@ -78,7 +78,7 @@ class Writer(ABC):
 
     def exists(self) -> bool:
         if self.store == 'local':
-            return exists(urlparse(self.path).path)
+            return exists(join(urlparse(self.path).path, '.zgroup'))
         else:
             METRICS.start_time('writer.exists.s3')
 

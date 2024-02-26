@@ -29,6 +29,7 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 import pika
+import psutil
 import xarray as xr
 import yaml
 from pika.channel import Channel
@@ -427,7 +428,7 @@ def mask_data(sams, targets, grid_ds, cfg):
     scaling = cfg.get('mask-scaling', 1)
     scaling = min(max(scaling, 1), 1.5)
 
-    logger.info(f'Footprint scaling factor: {scaling}')
+    logger.debug(f'Footprint scaling factor: {scaling}')
 
     target_dict = {}
 
@@ -670,7 +671,6 @@ def process_input(input_file,
         path = input_file
 
     logger.info(f'Processing input at {path}')
-    logger.info('Opening granule')
 
     try:
         with GranuleReader(path, **additional_params) as ds:
@@ -1161,7 +1161,23 @@ def parse_args():
         action='store_false'
     )
 
-    args = parser.parse_args()
+    parser.add_argument(
+        '-v',
+        help='Verbose logging output',
+        dest='verbose',
+        action='store_true'
+    )
+
+    args, unknown = parser.parse_known_args()
+
+    log_level = logging.DEBUG if args.verbose else logging.INFO
+    logger.setLevel(log_level)
+
+    for handler in logging.getLogger().handlers:
+        handler.setLevel(log_level)
+
+    if len(unknown) > 0:
+        logger.warning(f'Unknown commands provided: {unknown}')
 
     with open(args.cfg) as f:
         config_dict = load(f, Loader=Loader)
@@ -1244,6 +1260,36 @@ if __name__ == '__main__':
     start_time = datetime.now()
     v = -1
 
+    DEBUG_MPROF = os.getenv('DEBUG_MPROF')
+
+    if DEBUG_MPROF is not None:
+        try:
+            interval = float(DEBUG_MPROF)
+            assert 0.1 <= interval <= 300
+        except:
+            interval = 15
+
+        process = psutil.Process(os.getpid())
+
+        start_rss = process.memory_info().rss
+        start_vms = process.memory_info().vms
+
+        profile_logger = logging.getLogger('debug_mprof')
+
+        def profile_memory():
+            while True:
+                KB_rss = int((process.memory_info().rss - start_rss) / (1024 ** 2))
+                KB_vms = int((process.memory_info().vms - start_vms) / (1024 ** 2))
+                profile_logger.debug('rss_used={0:10,d} MiB vms_used={1:10,d} MiB'.format(KB_rss, KB_vms))
+
+                sleep(interval)
+
+        threading.Thread(
+            target=profile_memory,
+            daemon=True,
+            name='mprof_thread'
+        ).start()
+
     try:
         main(parse_args())
         v = 0
@@ -1259,4 +1305,8 @@ if __name__ == '__main__':
             METRICS.done()
 
         logger.info(f'Exiting code {v}. Runtime={datetime.now() - start_time}')
+        if DEBUG_MPROF is not None:
+            KB_rss = int((process.memory_info().rss - start_rss) / (1024 ** 2))
+            KB_vms = int((process.memory_info().vms - start_vms) / (1024 ** 2))
+            profile_logger.debug('rss_used={0:10,d} MiB vms_used={1:10,d} MiB (final)'.format(KB_rss, KB_vms))
         exit(v)

@@ -32,3 +32,4 @@ aiobotocore>=2.3.0,<2.4
 pika
 schema
 requests
+psutil
