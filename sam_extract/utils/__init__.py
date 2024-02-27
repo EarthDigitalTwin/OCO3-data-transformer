@@ -12,5 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from sam_extract.writers.Writer import Writer
-from sam_extract.writers.ZarrWriter import ZarrWriter
+import os
+from os.path import join
+
+from sam_extract.utils.ZarrUtils import AWSConfig
+from sam_extract.utils.ZarrUtils import create_backup as backup_zarr
+from sam_extract.utils.ZarrUtils import delete_backup as delete_zarr_backup
+
+PW_STATE_DIR = os.getenv('ZARR_BACKUP_DIR', '/tmp/oco_pipeline_zarr_state')
+PW_STATE_FILE_NAME = 'ZARR_WRITE.json'
+
+ZARR_REPAIR_FILE = join(PW_STATE_DIR, PW_STATE_FILE_NAME)
