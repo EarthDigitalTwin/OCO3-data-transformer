@@ -12,17 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from setuptools import setup, find_packages
+import os
 
-setup(
-    name='oco3_sam_zarr',
-    version='2024.02.26',
-    url='https://github.jpl.nasa.gov/rileykk/oco-sam-extract',
-    author='Riley Kuttruff',
-    author_email='riley.k.kuttruff@jpl.nasa.gov',
-    description='Extract SAMs from OCO-3 data and store them as Zarr either locally or in S3',
-    packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests", "scripts"]),
-    platforms='any',
-    python_requires='>=3.9',
-    include_package_data=True,
-)
+PW_STATE_DIR = os.getenv('ZARR_BACKUP_DIR', '/tmp/oco_pipeline_zarr_state')
+PW_STATE_FILE_NAME = 'ZARR_WRITE.json'
+
+from os.path import join
+
+ZARR_REPAIR_FILE = join(PW_STATE_DIR, PW_STATE_FILE_NAME)
+
+from sam_extract.utils.ZarrUtils import AWSConfig
+from sam_extract.utils.ZarrUtils import create_backup as backup_zarr
+from sam_extract.utils.ZarrUtils import delete_backup as delete_zarr_backup

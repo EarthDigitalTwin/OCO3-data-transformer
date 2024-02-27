@@ -39,7 +39,7 @@ from sam_extract.exceptions import *
 from sam_extract.readers import GranuleReader
 from sam_extract.targets import FILL_VALUE as TARGET_FILL
 from sam_extract.targets import extract_id, determine_id_type
-from sam_extract.writers import ZARR_REPAIR_FILE, PW_STATE_DIR, backup_zarr, delete_zarr_backup
+from sam_extract.utils import ZARR_REPAIR_FILE, PW_STATE_DIR, backup_zarr, delete_zarr_backup
 from sam_extract.writers import ZarrWriter
 from schema import Optional as Opt
 from schema import Schema, Or, SchemaError

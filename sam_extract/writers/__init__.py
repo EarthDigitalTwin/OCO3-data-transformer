@@ -22,9 +22,6 @@ from os.path import join
 ZARR_REPAIR_FILE = join(PW_STATE_DIR, PW_STATE_FILE_NAME)
 
 from sam_extract.writers.Writer import Writer
-from sam_extract.writers.NetCDFWriter import NetCDFWriter
+# from sam_extract.writers.NetCDFWriter import NetCDFWriter
 from sam_extract.writers.ZarrWriter import ZarrWriter
 
-from sam_extract.writers.ZarrUtils import AWSConfig
-from sam_extract.writers.ZarrUtils import create_backup as backup_zarr
-from sam_extract.writers.ZarrUtils import delete_backup as delete_zarr_backup

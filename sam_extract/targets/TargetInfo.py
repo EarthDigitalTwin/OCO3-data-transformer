@@ -22,7 +22,7 @@ TARGET_TYPES = dict(
     sif=3,          # *** Text ***
     volcano=4,      # Numeric
     tccon=5,        # Numeric
-    other=6,        # Mixture; use best effort to extract numerical ids
+    other=6,        # Mixture; use a best-effort approach to extract numerical ids
     fill=-1
 )
 
