@@ -147,6 +147,10 @@ INTERP_MAX_PARALLEL = max(int(os.environ.get('INTERP_MAX_PARALLEL', 2)), 1)
 INTERP_SEMA = threading.BoundedSemaphore(value=INTERP_MAX_PARALLEL)
 
 
+OPERATION_MODE_SAM = 4
+OPERATION_MODE_TARGET = 2
+
+
 def _unload_np_to_disk(path: str, a: np.ndarray, compress=False):
     """
     Map a numpy array to disk, so it can be unloaded from memory.
@@ -253,7 +257,7 @@ def __validate_files(files):
 
 
 def fit_data_to_grid(sams, cfg):
-    logger.info('Concatenating SAM datasets for interpolation')
+    logger.debug('Concatenating extracted datasets for interpolation')
 
     if len(sams) == 0:
         return None
@@ -393,7 +397,7 @@ def fit_data_to_grid(sams, cfg):
     return gridded_ds
 
 
-def mask_data(sams, targets, grid_ds, cfg):
+def mask_data(sams, targets, op_modes, grid_ds, cfg):
     if sams is None:
         return None
 
@@ -402,7 +406,7 @@ def mask_data(sams, targets, grid_ds, cfg):
 
     assert len(sams) == len(targets)
 
-    logger.info('Constructing SAM polygons to build mask')
+    logger.info('Constructing polygons to build mask')
 
     latitudes = grid_ds['/'].latitude.to_numpy()
     longitudes = grid_ds['/'].longitude.to_numpy()
@@ -414,10 +418,10 @@ def mask_data(sams, targets, grid_ds, cfg):
 
     logger.debug(f'Footprint scaling factor: {scaling}')
 
-    target_dict = {}
+    meta_dict = {}
 
-    for i, (sam, target) in enumerate(zip(sams, targets)):
-        logger.info(f'Creating bounding polys for SAM of {len(sam["/"].vertex_latitude):,} footprints '
+    for i, (sam, target, op_mode) in enumerate(zip(sams, targets, op_modes)):
+        logger.info(f'Creating bounding polys for region of {len(sam["/"].vertex_latitude):,} footprints '
                     f'[{i+1}/{len(sams)}]')
 
         footprint_polygons = []
@@ -426,7 +430,7 @@ def mask_data(sams, targets, grid_ds, cfg):
                 sam['/'].vertex_latitude.to_numpy(),
                 sam['/'].vertex_longitude.to_numpy(),
                 target.target_id.to_numpy(),
-                target.target_name.to_numpy()
+                target.target_name.to_numpy(),
         ):
             vertices = [(lons[i].item(), lats[i].item()) for i in range(len(lats))]
             vertices.append((lons[0].item(), lats[0].item()))
@@ -443,7 +447,7 @@ def mask_data(sams, targets, grid_ds, cfg):
             if isinstance(tn, np.ndarray):
                 tn = tn.item()
 
-            target_dict[p.wkt] = (tid, tn)
+            meta_dict[p.wkt] = (tid, tn, op_mode)
             footprint_polygons.append(p)
 
         if scaling != 1.0:
@@ -455,11 +459,12 @@ def mask_data(sams, targets, grid_ds, cfg):
 
         sam_polys.append((bounding_poly.bounds, footprint_polygons))
 
-    logger.info('Producing geo mask from SAM polys')
+    logger.info('Producing geo mask from generated polys')
 
     geo_mask = np.full((len(latitudes), len(longitudes)), False)
     target_ids = np.full((len(latitudes), len(longitudes)), TARGET_FILL, dtype='int')
     target_types = np.full((len(latitudes), len(longitudes)), TARGET_FILL, dtype='byte')
+    operation_mode = np.full((len(latitudes), len(longitudes)), TARGET_FILL, dtype='byte')
 
     lon_len = longitudes[1] - longitudes[0]
     lat_len = latitudes[1] - latitudes[0]
@@ -482,7 +487,7 @@ def mask_data(sams, targets, grid_ds, cfg):
             indices.append((
                 np.argwhere(np.logical_and(miny <= latitudes, latitudes <= maxy)),
                 np.argwhere(np.logical_and(minx <= longitudes, longitudes <= maxx)),
-                target_dict.get(poly.wkt, ('UNKNOWN', 'UNKNOWN')),
+                meta_dict.get(poly.wkt, ('UNKNOWN', 'UNKNOWN')),
                 poly
             ))
 
@@ -496,7 +501,7 @@ def mask_data(sams, targets, grid_ds, cfg):
 
         valid_points = 0
 
-        for lat_indices, lon_indices, (tid, tn), poly in indices:
+        for lat_indices, lon_indices, (tid, tn, op_mode), poly in indices:
             for lon_i in lon_indices:
                 for lat_i in lat_indices:
                     lon_i = tuple(lon_i)
@@ -523,12 +528,14 @@ def mask_data(sams, targets, grid_ds, cfg):
                         if target_types[lat_i][lon_i] == TARGET_FILL:
                             target_types[lat_i][lon_i] = id_type
 
+                        if operation_mode[lat_i][lon_i] == TARGET_FILL:
+                            operation_mode[lat_i][lon_i] = op_mode
+
         logger.debug(f'Finished applying polys in ({bounds}) to geo mask. Added {valid_points:,} valid points')
 
-    mask = np.array([geo_mask])
+    # Apply mask RIGHT AWAY, seems to be BAD for memory otherwise
 
-    # TODO: Maybe the application should be moved to after target_id & type are added to grid_ds to address potential
-    #  issue with more target chunks than variable chunks
+    mask = np.array([geo_mask])
 
     logger.info('Applying mask to dataset')
 
@@ -548,6 +555,11 @@ def mask_data(sams, targets, grid_ds, cfg):
     target_type_attrs = dict(
         units='none',
         long_name='OCO-3 Target (or SAM) ID target type: 1=fossil, 2=ecostress, 3=sif, 4=volcano, 5=tccon, 6=other',
+    )
+
+    operation_mode_attrs = dict(
+        units='none',
+        long_name='OCO-3 Operation Mode: 2=Target, 4=Snapshot Area Map',
     )
 
     target_ids_da = xr.DataArray(
@@ -574,8 +586,21 @@ def mask_data(sams, targets, grid_ds, cfg):
         attrs=target_type_attrs
     )
 
+    operation_mode_da = xr.DataArray(
+        data=np.array([operation_mode], dtype='byte'),
+        coords={dim: grid_ds['/'].coords[dim] for dim in grid_ds['/'].coords},
+        dims=[
+            'time',
+            'latitude',
+            'longitude'
+        ],
+        name='operation_mode',
+        attrs=operation_mode_attrs
+    )
+
     grid_ds['/']['target_id'] = target_ids_da
     grid_ds['/']['target_type'] = target_types_da
+    grid_ds['/']['operation_mode'] = operation_mode_da
 
     return grid_ds
 
@@ -621,24 +646,49 @@ def process_input(input_file,
         with GranuleReader(path, **additional_params) as ds:
             mode_array = ds['/Sounding']['operation_mode']
 
-            logger.info('Splitting into individual SAM groups')
+            logger.info('Splitting into individual SAM regions')
 
-            sam_slices = []
-            sam = False
+            n_sams = 0
+            n_targets = 0
 
+            region_slices = []
+            in_region = False
             start = None
+
             for i, mode in enumerate(mode_array.to_numpy()):
-                if mode.item() == 4:
-                    if not sam:
-                        sam = True
+                if mode.item() == OPERATION_MODE_SAM:
+                    if not in_region:
+                        in_region = True
                         start = i
                 else:
-                    if sam:
-                        sam = False
-                        sam_slices.append(slice(start, i))
+                    if in_region:
+                        in_region = False
+                        region_slices.append((slice(start, i), OPERATION_MODE_SAM))
+                        n_sams += 1
 
-            if sam:
-                sam_slices.append(slice(start, i))
+            if in_region:
+                region_slices.append((slice(start, i), OPERATION_MODE_SAM))
+                n_sams += 1
+
+            logger.info('Splitting into individual target regions')
+
+            in_region = False
+            start = None
+
+            for i, mode in enumerate(mode_array.to_numpy()):
+                if mode.item() == OPERATION_MODE_TARGET:
+                    if not in_region:
+                        in_region = True
+                        start = i
+                else:
+                    if in_region:
+                        in_region = False
+                        region_slices.append((slice(start, i), OPERATION_MODE_TARGET))
+                        n_targets += 1
+
+            if in_region:
+                region_slices.append((slice(start, i), OPERATION_MODE_TARGET))
+                n_targets += 1
 
             extracted_sams_pre_qf = []
             extracted_sams_post_qf = []
@@ -646,21 +696,27 @@ def process_input(input_file,
             extracted_targets_pre_qf = []
             extracted_targets_post_qf = []
 
-            logger.info('Filtering out bad quality soundings in SAM ranges')
+            extracted_op_modes_pre_qf = []
+            extracted_op_modes_post_qf = []
 
-            for s in sam_slices:
+            logger.info(f'Identified {n_sams} SAM regions and {n_targets} Target regions')
+
+            logger.info('Filtering out bad quality soundings in selected ranges')
+
+            for s, op_mode in region_slices:
                 sam_group = {group: ds[group].isel(sounding_id=s) for group in ds if group not in exclude_groups}
                 tid_group = ds['/Sounding'].isel(sounding_id=s)[['target_id', 'target_name']]
 
                 if output_pre_qf:
                     extracted_sams_pre_qf.append(sam_group)
                     extracted_targets_pre_qf.append(tid_group)
+                    extracted_op_modes_pre_qf.append(op_mode)
 
                 quality = sam_group['/'].xco2_quality_flag == 0
 
                 # If this SAM has no good data
                 if not any(quality):
-                    logger.info(f'Dropping SAM from sounding_id range '
+                    logger.info(f'Dropping region from sounding_id range '
                                 f'{ds["/"].sounding_id[s.start].item()} to '
                                 f'{ds["/"].sounding_id[s.stop].item()} ({len(quality):,} soundings) as there are no '
                                 f'points flagged as good.')
@@ -674,25 +730,26 @@ def process_input(input_file,
                 extracted_targets_post_qf.append(
                     tid_group.where(quality, drop=True)
                 )
+                extracted_op_modes_post_qf.append(op_mode)
 
             if output_pre_qf:
-                logger.info(f'Extracted {len(extracted_sams_pre_qf)} SAMs total, {len(extracted_sams_post_qf)} SAMs '
-                            f'with good data')
+                logger.info(f'Extracted {len(extracted_sams_pre_qf)} regions total, {len(extracted_sams_post_qf)} '
+                            f'regions with good data')
             else:
-                logger.info(f'Extracted {len(extracted_sams_post_qf)} SAMs with good data')
+                logger.info(f'Extracted {len(extracted_sams_post_qf)} regions with good data')
 
             if len(extracted_sams_post_qf) == 0:
                 if not output_pre_qf or len(extracted_sams_pre_qf) == 0:
-                    logger.info('No SAM data to work with, skipping input')
+                    logger.info('No SAM or target data to work with, skipping input')
                     return None, None, True, path
 
             chunking: Tuple[int, int, int] = cfg['chunking']['config']
 
             if output_pre_qf:
-                logger.info('Fitting unfiltered SAM data to output grid')
+                logger.info('Fitting unfiltered data to output grid')
 
                 gridded_groups_pre_qf = mask_data(
-                    extracted_sams_pre_qf, extracted_targets_pre_qf,
+                    extracted_sams_pre_qf, extracted_targets_pre_qf, extracted_op_modes_pre_qf,
                     fit_data_to_grid(
                         extracted_sams_pre_qf,
                         cfg
@@ -707,7 +764,7 @@ def process_input(input_file,
                 if gridded_groups_pre_qf is not None:
                     temp_path_pre = os.path.join(temp_dir, 'pre_qf', os.path.basename(input_file)) + '.zarr'
 
-                    logger.info('Outputting unfiltered SAM product slice to temporary Zarr array')
+                    logger.info('Outputting unfiltered product slice to temporary Zarr array')
 
                     writer = ZarrWriter(temp_path_pre, chunking, overwrite=True, verify=False)
                     writer.write(gridded_groups_pre_qf)
@@ -718,10 +775,10 @@ def process_input(input_file,
                 else:
                     ret_pre_qf = None
 
-            logger.info('Fitting filtered SAM data to output grid')
+            logger.info('Fitting filtered data to output grid')
 
             gridded_groups_post_qf = mask_data(
-                extracted_sams_post_qf, extracted_targets_post_qf,
+                extracted_sams_post_qf, extracted_targets_post_qf, extracted_op_modes_post_qf,
                 fit_data_to_grid(
                     extracted_sams_post_qf,
                     cfg
@@ -764,7 +821,7 @@ def merge_groups(groups):
     if len(groups) == 0:
         return None
 
-    return {group: xr.concat([g[group] for g in groups], dim='time').sortby('time') for group in groups[0]}
+    return {group: xr.concat([g[group] for g in groups], dim='time').sortby('time') for group in groups[0]}, len(groups)
 
 
 def process_inputs(in_files, cfg):
@@ -834,13 +891,13 @@ def process_inputs(in_files, cfg):
                     if result_pre is not None:
                         processed_groups_pre.append(result_pre)
                     else:
-                        logger.info(f'No pre-QF SAM data generated for {path}; likely none was present')
+                        logger.info(f'No pre-QF data generated for {path}; likely no SAMs/targets were present')
 
                     if result_post is not None:
                         processed_groups_post.append(result_post)
                     else:
-                        logger.info(f'No post-QF SAM data generated for {path}; likely no SAMs were present or they '
-                                    f'were all filtered out')
+                        logger.info(f'No post-QF data generated for {path}; likely no SAMs/targets were present or they'
+                                    f' were all filtered out')
                 else:
                     failed_inputs.append(path)
 
@@ -852,8 +909,8 @@ def process_inputs(in_files, cfg):
             for failed in failed_inputs:
                 logger.error(f' - {failed}')
 
-        merged_pre = merge_groups(processed_groups_pre)
-        merged_post = merge_groups(processed_groups_post)
+        merged_pre, len_pre = merge_groups(processed_groups_pre)
+        merged_post, len_post = merge_groups(processed_groups_post)
 
         logger.info('Data generation complete. Will proceed to final write when backups are completed...')
 
@@ -871,7 +928,7 @@ def process_inputs(in_files, cfg):
         backup_executor.shutdown()
 
         if merged_pre is not None:
-            logger.info('Merged processed pre_qf data')
+            logger.info(f'Writing {len_pre} days of pre_qf data')
 
             zarr_writer_pre.write(
                 merged_pre,
@@ -884,7 +941,7 @@ def process_inputs(in_files, cfg):
             logger.info('No pre_qf data generated')
 
         if merged_post is not None:
-            logger.info('Merged processed post_qf data')
+            logger.info(f'Writing {len_pre} days of post_qf data')
 
             zarr_writer_post.write(
                 merged_post,
@@ -894,7 +951,8 @@ def process_inputs(in_files, cfg):
                 )
             )
         else:
-            logger.info('No post_qf data generated, all SAMs on these days may have been filtered out for bad qf')
+            logger.info('No post_qf data generated, all SAMs and target soundings on these days may have been filtered '
+                        'out for bad qf')
 
         logger.info(f'Cleaning up temporary directory at {td}')
 
@@ -1204,6 +1262,10 @@ if __name__ == '__main__':
     v = -1
 
     DEBUG_MPROF = os.getenv('DEBUG_MPROF')
+
+    profile_logger = None
+    process = None
+    start_rss, start_vms = None, None
 
     if DEBUG_MPROF is not None:
         try:

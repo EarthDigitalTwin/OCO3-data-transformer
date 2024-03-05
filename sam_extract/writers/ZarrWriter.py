@@ -108,7 +108,7 @@ class ZarrWriter(Writer):
             return groups
 
     def write(self, ds: Dict[str, Dataset], attrs: Dict[str, str] | None = None):
-        logger.info(f'Writing SAM group to Zarr array at {self.path}')
+        logger.info(f'Writing dataset group to Zarr array at {self.path}')
 
         if attrs is None:
             attrs = {}
@@ -200,6 +200,8 @@ class ZarrWriter(Writer):
             encodings['/']['target_id']['dtype'] = 'int32'
             encodings['/']['target_type']['_FillValue'] = TARGET_FILL
             encodings['/']['target_type']['dtype'] = 'int8'
+            encodings['/']['operation_mode']['_FillValue'] = TARGET_FILL
+            encodings['/']['operation_mode']['dtype'] = 'int8'
 
             if not TEMP_XARRAY_8016:
                 for grp in ds:
