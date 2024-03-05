@@ -15,6 +15,7 @@
 import os
 from os.path import join
 
+from sam_extract.utils.DaskLogging import ProgressLogging
 from sam_extract.utils.ZarrUtils import AWSConfig
 from sam_extract.utils.ZarrUtils import create_backup as backup_zarr
 from sam_extract.utils.ZarrUtils import delete_backup as delete_zarr_backup

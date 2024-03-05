@@ -40,6 +40,7 @@ from sam_extract.readers import GranuleReader
 from sam_extract.targets import FILL_VALUE as TARGET_FILL
 from sam_extract.targets import extract_id, determine_id_type
 from sam_extract.utils import ZARR_REPAIR_FILE, PW_STATE_DIR, backup_zarr, delete_zarr_backup
+from sam_extract.utils import ProgressLogging
 from sam_extract.writers import ZarrWriter
 from schema import Optional as Opt
 from schema import Schema, Or, SchemaError
@@ -930,26 +931,28 @@ def process_inputs(in_files, cfg):
         if merged_pre is not None:
             logger.info(f'Writing {len_pre} days of pre_qf data')
 
-            zarr_writer_pre.write(
-                merged_pre,
-                attrs=dict(
-                    title=cfg['output']['title']['pre_qf'],
-                    quality_flag_filtered='no'
+            with ProgressLogging(log_level=logging.INFO):
+                zarr_writer_pre.write(
+                    merged_pre,
+                    attrs=dict(
+                        title=cfg['output']['title']['pre_qf'],
+                        quality_flag_filtered='no'
+                    )
                 )
-            )
         else:
             logger.info('No pre_qf data generated')
 
         if merged_post is not None:
             logger.info(f'Writing {len_pre} days of post_qf data')
 
-            zarr_writer_post.write(
-                merged_post,
-                attrs=dict(
-                    title=cfg['output']['title']['post_qf'],
-                    quality_flag_filtered='yes'
+            with ProgressLogging(log_level=logging.INFO):
+                zarr_writer_post.write(
+                    merged_post,
+                    attrs=dict(
+                        title=cfg['output']['title']['post_qf'],
+                        quality_flag_filtered='yes'
+                    )
                 )
-            )
         else:
             logger.info('No post_qf data generated, all SAMs and target soundings on these days may have been filtered '
                         'out for bad qf')

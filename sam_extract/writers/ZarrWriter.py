@@ -25,6 +25,7 @@ import s3fs
 import xarray as xr
 import zarr
 from sam_extract.targets import FILL_VALUE as TARGET_FILL
+from sam_extract.utils import ProgressLogging
 from sam_extract.writers import Writer
 from sam_extract.writers.Writer import FIXED_ATTRIBUTES
 from xarray import Dataset
@@ -343,13 +344,15 @@ class ZarrWriter(Writer):
                     temp_path = os.path.join(td, 'sorted.zarr')
 
                     writer = ZarrWriter(temp_path, self.__chunking, overwrite=True, verify=False)
-                    writer.write(zarr_group)
+                    with ProgressLogging(log_level=logging.INFO, interval=10):
+                        writer.write(zarr_group)
 
                     corrected_group = ZarrWriter.open_zarr_group(temp_path, 'local', None)
 
                     self.overwrite = True
                     self.__correct_ct = corrected_group['/'].attrs.get('date_created', None)
 
-                    self.write(corrected_group)
+                    with ProgressLogging(log_level=logging.INFO, interval=10):
+                        self.write(corrected_group)
             else:
                 logger.info('Appended Zarr array looks good')
