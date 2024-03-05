@@ -13,7 +13,7 @@ interest on a single overflight. This is called a Snapshot Area Map, or SAM, and
     Example SAM capture.
 </p>
 
-This software takes daily OCO-3 CO2 input, isolates SAM captures, and fits the data to a global, fixed grid for a level 3 output product.
+This software takes daily OCO-3 CO2 input, isolates SAM- and target-mode captures, and fits the data to a global, fixed grid for a level 3 output product.
 
 ### Source Data
 
@@ -50,7 +50,7 @@ Zarr support is being developed for analysis tools like [Apache SDAP](https://sd
 
 In parallel:
 1. Input NetCDF file is opened
-2. Data is filtered for SAM observations (`/Sounding/operation_mode == 4`)
+2. Data is filtered for SAM and Target observations (`/Sounding/operation_mode in {2,4}`)
 3. The following steps are run on the filtered data that both has and has not been filtered by the quality flag:
    1. Desired science variables are interpolated to fit to a fixed lat/lon grid
    2. Output gridded arrays are masked to only include pixels that intersect with the actual source SAM footprints
