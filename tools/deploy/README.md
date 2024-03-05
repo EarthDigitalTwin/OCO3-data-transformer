@@ -16,7 +16,7 @@ files and [Lambda](https://aws.amazon.com/lambda/?nc2=h_ql_prod_cp_lbd) to proce
 triggered with an [EventBridge](https://aws.amazon.com/eventbridge/?nc2=h_ql_prod_ap_eb) schedule. Logs from the various components are aggregated into a [CloudWatch](https://aws.amazon.com/cloudwatch/?nc2=h_ql_prod_mg_cw) Log Group and
 Amazon [Simple Notification Service (SNS)](https://aws.amazon.com/sns/?nc2=h_ql_prod_ap_sns) is used to notify interested users in the event of a failure.
 
-The image used for the processing step should be tagged `>=2024.01.25` (convention is to start tags with the date of build), as that allows for detection of errors that occur during the critical phase of processing (final result write)
+The image used for the processing step should be tagged `>=2024.02.26` (convention is to start tags with the date of build), as that allows for detection of errors that occur during the critical phase of processing (final result write)
 and subsequent restoration of result data from a backup. This prevents corruption of output data should a failure occur here. 
 
 <p align="center">
