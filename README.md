@@ -268,14 +268,13 @@ python main.py -i <path to config yaml>
 Command line usage:
 
 ```
-usage: main.py [-h] -i YAML [--ed-user EDU] [--ed-pass EDP] [--skip-netrc]
+usage: main.py [-h] -i YAML [--ed-user EDU] [--ed-pass EDP]
 
 options:
   -h, --help     show this help message and exit
   -i YAML        Configuration yaml file
   --ed-user EDU  Earthdata username
   --ed-pass EDP  Earthdata password
-  --skip-netrc   Don't check for a .netrc file
 ```
 
 ### Docker Image Build & Run

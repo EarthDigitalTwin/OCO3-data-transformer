@@ -560,7 +560,7 @@ locals {
   batch_definition_containerprops_process = jsonencode({
     image = local.image
     command = concat(
-      ["python", "/sam_extract/main.py", "-i", "/var/pipeline-rc.yaml", "--skip-netrc"],
+      ["python", "/sam_extract/main.py", "-i", "/var/pipeline-rc.yaml"],
       var.verbose ? ["-v"] : []
     )
     jobRoleArn       = data.aws_iam_role.iam_task_role.arn

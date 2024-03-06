@@ -17,17 +17,12 @@ import logging
 import os
 import tempfile
 import threading
-from getpass import getpass
-from netrc import netrc
-from subprocess import Popen
 from typing import Dict, Optional, List, Tuple
 from urllib.parse import urlparse, ParseResult
 
 import boto3
-import requests
 import xarray as xr
 from botocore.exceptions import ClientError
-
 from sam_extract.exceptions import ReaderException
 
 logger = logging.getLogger(__name__)
@@ -127,9 +122,6 @@ class GranuleReader:
 
         fp = tempfile.NamedTemporaryFile(suffix='.nc4')
 
-        if 'urs' in auth:
-            auth = GranuleReader._get_temporary_creds(auth['urs'])
-
         with BOTO_LOCK:
             global BOTO_SESSION
             if BOTO_SESSION is None:
@@ -204,60 +196,3 @@ class GranuleReader:
                            f'{expected_length:,} (expected) != {os.path.getsize(fp.name):,} (downloaded)')
 
         return fp
-
-    @staticmethod
-    def _get_temporary_creds(urs_endpoint: str) -> Dict[str, str]:
-        logger.info(f'Fetching temporary S3 credentials from {urs_endpoint}')
-
-        response = requests.get(urs_endpoint)
-        response.raise_for_status()
-
-        response_dict = response.json()
-
-        return dict(
-            accessKeyID=response_dict['accessKeyId'],
-            secretAccessKey=response_dict['secretAccessKey'],
-            sessionToken=response_dict['sessionToken']
-        )
-
-    @staticmethod
-    def configure_netrc(username, password, urs='urs.earthdata.nasa.gov',):
-        netrc_name = ".netrc"
-
-        if urs in CHECKED_URS:
-            return
-
-        logger.info(f'Checking if {urs} netrc is present')
-
-        try:
-            netrcDir = os.path.expanduser(f"~/{netrc_name}")
-            _ = netrc(netrcDir).authenticators(urs)[0]
-
-            logger.info('Found .netrc in homedir with needed creds')
-        except (FileNotFoundError, TypeError):
-            logger.warning('.netrc not found or does not contain needed creds, trying to add them')
-
-            # assert username is not None, 'Username must be provided if netrc is not present'
-            # assert password is not None, 'Password must be provided if netrc is not present'
-
-            if username is None:
-                username = getpass("Earthdata Username: ")
-
-            if password is None:
-                password = getpass("Earthdata Password: ")
-
-            homeDir = os.path.expanduser("~")
-
-            with open(os.path.join(homeDir, netrc_name), 'at') as nf:
-                nf.write(f'\nmachine {urs}\n')
-                nf.write(f'\n    login {username}\n')
-                nf.write(f'\n    password {password}\n')
-
-            # Popen('touch {0}{2} | echo machine {1} >> {0}{2}'.format(homeDir + os.sep, urs, netrc_name), shell=True)
-            # Popen('echo login {} >> {}{}'.format(username, homeDir + os.sep, netrc_name), shell=True)
-            # Popen('echo \'password {} \'>> {}{}'.format(password, homeDir + os.sep, netrc_name),
-            #       shell=True)
-            # Set restrictive permissions
-            Popen('chmod 0600 {0}{1}'.format(homeDir + os.sep, netrc_name), shell=True)
-
-        CHECKED_URS.append(urs)
