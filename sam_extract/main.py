@@ -94,7 +94,6 @@ RMQ_SCHEMA = Schema({
                 'path': str,
                 Opt('accessKeyID'): str,
                 Opt('secretAccessKey'): str,
-                Opt('urs'): str
             }
         )
     ]
@@ -108,7 +107,6 @@ FILES_SCHEMA = Schema([
             'path': str,
             Opt('accessKeyID'): str,
             Opt('secretAccessKey'): str,
-            Opt('urs'): str
         }
     )
 ])
@@ -1212,13 +1210,6 @@ def parse_args():
     )
 
     parser.add_argument(
-        '--skip-netrc',
-        help='Don\'t check for a .netrc file',
-        dest='netrc',
-        action='store_false'
-    )
-
-    parser.add_argument(
         '-v',
         help='Verbose logging output',
         dest='verbose',
@@ -1306,9 +1297,6 @@ def parse_args():
     except KeyError as err:
         logger.exception(err)
         raise ValueError('Invalid configuration')
-
-    if args.netrc:
-        GranuleReader.configure_netrc(username=args.edu, password=args.edp)
 
     return config_dict
 

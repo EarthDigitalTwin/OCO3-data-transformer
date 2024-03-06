@@ -447,7 +447,6 @@ def main(phase_override=None):
                             '/sam_extract/main.py',
                             '-i',
                             '/etc/config.yaml',
-                            '--skip-netrc'
                         ],
                         stdout=log_fp,
                         stderr=subprocess.STDOUT
