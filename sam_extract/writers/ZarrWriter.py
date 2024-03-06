@@ -24,11 +24,11 @@ import numpy as np
 import s3fs
 import xarray as xr
 import zarr
-
 from sam_extract.metrics import get_metrics
+from sam_extract.targets import FILL_VALUE as TARGET_FILL
+from sam_extract.utils import ProgressLogging
 from sam_extract.writers import Writer
 from sam_extract.writers.Writer import FIXED_ATTRIBUTES
-from sam_extract.targets import FILL_VALUE as TARGET_FILL
 from xarray import Dataset
 
 logger = logging.getLogger(__name__)
@@ -112,7 +112,7 @@ class ZarrWriter(Writer):
             return groups
 
     def write(self, ds: Dict[str, Dataset], attrs: Dict[str, str] | None = None):
-        logger.info(f'Writing SAM group to Zarr array at {self.path}')
+        logger.info(f'Writing dataset group to Zarr array at {self.path}')
 
         if attrs is None:
             attrs = {}
@@ -204,6 +204,8 @@ class ZarrWriter(Writer):
             encodings['/']['target_id']['dtype'] = 'int32'
             encodings['/']['target_type']['_FillValue'] = TARGET_FILL
             encodings['/']['target_type']['dtype'] = 'int8'
+            encodings['/']['operation_mode']['_FillValue'] = TARGET_FILL
+            encodings['/']['operation_mode']['dtype'] = 'int8'
 
             if not TEMP_XARRAY_8016:
                 for grp in ds:
@@ -345,13 +347,15 @@ class ZarrWriter(Writer):
                     temp_path = os.path.join(td, 'sorted.zarr')
 
                     writer = ZarrWriter(temp_path, self.__chunking, overwrite=True, verify=False)
-                    writer.write(zarr_group)
+                    with ProgressLogging(log_level=logging.INFO, interval=10):
+                        writer.write(zarr_group)
 
                     corrected_group = ZarrWriter.open_zarr_group(temp_path, 'local', None)
 
                     self.overwrite = True
                     self.__correct_ct = corrected_group['/'].attrs.get('date_created', None)
 
-                    self.write(corrected_group)
+                    with ProgressLogging(log_level=logging.INFO, interval=10):
+                        self.write(corrected_group)
             else:
                 logger.info('Appended Zarr array looks good')

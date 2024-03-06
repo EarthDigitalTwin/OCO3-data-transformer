@@ -39,7 +39,7 @@ FIXED_ATTRIBUTES = {
     'comment': 'NetCDF Lite files converted to Zarr on fixed grid',
     'platform': 'ISS',
     'sensor': 'OCO-3',
-    'operation_mode': 'Snapshot Area Mapping [SAM]',
+    'operation_mode': 'Snapshot Area Mapping [SAM] + Target',
     'processing_level': 'L3',
     'contacts': 'Riley Kuttruff <Riley.K.Kuttruff@jpl.nasa.gov>; '
                 'Nga Chung <Nga.T.Chung@jpl.nasa.gov>; '
