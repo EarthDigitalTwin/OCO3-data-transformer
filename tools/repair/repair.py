@@ -1,4 +1,4 @@
-# Copyright 2023 California Institute of Technology (Caltech)
+# Copyright 2024 California Institute of Technology (Caltech)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,7 +26,8 @@ from typing import Literal
 from urllib.parse import urlparse
 
 import boto3
-from sam_extract.writers import ZARR_REPAIR_FILE, delete_zarr_backup, ZarrWriter, AWSConfig
+from sam_extract.writers import ZarrWriter
+from sam_extract.utils import ZARR_REPAIR_FILE, delete_zarr_backup, AWSConfig
 from yaml import load
 
 try:
