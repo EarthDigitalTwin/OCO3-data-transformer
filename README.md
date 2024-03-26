@@ -1,11 +1,33 @@
-# OCO-3 Snapshot Area Map (SAM) Global, Level 3 Zarr Product Generation
+[//]: # (# OCO-3 Snapshot Area Map &#40;SAM&#41; Global, Level 3 Zarr Product Generation)
+
+# Orbiting Carbon Observatories Targeted Observations: Global, Level 3 Zarr Product Generation
 
 ## Introduction and Description
 
+### OCO-2
+
+NASA-JPL's OCO-2 (Orbiting Carbon Observatory 2) is an Earth satellite mission to study the sources and sinks of carbon 
+dioxide globally. The satellite retrieves column-averaged CO2 dry air mole fraction (XCO2) by measuring the spectra of 
+reflected sunlight from the Earth's surface. OCO-2 operates in one of three modes: nadir, glint, and target. Nadir mode
+effectively means "straight down," observing the ground track of the spacecraft; it provides high spatial resolution, 
+but may not have enough signal-to-noise ratio over the oceans. Glint mode focuses on the bright "glint" spot where solar
+radiation is reflected specularly from the surface; this can provide much higher SNR over the oceans. Usually, OCO-2 
+alternates between nadir and glint modes, but the focus of this product is on target mode. Target mode makes observations
+focused on a single location on the surface as the satellite passes by, allowing for more highly detailed sampling of 
+areas of particular interest. This can be beneficial for calibration and validation, systematic and random error correction,
+or monitoring areas of particular scientific interest. [This animation](https://ocov2.jpl.nasa.gov/media/documents/targetmode.mp4)
+demonstrates OCO-2 in target mode.
+
+[Learn more about OCO-2](https://ocov2.jpl.nasa.gov/)
+
+### OCO-3
+
 NASA-JPL's OCO-3 is an instrument onboard the International Space Station that measures carbon dioxide in the Earth's 
-atmosphere. OCO-3 is similar in design to its predecessor, OCO-2, with the addition of the Pointing Mirror Assembly 
+atmosphere. OCO-3 is similar in design to OCO-2 with the addition of the Pointing Mirror Assembly 
 (PMA) which essentially allows the instrument to focus its observations on the area surrounding a given location of 
-interest on a single overflight. This is called a Snapshot Area Map, or SAM, and is the focus of this software.
+interest on a single overflight. This is a fourth operation mode (along with the three operation modes of OCO-2) called 
+Snapshot Area Mapping, or SAM, and is, along with target-mode observations, the focus of this product. [This video](https://youtu.be/CwSJIsUqyIA?si=C0PMB7U2Eywmqk4W)
+demonstrates the PMA and SAM-mode operation.
 
 <p align="center">
     <img src="images/example_sam.png" width="500" alt="Example SAM capture." />
@@ -13,20 +35,24 @@ interest on a single overflight. This is called a Snapshot Area Map, or SAM, and
     Example SAM capture.
 </p>
 
-This software takes daily OCO-3 CO2 input, isolates SAM- and target-mode captures, and fits the data to a global, fixed grid for a level 3 output product.
+This software takes daily OCO-3 CO2 input, isolates SAM- and target-mode captures, and fits the data to a global, fixed 
+grid for a level 3 output product.
+
+[Learn more about OCO-3](https://ocov3.jpl.nasa.gov/)
 
 ### Source Data
 
-The software was designed to take as input NetCDF files from the [`OCO3_L2_Lite_FP`](https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_FP_10.4r/summary?keywords=oco3) dataset from the
-[GES DISC](https://disc.gsfc.nasa.gov/) DAAC.
+The software was designed to take as input NetCDF files from the [`OCO2_L2_Lite_FP v11.1r`](https://disc.gsfc.nasa.gov/datasets/OCO2_L2_Lite_FP_11.1r/summary?keywords=OCO2_L2_Lite_FP_11.1r) and 
+[`OCO3_L2_Lite_FP v10.4r`](https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_FP_10.4r/summary?keywords=oco3) datasets from the [GES DISC](https://disc.gsfc.nasa.gov/) DAAC.
 
 ### What is Zarr & Why Produce it?
 
-[Zarr](https://zarr.dev/) is a novel, cloud-optimized format "for storage of large N-dimensional typed arrays, [stored] 
-using distributed systems like cloud object stores, and [enabling] efficient I/O for parallel computing applications."
+[Zarr](https://zarr.dev/) is a novel, cloud-optimized format "for storage of large N-dimensional typed arrays, &lbrack;stored&rbrack; 
+using distributed systems like cloud object stores, and &lbrack;enabling&rbrack; efficient I/O for parallel computing 
+applications."
 
 Zarr and other formats such as Cloud-Optimized GeoTIFF are currently being investigated by NASA EOSDIS as an alternative to
-traditional formats such as NetCDF or HDF5.
+traditional formats such as NetCDF.
 
 <p align="center">
     <img src="images/sample_io.png" alt="Example of pre- and post-qf data before and after processing." />
@@ -50,11 +76,11 @@ Zarr support is being developed for analysis tools like [Apache SDAP](https://sd
 
 In parallel:
 1. Input NetCDF file is opened
-2. Data is filtered for SAM and Target observations (`/Sounding/operation_mode in {2,4}`)
+2. Data is filtered for SAM and/or Target observations (`/Sounding/operation_mode in {2,4}`)
 3. The following steps are run on the filtered data that both has and has not been filtered by the quality flag:
    1. Desired science variables are interpolated to fit to a fixed lat/lon grid
    2. Output gridded arrays are masked to only include pixels that intersect with the actual source SAM footprints
-   3. Additional arrays describing SAM target IDs and types are produced
+   3. Additional arrays describing SAM target IDs, types, and operation mode are produced (only for OCO-3)
    4. The final arrays are written to disk in a temporary directory (to save memory)
 
 Once all input files have been processed:
@@ -101,7 +127,48 @@ The `input` key is required to define what and were the script sources its data 
 
 The first is defined by `inputs.files` which should be a list of either paths to files on the local filesystem or objects in S3.
 
-Example:
+By default, local paths or S3 objects in the `inputs.files` list will be processed as OCO-3 files, with the corresponding
+OCO-2 variables being empty in the output product for the corresponding day. To specify OCO-2 files, the paths/objects 
+should be specified as a dictionary with `oco2` and `oco3` as the keys. If no granule for one of the source datasets 
+exists for the day, a null value could be used or the key omitted. NOTE: It is up to the user to ensure the files 
+correspond to the same day.
+
+Example (OCO-2 & OCO-3)
+
+```yaml
+input:
+  files:
+      # Local inputs with both datasets
+    - oco2: /tmp/oco2/oco2_LtCO2_191012_B11100Ar_230603005524s.nc4
+      oco3: /tmp/oco3/oco3_LtCO2_191012_B10400Br_220317234818s.nc4
+      # Local inputs with just one dataset
+    - oco2: /tmp/oco2/oco2_LtCO2_150211_B11100Ar_230524225123s.nc4
+      oco3: ~
+      # Local inputs with just one dataset (Alternate)
+    - oco2: /tmp/oco2/oco2_LtCO2_150211_B11100Ar_230524225123s.nc4
+      # S3 inputs with both datasets
+    - oco2: 
+        path: s3://example-bucket/oco2_LtCO2_191012_B11100Ar_230603005524s.nc4
+        accessKeyID: <secret>
+        secretAccessKey: <secret>
+      oco3: 
+        path: s3://example-bucket/oco3_LtCO2_191012_B10400Br_220317234818s.nc4
+        accessKeyID: <secret>
+        secretAccessKey: <secret>
+      # S3 inputs with just one dataset
+    - oco2: 
+        path: s3://example-bucket/oco2_LtCO2_150211_B11100Ar_230524225123s.nc4
+        accessKeyID: <secret>
+        secretAccessKey: <secret>
+      oco3: ~
+      # S3 inputs with just one dataset (Alternate)
+    - oco2: 
+        path: s3://example-bucket/oco2_LtCO2_150211_B11100Ar_230524225123s.nc4
+        accessKeyID: <secret>
+        secretAccessKey: <secret>
+```
+
+Example (Default to OCO-3):
 
 ```yaml
 input:
@@ -305,6 +372,7 @@ Base configuration can be set by exporting the following environment variables i
 - `S3_PATH`: S3 URI path to upload logs to
 - `AWS_PROFILE`: AWS profile (`~/.aws/credentials`) which should have permissions for S3 and SNS
 - `SNS_ARN`: SNS topic ARN (Currently unused)
+- `GAP_FILE`: Optional JSON file to specify known gaps in OCO-2 and OCO-3 data availability. Used to help determine whether granules on a certain date are ready to be processed or should be held to wait for other granules on that day to become available.
 
 Prerequisites to run:
 - [Earthdata login](https://urs.earthdata.nasa.gov/) free access to NASA EOSDIS data

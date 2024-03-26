@@ -26,7 +26,7 @@ from uuid import uuid4
 
 import boto3
 from botocore.config import Config
-from sam_extract.writers import ZarrWriter
+from sam_extract.writers.ZarrWriter import ZarrWriter
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

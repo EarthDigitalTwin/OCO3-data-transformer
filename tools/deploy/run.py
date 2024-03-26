@@ -19,11 +19,13 @@ import os
 import shutil
 import subprocess
 import sys
+import urllib.parse
 import uuid
+from copy import deepcopy
 from datetime import datetime
 from tempfile import NamedTemporaryFile
 
-from schema import Schema, SchemaError
+from schema import Schema, SchemaError, Or
 from yaml import dump, load
 
 try:
@@ -39,12 +41,21 @@ except ImportError:
 # LAMBDA_RC_TEMPLATE : Path to RC template file in mounted filesystem
 # LAMBDA_STAC_PATH   : Path to CMR search result file in mounted filesystem
 # LAMBDA_STAGE_PATH  : Path to data stage output file in mounted filesystem
+# LAMBDA_GAP_FILE    : Path to gap file (see --gapfile arg)
 
 
 STATE_SCHEMA = Schema({
-    'count': int,
-    'processed': [str]
+    'days': int,
+    'granules': int,
+    'processed': Or({str: {str: str}}, {})  # {Date -> {Mission -> Filename}}
 })
+
+GAP_SCHEMA = Schema([{
+    str: {
+        'start': str,
+        'stop': Or(str, None)
+    }
+}])
 
 NO_NEW_DATA = 255
 FAILED_PIPELINE = 1
@@ -56,6 +67,15 @@ PHASE_STAC_CHECK = 1
 PHASE_POST_STAGE = 2
 PHASE_FINISH = 3
 PHASE_CLEANUP = 4
+
+
+# WON'T make any assumptions about EOMs until they are well known. That is, there is no chance of an extension
+# Use dummy dates for now...
+DATE_RANGES = dict(
+    oco2=dict(start=datetime(2014, 9, 6), end=datetime(2999, 12, 31)),
+    oco3=dict(start=datetime(2019, 8, 6), end=datetime(2999, 12, 31))
+)
+
 
 try:
     lp = os.getenv("LAMBDA_PHASE")
@@ -78,7 +98,7 @@ def load_state(path: str):
     if not os.path.exists(path):
         logger.warning(f'No state file present at {path}; initializing a new one')
 
-        state = dict(count=0, processed=[])
+        state = dict(count=0, granules=0, processed={})
 
         if IN_LAMBDA:
             with open(path, 'w') as fp:
@@ -92,13 +112,13 @@ def load_state(path: str):
     except SchemaError:
         logger.error('Invalid state file structure; reinitializing it')
 
-        state = dict(count=0, processed=[])
+        state = dict(days=0, granules=0, processed={})
 
     return state
 
 
 if os.getenv('NO_DC_JSON') is None:
-    def get_exit_code(cfg_file):
+    def get_exit_code(cfg_file, multi=False):
         p = subprocess.Popen([
             dc, '-f', cfg_file, 'ps', '-a', '--format', 'json'
         ], stdout=subprocess.PIPE)
@@ -113,7 +133,7 @@ if os.getenv('NO_DC_JSON') is None:
 
         return container['ExitCode']
 else:
-    def get_exit_code(cfg_file):
+    def get_exit_code(cfg_file, multi=False):
         p = subprocess.Popen([
             dc, '-f', cfg_file, 'ps', '-q'
         ], stdout=subprocess.PIPE)
@@ -121,24 +141,167 @@ else:
         p.wait()
 
         output = p.communicate()[0].decode('utf-8')
-        container_id = [o for o in output.split('\n') if len(o) > 0]
+        container_ids = [o for o in output.split('\n') if len(o) > 0]
 
-        if len(container_id) > 1:
-            logger.warning('More than one container id in dc service... Picking first')
+        if multi:
+            exit_codes = []
 
-        container_id = container_id[0]
+            for container_id in container_ids:
+                p = subprocess.Popen([
+                    docker, 'inspect', container_id
+                ], stdout=subprocess.PIPE)
 
-        p = subprocess.Popen([
-            docker, 'inspect', container_id
-        ], stdout=subprocess.PIPE)
+                p.wait()
 
-        p.wait()
+                output = p.communicate()[0].decode('utf-8')
 
-        output = p.communicate()[0].decode('utf-8')
+                inspect = json.loads(output)[0]
 
-        inspect = json.loads(output)[0]
+                exit_codes.append(inspect['State']['ExitCode'])
 
-        return inspect['State']['ExitCode']
+            if any([ec != 0 for ec in exit_codes]):
+                exit_code = [ec for ec in exit_codes if ec != 0][0]
+            else:
+                exit_code = 0
+        else:
+            if len(container_ids) > 1:
+                logger.warning('More than one container id in dc service... Picking first')
+
+            container_id = container_ids[0]
+
+            p = subprocess.Popen([
+                docker, 'inspect', container_id
+            ], stdout=subprocess.PIPE)
+
+            p.wait()
+
+            output = p.communicate()[0].decode('utf-8')
+
+            inspect = json.loads(output)[0]
+
+            exit_code = inspect['State']['ExitCode']
+
+        return exit_code
+
+
+def granule_to_dt(granule_name: str) -> str:
+    dt = datetime.strptime(
+        os.path.basename(granule_name).split('_')[2],  # Location of date info in oco2/3 lite file names
+        "%y%m%d"
+    )
+
+    return dt.strftime("%Y-%m-%d")
+
+
+def stac_filter(cmr_features, state, gap_file):
+    class Gap:
+        def __init__(self, start, stop):
+            self.start = datetime.strptime(start, '%Y-%m-%d')
+            self.stop = datetime.strptime(stop, '%Y-%m-%d') if stop is not None else None
+
+        def is_in(self, obj):
+            if isinstance(obj, str):
+                obj = datetime.strptime(obj, '%Y-%m-%d')
+
+            return self.start <= obj and (self.stop is None or obj <= self.stop)
+
+        def __contains__(self, obj):
+            return self.is_in(obj)
+
+    known_gaps = []
+
+    if gap_file:
+        try:
+            with open(gap_file) as fp:
+                gap_json = json.load(fp)
+
+            try:
+                GAP_SCHEMA.validate(gap_json)
+
+                for gap in gap_json:
+                    collection = list(gap.keys())[0]
+                    known_gaps.append((Gap(gap[collection]['start'], gap[collection]['stop']), collection))
+            except SchemaError:
+                logger.error('Bad gap file schema, ignoring it')
+            except FileNotFoundError:
+                logger.error(f'Specified gap file {gap_file} does not exist')
+        except:
+            logger.error('Unexpected error parsing gap file')
+            raise
+
+    # Granule can be:
+    # - 1: Present
+    # - 2: Absent, but before start of available data
+    # - 3: Absent, but after end of mission
+    # - 4: Absent, but in a known gap
+    # - 5: Absent for reason unknown
+    #
+    # A granule is included if neither granule is of type 5 or there is a later included granule
+
+    date_map = {}
+
+    for date in cmr_features:
+        features = cmr_features[date]
+
+        for collection in ['oco2', 'oco3']:
+            if collection in features:
+                date_map.setdefault(date, {})[collection] = 'PRESENT'
+            else:
+                date_dt = datetime.strptime(date, '%Y-%m-%d')
+
+                if date_dt < DATE_RANGES[collection]['start'] or DATE_RANGES[collection]['end'] < date_dt:
+                    date_map.setdefault(date, {})[collection] = 'EXPECTED ABSENT'
+                elif any([date_dt in gap for gap, c in known_gaps if c == collection]):
+                    date_map.setdefault(date, {})[collection] = 'EXPECTED ABSENT'
+                else:
+                    date_map.setdefault(date, {})[collection] = 'ABSENT'
+
+    date_map = {d: date_map[d] for d in sorted(date_map.keys())}
+    mapped_dates = list(sorted(date_map.keys()))
+    new_data = False
+    last_valid_i = None
+
+    for i in range(len(mapped_dates) - 1, -1, -1):
+        d = mapped_dates[i]
+
+        if date_map[d]['oco2'] != 'ABSENT' and date_map[d]['oco3'] != 'ABSENT':
+            new_data = True
+            last_valid_i = i
+            break
+
+    if not new_data:
+        return []
+
+    logger.info(f'Complete data is confirmed available from {mapped_dates[0]} to {mapped_dates[last_valid_i]}')
+
+    reduced_cmr_features = {d: cmr_features[d] for d in mapped_dates[:last_valid_i + 1]}
+
+    return_features = []
+
+    for date in reduced_cmr_features:
+        if date not in state['processed']:
+            for collection in ['oco2', 'oco3']:
+                if collection in reduced_cmr_features[date]:
+                    filename, feature = reduced_cmr_features[date][collection]
+                    return_features.append((granule_to_dt(filename), feature))
+        elif reduced_cmr_features[date].keys() != state['processed'][date].keys():
+            logger.warning(f'For date {date}, data has been processed but new data has now been returned for this date'
+                           f' this will trigger a repair down the line')
+
+            added_collections = []
+
+            for collection in reduced_cmr_features[date]:
+                added_collections.append(collection)
+                filename, feature = reduced_cmr_features[date][collection]
+                return_features.append((granule_to_dt(filename), feature))
+
+            for collection in state['processed'][date]:
+                if collection in added_collections:
+                    continue
+                filename, feature = reduced_cmr_features[date][collection]
+                return_features.append((granule_to_dt(filename), feature))
+
+    return return_features
 
 
 parser = argparse.ArgumentParser()
@@ -206,6 +369,13 @@ parser.add_argument(
     dest='verbose',
     action='store_true',
     help='Verbose logging'
+)
+
+parser.add_argument(
+    '--gapfile',
+    dest='gaps',
+    help='Path to JSON file containing known, extended data gaps in missions. '
+         'Fmt: [{mission: {start: dt, end: dt/null}}]'
 )
 
 args = parser.parse_args()
@@ -280,7 +450,7 @@ def main(phase_override=None):
         logger.info(f'CMR search completed in {datetime.now() - the_time}')
 
         try:
-            search_exit_code = get_exit_code(args.dc_search)
+            search_exit_code = get_exit_code(args.dc_search, multi=True)
         except Exception as e:
             logger.critical('Could not determine CMR search status! Exiting')
             raise
@@ -300,41 +470,79 @@ def main(phase_override=None):
             with open(args.dc_search) as fp:
                 search_config = load(fp, Loader=Loader)
 
-            stac_file = container_to_host_path(
-                search_config['services']['cumulus_granules_search']['environment']['OUTPUT_FILE'],
-                *search_config['services']['cumulus_granules_search']['volumes'][0].split(':')[:2]
+            stac_files = dict(
+                oco2=container_to_host_path(
+                    search_config['services']['cumulus_granules_search_oco2']['environment']['OUTPUT_FILE'],
+                    *search_config['services']['cumulus_granules_search_oco2']['volumes'][0].split(':')[:2]
+                ),
+                oco3=container_to_host_path(
+                    search_config['services']['cumulus_granules_search_oco3']['environment']['OUTPUT_FILE'],
+                    *search_config['services']['cumulus_granules_search_oco3']['volumes'][0].split(':')[:2]
+                )
             )
         else:
-            stac_file = os.getenv('LAMBDA_STAC_PATH')
-
-        with open(stac_file) as fp:
-            cmr_results = json.load(fp)
+            stac_file_root = os.getenv('LAMBDA_STAC_PATH')
+            stac_files = dict(
+                oco2=os.path.join(stac_file_root, 'cmr-results-oco2.json'),
+                oco3=os.path.join(stac_file_root, 'cmr-results.json'),
+            )
 
         logger.info('Comparing CMR results to state')
 
-        dl_features = []
+        import warnings
+        warnings.warn('HAVE TO ALTER METHOD OF STORING AND CHECKING AGAINST STATE TO ACCOUNT FOR MULTIPLE DATASETS. '
+                      'DATA CAN _ONLY_ BE PROCESSED IF ALL POSSIBLE GRANULES ARE PRESENT AND CURRENTLY THAT IS NOT '
+                      'ENFORCED!!!', UserWarning)
 
-        for f in cmr_results['features']:
-            filename = f['assets']['data']['href'].split('/')[-1]
+        cmr_feature_count = 0
+        cmr_features = {}
 
-            if filename not in state['processed']:
-                dl_features.append(f)
+        for collection in stac_files:
+            with open(stac_files[collection]) as fp:
+                cmr_results = json.load(fp)
+
+            for f in cmr_results['features']:
+                cmr_feature_count += 1
+                filename = f['assets']['data']['href'].split('/')[-1]
+
+                cmr_features.setdefault(granule_to_dt(filename), {})[collection] = (filename, f)
+
+        if LAMBDA_PHASE is None:
+            gap_file = args.gaps
+        else:
+            gap_file = os.getenv('LAMBDA_GAP_FILE')
+
+        dl_features = stac_filter(cmr_features, state, gap_file)
 
         if len(dl_features) == 0:
             logger.info('No new data to process')
             return NO_NEW_DATA
 
-        logger.info(f"CMR returned {len(cmr_results['features']):,} features with {len(dl_features):,} new granules to process")
+        granule_date_mapping = {}
 
-        if args.limit and len(dl_features) > args.limit:
-            logger.warning(f'CMR returned more granules ({len(dl_features):,}) than the provided limit ({args.limit:,}). '
-                           f'Truncating list of granules to process.')
+        for date, feature in dl_features:
+            granule_date_mapping.setdefault(date, []).append(feature)
 
-            dl_features = dl_features[:args.limit]
+        logger.info(f"CMR returned {cmr_feature_count:,} features with {len(dl_features):,} new granules "
+                    f"over {len(granule_date_mapping):,} days to process")
+
+        if args.limit and len(granule_date_mapping) > args.limit:
+            logger.info(f'CMR returned more days of data ({len(granule_date_mapping):,}) than the provided limit '
+                        f'({args.limit:,}). Truncating list of granules to process.')
+
+            granule_date_mapping = dict(list(granule_date_mapping.items())[:args.limit])
+
+            logger.info(f'Reduced selection to {len(granule_date_mapping)} days with '
+                        f'{sum([len(granule_date_mapping[k]) for k in granule_date_mapping])} granules')
+
+        dl_features = []
+
+        for date in granule_date_mapping:
+            dl_features.extend(granule_date_mapping[date])
 
         cmr_results['features'] = dl_features
 
-        with open(stac_file, 'w') as fp:
+        with open(stac_files['oco3'], 'w') as fp:
             json.dump(cmr_results, fp, indent=4)
 
         if IN_LAMBDA:
@@ -386,12 +594,12 @@ def main(phase_override=None):
                 search_config = load(fp, Loader=Loader)
 
             stac_file = container_to_host_path(
-                search_config['services']['cumulus_granules_search']['environment']['OUTPUT_FILE'],
-                *search_config['services']['cumulus_granules_search']['volumes'][0].split(':')[:2]
+                search_config['services']['cumulus_granules_search_oco3']['environment']['OUTPUT_FILE'],
+                *search_config['services']['cumulus_granules_search_oco3']['volumes'][0].split(':')[:2]
             )
         else:
             granule_dir = os.getenv('LAMBDA_STAGE_DIR')
-            stac_file = os.getenv('LAMBDA_STAC_PATH')
+            stac_file = os.path.join(os.getenv('LAMBDA_STAC_PATH'), 'cmr-results.json')
 
         with open(os.path.join(granule_dir, 'downloaded_feature_collection.json')) as fp:
             downloaded_granules = [feature['assets']['data']['href'].lstrip('./') for feature in json.load(fp)['features']]
@@ -407,10 +615,17 @@ def main(phase_override=None):
         else:
             logger.info(f'Downloaded correct number of granules: {n_needed}')
 
+        granule_date_mapping = {}
+
+        for granule in downloaded_granules:
+            collection = 'oco3' if granule.startswith('oco3') else 'oco2'
+            granule_date_mapping.setdefault(granule_to_dt(granule), {})[collection] = (
+                os.path.join('/var/inputs/', granule))
+
         with open(args.rc) as fp:
             pipeline_config = load(fp, Loader=Loader)
 
-        pipeline_config['input']['files'] = [os.path.join('/var/inputs/', g) for g in downloaded_granules]
+        pipeline_config['input']['files'] = [granule_date_mapping[date] for date in granule_date_mapping]
 
         if LAMBDA_PHASE is not None:
             with open(os.path.join(mount_dir, 'pipeline-rc.yaml'), 'w') as fp:
@@ -421,6 +636,14 @@ def main(phase_override=None):
 
             return 0
         else:
+            output_cfg = deepcopy(pipeline_config['output'])
+
+            if 'local' in output_cfg:
+                output_mount_dir = urllib.parse.urlparse(output_cfg['local']).path
+                pipeline_config['output']['local'] = '/var/outputs/'
+            else:
+                output_mount_dir = None
+
             logger.info('Starting pipeline')
 
             with NamedTemporaryFile(
@@ -432,22 +655,33 @@ def main(phase_override=None):
                 the_time = datetime.now()
 
                 with open(f'{log_file_root}-pipeline.log', 'w') as log_fp:
+                    p_args = [
+                        docker,
+                        'run',
+                        '--name',
+                        'oco-sam-l3',
+                        '-v',
+                        f'{rc_fp.name}:/etc/config.yaml',
+                        '-v',
+                        f'{granule_dir}:/var/inputs/',
+                    ]
+
+                    if output_mount_dir is not None:
+                        p_args.extend([
+                            '-v',
+                            f'{output_mount_dir}:/var/outputs/',
+                        ])
+
+                    p_args.extend([
+                        args.image,
+                        'python',
+                        '/sam_extract/main.py',
+                        '-i',
+                        '/etc/config.yaml',
+                    ])
+
                     pipeline_p = subprocess.Popen(
-                        [
-                            docker,
-                            'run',
-                            '--name',
-                            'oco-sam-l3',
-                            '-v',
-                            f'{rc_fp.name}:/etc/config.yaml',
-                            '-v',
-                            f'{granule_dir}:/var/inputs/',
-                            args.image,
-                            'python',
-                            '/sam_extract/main.py',
-                            '-i',
-                            '/etc/config.yaml',
-                        ],
+                        p_args,
                         stdout=log_fp,
                         stderr=subprocess.STDOUT
                     ).wait()
@@ -500,8 +734,14 @@ def main(phase_override=None):
                 downloaded_granules = s['granules']
                 granule_dir = s['granule_dir']
 
-        state['count'] += len(downloaded_granules)
-        state['processed'].extend(downloaded_granules)
+        for g in downloaded_granules:
+            collection = 'oco3' if g.startswith('oco3') else 'oco2'
+            date = granule_to_dt(g)
+
+            state['processed'].setdefault(date, {})[collection] = g
+
+        state['days'] = len(state['processed'])
+        state['granules'] = sum([len(state['processed'][d]) for d in state['processed']])
 
         logger.info('Cleaning up & updating state')
 

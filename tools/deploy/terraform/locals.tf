@@ -824,50 +824,127 @@ locals {
           "Comment": "This really shouldn't ever fail (but has). Retry a couple times"
         }
       ],
-      "Next": "cmr_search",
+      "Next": "cmr_searches",
       "Comment": "Copies RC template from S3 to EFS\nPurges granule stage dir and other temp files in EFS",
       "Catch": [
         {
           "ErrorEquals": [
             "States.ALL"
           ],
-          "Next": "cmr_search",
+          "Next": "cmr_searches",
           "Comment": "If this fails, it's likely not a very big deal, try to proceed without"
         }
       ]
     },
-    "cmr_search": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::batch:submitJob.sync",
-      "Parameters": {
-        "JobName": "cmr_search",
-        "JobDefinition": "${aws_batch_job_definition.batch_job_def_search.arn}",
-        "JobQueue": "${aws_batch_job_queue.batch_queue.arn}"
-      },
-      "Next": "err_check_0",
-      "Comment": "Queries CMR for granules in collection",
+    "cmr_searches": {
+      "Type": "Parallel",
+      "Next": "stac_filter",
+      "Branches": [
+        {
+          "StartAt": "cmr_search_oco2",
+          "States": {
+            "cmr_search_oco2": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::batch:submitJob.sync",
+              "Parameters": {
+                "JobName": "cmr_search",
+                "JobDefinition": "${aws_batch_job_definition.batch_job_def_search.arn}",
+                "JobQueue": "${aws_batch_job_queue.batch_queue.arn}",
+                "ContainerOverrides": {
+                  "Environment": [
+                    {
+                      "Name": "OUTPUT_FILE",
+                      "Value": "/tmp/cmr-results-oco2.json"
+                    },
+                    {
+                      "Name": "COLLECTION_ID",
+                      "Value": "C2716248872-GES_DISC"
+                    }
+                  ]
+                }
+              },
+              "Comment": "Queries CMR for granules in collection",
+              "Catch": [
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "Next": "oco2_search_fail",
+                  "Comment": "General error catch"
+                }
+              ],
+              "Next": "err_check_0_oco2"
+            },
+            "err_check_0_oco2": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.Container.ExitCode",
+                  "NumericEquals": 0,
+                  "Next": "oco2_search_success"
+                }
+              ],
+              "Default": "oco2_search_fail"
+            },
+            "oco2_search_success": {
+              "Type": "Succeed"
+            },
+            "oco2_search_fail": {
+              "Type": "Fail"
+            }
+          }
+        },
+        {
+          "StartAt": "cmr_search_oco3",
+          "States": {
+            "cmr_search_oco3": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::batch:submitJob.sync",
+              "Parameters": {
+                "JobName": "cmr_search",
+                "JobDefinition": "${aws_batch_job_definition.batch_job_def_search.arn}",
+                "JobQueue": "${aws_batch_job_queue.batch_queue.arn}"
+              },
+              "Comment": "Queries CMR for granules in collection",
+              "Catch": [
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "Next": "oco3_search_fail",
+                  "Comment": "General error catch"
+                }
+              ],
+              "Next": "err_check_0_oco3"
+            },
+            "err_check_0_oco3": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.Container.ExitCode",
+                  "NumericEquals": 0,
+                  "Next": "oco3_search_success"
+                }
+              ],
+              "Default": "oco3_search_fail"
+            },
+            "oco3_search_success": {
+              "Type": "Succeed"
+            },
+            "oco3_search_fail": {
+              "Type": "Fail"
+            }
+          }
+        }
+      ],
       "Catch": [
         {
           "ErrorEquals": [
-            "States.TaskFailed"
+            "States.ALL"
           ],
-          "Next": "fail_msg_search",
-          "Comment": "General error catch"
+          "Next": "fail_msg_search"
         }
       ]
-    },
-    "err_check_0": {
-      "Type": "Choice",
-      "Choices": [
-        {
-          "Variable": "$.Container.ExitCode",
-          "NumericEquals": 0,
-          "Next": "stac_filter",
-          "Comment": "Completed ok?"
-        }
-      ],
-      "Default": "fail_msg_search",
-      "Comment": "Check if previous step completed successfully"
     },
     "fail_msg_search": {
       "Type": "Pass",
@@ -1386,6 +1463,5 @@ locals {
   },
   "Comment": "Queries NASA Earthdata CMR for OCO-3 data granules, filters out a list of granules to be processed based on a state file in EFS and an optional, configurable limit, download the files to EFS, then process them into gridded SAM data, which is written as Zarr to S3. Downloaded data and temp files are then cleaned up. If a stage fails, a notice message is published to SNS.\nCurrent version: 0.5\nPlanned versions:\n0.5: Basic workflow [DONE]\n1.0: Check for critical failures from process job; attempt to restore backup in that case. If that fails, disable further automatic invocations of this function\n2.0: Separate write S3 destination from prod S3 destination, use something like DataSync to push to prod upon successful update"
 }
-  EOF
-
+EOF
 }

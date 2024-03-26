@@ -47,6 +47,7 @@ python run.py \
   $([[ ! -z "$STATE_FILE" ]] && echo --state=$STATE_FILE) \
   $([[ ! -z "$GRANULE_LIMIT" ]] && echo --limit=$GRANULE_LIMIT) \
   $([[ ! -z "$LOGGING_DIR" ]] && echo --logging=$LOGGING_DIR) \
+  $([[ ! -z "$GAP_FILE" ]] && echo --gapfile=$GAP_FILE) \
   $([[ ! -z "$VERBOSE" ]] && echo -v)
 
 exit_code=$?

@@ -17,15 +17,14 @@ import os.path
 from datetime import datetime
 from itertools import chain
 from tempfile import TemporaryDirectory
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Any
 from urllib.parse import urlparse
 
 import numpy as np
 import s3fs
 import xarray as xr
 import zarr
-from sam_extract.targets import FILL_VALUE as TARGET_FILL
-from sam_extract.utils import ProgressLogging
+
 from sam_extract.writers import Writer
 from sam_extract.writers.Writer import FIXED_ATTRIBUTES
 from xarray import Dataset
@@ -48,6 +47,8 @@ APPEND_WARNING = [
 
 ISO_8601 = "%Y-%m-%dT%H:%M:%S%zZ"
 TIME_CHUNKING = (4000,)  # 3650 days in OCO-3's 10-year nominal mission, rounded up to nearest thousand
+
+ENCODINGS: Dict[str, Dict[str, Dict[str, Any]]] = {}
 
 
 class ZarrWriter(Writer):
@@ -197,12 +198,11 @@ class ZarrWriter(Writer):
             for group in ds:
                 encodings[group]['time'] = {'chunks': TIME_CHUNKING}
 
-            encodings['/']['target_id']['_FillValue'] = TARGET_FILL
-            encodings['/']['target_id']['dtype'] = 'int32'
-            encodings['/']['target_type']['_FillValue'] = TARGET_FILL
-            encodings['/']['target_type']['dtype'] = 'int8'
-            encodings['/']['operation_mode']['_FillValue'] = TARGET_FILL
-            encodings['/']['operation_mode']['dtype'] = 'int8'
+            for group in encodings:
+                if group in ENCODINGS:
+                    for var in encodings[group]:
+                        if var in ENCODINGS[group]:
+                            encodings[group][var].update(ENCODINGS[group][var])
 
             if not TEMP_XARRAY_8016:
                 for grp in ds:
@@ -341,6 +341,8 @@ class ZarrWriter(Writer):
 
                 with TemporaryDirectory(prefix='oco-sam-extract-', suffix='-zarr-scratch-corrected',
                                         ignore_cleanup_errors=True) as td:
+                    from sam_extract.utils import ProgressLogging
+
                     temp_path = os.path.join(td, 'sorted.zarr')
 
                     writer = ZarrWriter(temp_path, self.__chunking, overwrite=True, verify=False)

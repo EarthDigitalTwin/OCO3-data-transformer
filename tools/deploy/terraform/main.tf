@@ -262,16 +262,33 @@ Lambda
 
 */
 
+data "local_file" "init_package" {
+  filename = "../lambdas/init/package.zip"
+}
+
+data "local_file" "eval_package" {
+  filename = "../lambdas/pipeline-fail-eval/package.zip"
+}
+
+data "local_file" "transform_package" {
+  filename = "../lambda_deployment_package.zip"
+}
+
+data "local_file" "reset_package" {
+  filename = "../lambdas/reset/package.zip"
+}
+
 resource "aws_lambda_function" "init_lambda" {
-  function_name = "${local.name_root}transform-rc-template-copy"
-  role          = data.aws_iam_role.iam_lambda_role.arn
-  architectures = ["x86_64"]
-  filename      = "../lambdas/init/package.zip"
-  handler       = "lambda_function.lambda_handler"
-  memory_size   = 128
-  runtime       = "python3.11"
-  timeout       = 120
-  depends_on    = [local.mount_point_dep, aws_s3_object.rct]
+  function_name    = "${local.name_root}transform-rc-template-copy"
+  role             = data.aws_iam_role.iam_lambda_role.arn
+  architectures    = ["x86_64"]
+  filename         = data.local_file.init_package.filename
+  source_code_hash = data.local_file.init_package.content_base64sha256
+  handler          = "lambda_function.lambda_handler"
+  memory_size      = 128
+  runtime          = "python3.11"
+  timeout          = 120
+  depends_on       = [local.mount_point_dep, aws_s3_object.rct]
 
   environment {
     variables = {
@@ -298,15 +315,16 @@ resource "aws_lambda_function" "init_lambda" {
 }
 
 resource "aws_lambda_function" "eval_lambda" {
-  function_name = "${local.name_root}transform-pipeline-fail-eval"
-  role          = data.aws_iam_role.iam_lambda_role.arn
-  architectures = ["x86_64"]
-  filename      = "../lambdas/pipeline-fail-eval/package.zip"
-  handler       = "lambda_function.lambda_handler"
-  memory_size   = 128
-  runtime       = "python3.11"
-  timeout       = 30
-  depends_on    = [local.mount_point_dep]
+  function_name    = "${local.name_root}transform-pipeline-fail-eval"
+  role             = data.aws_iam_role.iam_lambda_role.arn
+  architectures    = ["x86_64"]
+  filename         = data.local_file.eval_package.filename
+  source_code_hash = data.local_file.eval_package.content_base64sha256
+  handler          = "lambda_function.lambda_handler"
+  memory_size      = 128
+  runtime          = "python3.11"
+  timeout          = 30
+  depends_on       = [local.mount_point_dep]
 
   environment {
     variables = {
@@ -331,15 +349,16 @@ resource "aws_lambda_function" "eval_lambda" {
 }
 
 resource "aws_lambda_function" "transform_lambda" {
-  function_name = "${local.name_root}transform-lambda"
-  role          = data.aws_iam_role.iam_lambda_role.arn
-  architectures = ["x86_64"]
-  filename      = "../lambda_deployment_package.zip"
-  handler       = "run.lambda_handler"
-  memory_size   = 128
-  runtime       = "python3.11"
-  timeout       = 60
-  depends_on    = [local.mount_point_dep]
+  function_name    = "${local.name_root}transform-lambda"
+  role             = data.aws_iam_role.iam_lambda_role.arn
+  architectures    = ["x86_64"]
+  filename         = data.local_file.transform_package.filename
+  source_code_hash = data.local_file.transform_package.content_base64sha256
+  handler          = "run.lambda_handler"
+  memory_size      = 128
+  runtime          = "python3.11"
+  timeout          = 60
+  depends_on       = [local.mount_point_dep]
 
   environment {
     variables = {
@@ -347,9 +366,10 @@ resource "aws_lambda_function" "transform_lambda" {
       LAMBDA_MOUNT_DIR     = "/mnt/transform/"
       LAMBDA_PHASE         = 1
       LAMBDA_RC_TEMPLATE   = "/mnt/transform/run-config.yaml"
-      LAMBDA_STAC_PATH     = "/mnt/transform/cmr-results.json"
+      LAMBDA_STAC_PATH     = "/mnt/transform/"
       LAMBDA_STAGE_DIR     = "/mnt/transform/inputs/"
       LAMBDA_STATE         = "/mnt/transform/state.json"
+      LAMBDA_GAP_FILE      = "/mnt/transform/gaps.json"
     }
   }
 
@@ -368,6 +388,36 @@ resource "aws_lambda_function" "transform_lambda" {
     subnet_ids         = [data.aws_subnet.subnet.id]
   }
 }
+
+// Removes ALL files, will restart processing. To be triggered manually
+resource "aws_lambda_function" "reset_lambda" {
+  function_name    = "${local.name_root}reset"
+  role             = data.aws_iam_role.iam_lambda_role.arn
+  architectures    = ["x86_64"]
+  filename         = data.local_file.reset_package.filename
+  source_code_hash = data.local_file.reset_package.content_base64sha256
+  handler          = "lambda_function.lambda_handler"
+  memory_size      = 128
+  runtime          = "python3.11"
+  timeout          = 120
+  depends_on       = [local.mount_point_dep, aws_s3_object.rct]
+
+  file_system_config {
+    arn              = local.ap_dep_arn
+    local_mount_path = "/mnt/transform"
+  }
+
+  logging_config {
+    log_format = "Text"
+    log_group  = aws_cloudwatch_log_group.log_group.name
+  }
+
+  vpc_config {
+    security_group_ids = [data.aws_security_group.compute_sg.id]
+    subnet_ids         = [data.aws_subnet.subnet.id]
+  }
+}
+
 
 /*
 

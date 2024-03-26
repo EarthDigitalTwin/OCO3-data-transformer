@@ -12,17 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from setuptools import setup, find_packages
 
-setup(
-    name='oco3_sam_zarr',
-    version='2024.03.12',
-    url='https://github.jpl.nasa.gov/rileykk/oco-sam-extract',
-    author='Riley Kuttruff',
-    author_email='riley.k.kuttruff@jpl.nasa.gov',
-    description='Extract SAMs from OCO-3 data and store them as Zarr either locally or in S3',
-    packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests", "scripts"]),
-    platforms='any',
-    python_requires='>=3.9',
-    include_package_data=True,
-)
+from sam_extract.processors.Processor import Processor, PROCESSORS
+from sam_extract.processors.OCO3SamProcessor import OCO3SamProcessor
+from sam_extract.processors.OCO2Processor import OCO2Processor
