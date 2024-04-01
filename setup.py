@@ -16,7 +16,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='oco3_sam_zarr',
-    version='2024.03.12',
+    version='2024.04.01',
     url='https://github.jpl.nasa.gov/rileykk/oco-sam-extract',
     author='Riley Kuttruff',
     author_email='riley.k.kuttruff@jpl.nasa.gov',

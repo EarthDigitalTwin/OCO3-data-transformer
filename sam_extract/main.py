@@ -357,16 +357,18 @@ def process_inputs(in_files, cfg):
             logger.warning('Could not remove Zarr write status file')
 
         if backup_pre is not None and not delete_zarr_backup(
-                backup_pre,
-                zarr_writer_pre.store,
-                zarr_writer_pre.store_params
+            backup_pre,
+            zarr_writer_pre.store,
+            zarr_writer_pre.store_params,
+            verify=False
         ):
             logger.warning(f'Unable to remove backup for pre_qf zarr data at {backup_pre}')
 
         if backup_pre is not None and not delete_zarr_backup(
-                backup_post,
-                zarr_writer_post.store,
-                zarr_writer_post.store_params
+            backup_post,
+            zarr_writer_post.store,
+            zarr_writer_post.store_params,
+            verify=False
         ):
             logger.warning(f'Unable to remove backup for post_qf zarr data at {backup_post}')
 

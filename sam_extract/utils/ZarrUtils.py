@@ -152,28 +152,32 @@ def create_backup(src_path: str, store_type: Literal['local', 's3'], store_param
         raise ValueError(f'Invalid store type: {store_type}')
 
 
-def delete_backup(path: str, store_type: Literal['local', 's3'], store_params: dict = None) -> bool:
+def delete_backup(path: str, store_type: Literal['local', 's3'], store_params: dict = None, verify=True) -> bool:
     path = path.rstrip('/')
 
     logger.info(f'Deleting backup at {path}')
 
-    try:
-        # Check that the path we're deleting is actually Zarr data
-        if not path.endswith('.tar'):
-            ZarrWriter.open_zarr_group(path, store_type, store_params, root=True)
-        else:
-            likely_zarr = False
-            with tarfile.open(path, 'r') as tar:
-                for f in tar.getnames():
-                    if basename(f) == '.zgroup':
-                        likely_zarr = True
-                        break
-            if not likely_zarr:
-                logger.error(f'Backup archive file at {path} does not appear to be a Zarr group')
-                return False
-    except Exception as e:
-        logger.warning(f'Zarr group at path {path} could not be opened. Maybe it does not exist. Error: {repr(e)}')
-        return False
+    if verify:
+        try:
+            # Check that the path we're deleting is actually Zarr data
+            if not path.endswith('.tar'):
+                ZarrWriter.open_zarr_group(path, store_type, store_params, root=True)
+            else:
+                likely_zarr = False
+                with tarfile.open(path, 'r') as tar:
+                    for f in tar.getnames():
+                        if basename(f) == '.zgroup':
+                            likely_zarr = True
+                            break
+                if not likely_zarr:
+                    logger.error(f'Backup archive file at {path} does not appear to be a Zarr group')
+                    return False
+        except Exception as e:
+            logger.warning(f'Zarr group at path {path} could not be opened. Maybe it does not exist. Error: {repr(e)}')
+            return False
+    else:
+        logger.info('Skipping verification for Zarr backup. Should only do this if we\'re certain the provided path '
+                    'is a backup')
 
     if store_type == 'local':
         try:
