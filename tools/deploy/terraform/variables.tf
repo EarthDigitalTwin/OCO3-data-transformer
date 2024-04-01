@@ -158,12 +158,22 @@ EventBridge
 */
 
 variable "schedule_frequency" {
-  description = "EventBridge schedule frequency. Values: 15, 30, 60 for 4, 2 and 1 invocations per hour"
-  type        = number
-  default     = 15
+  description = "EventBridge schedule frequency. Values: quarter-hourly, half-hourly, hourly, daily, weekly, monthly. Also valid: 15, 30, 60 (minutes per invocation)"
+  type        = string
+  default     = "quarter-hourly"
 
   validation {
-    condition     = contains([15, 30, 60], tonumber(var.schedule_frequency))
+    condition = contains([
+      "quarter-hourly",
+      "half-hourly",
+      "hourly",
+      "daily",
+      "weekly",
+      "monthly",
+      "15",
+      "30",
+      "60"
+    ], var.schedule_frequency)
     error_message = "Invalid schedule frequency"
   }
 }

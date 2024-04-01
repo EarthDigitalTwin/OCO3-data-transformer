@@ -23,6 +23,18 @@ locals {
 
   chunk_config = "${var.output_chunk_time}_${var.output_chunk_lat}_${var.output_chunk_lon}"
 
+  invoke_frequency = {
+    quarter-hourly = "cron(*/15 * * * ? *)"
+    half-hourly    = "cron(*/30 * * * ? *)"
+    hourly         = "cron(0 * * * ? *)"
+    daily          = "cron(0 0 * * ? *)"
+    weekly         = "cron(0 0 ? * 1 *)"
+    monthly        = "cron(0 0 1 * ? *)"
+    "15"           = "cron(*/15 * * * ? *)"
+    "30"           = "cron(*/30 * * * ? *)"
+    "60"           = "cron(*/60 * * * ? *)"
+  }
+
   rc_template = yamlencode({
     output = {
       local = "/var/outputs"

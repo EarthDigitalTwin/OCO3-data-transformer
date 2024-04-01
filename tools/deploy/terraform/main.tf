@@ -564,7 +564,7 @@ EventBridge
 
 resource "aws_scheduler_schedule" "schedule" {
   name                         = local.schedule_name
-  schedule_expression          = "cron(*/${var.schedule_frequency} * * * ? *)"
+  schedule_expression          = local.invoke_frequency[var.schedule_frequency]
   schedule_expression_timezone = "America/Los_Angeles"
   state                        = !var.disable_schedule ? "ENABLED" : "DISABLED"
 
