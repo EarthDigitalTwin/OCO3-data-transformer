@@ -77,6 +77,13 @@ DATE_RANGES = dict(
 )
 
 
+GAPS = [
+    {
+        'oco3': dict(start="2023-11-13", stop=None)
+    }
+]
+
+
 try:
     lp = os.getenv("LAMBDA_PHASE")
     if lp is not None:
@@ -209,6 +216,10 @@ def stac_filter(cmr_features, state, gap_file):
             return self.is_in(obj)
 
     known_gaps = []
+
+    for gap in GAPS:
+        collection = list(gap.keys())[0]
+        known_gaps.append((Gap(gap[collection]['start'], gap[collection]['stop']), collection))
 
     if gap_file:
         try:
