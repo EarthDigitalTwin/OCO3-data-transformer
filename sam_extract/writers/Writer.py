@@ -31,14 +31,15 @@ logger = logging.getLogger(__name__)
 FIXED_ATTRIBUTES = {
     'pipeline_version': sam_extract.__version__,
     'institution': 'Jet Propulsion Laboratory',
-    'source': 'Derived from the OCO3_L2_Lite_FP_10.4r dataset from GES-DISC '
-              '(https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_FP_10.4r/summary?keywords=oco3)',
+    'source': 'Derived from the OCO3_L2_Lite_FP_10.4r and OCO2_L2_Lite_FP_11.1r datasets from GES-DISC '
+              '(https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_FP_10.4r/summary , '
+              'https://disc.gsfc.nasa.gov/datasets/OCO2_L2_Lite_FP_11.1r/summary)',
     'references': '10.5194/amt-12-2341-2019, '
                   '10.1016/j.rse.2020.112032, '
                   '10.1016/j.rse.2021.112314',
     'comment': 'NetCDF Lite files converted to Zarr on fixed grid',
-    'platform': 'ISS',
-    'sensor': 'OCO-3',
+    'platform': 'ISS, OCO-2',
+    'sensor': 'OCO-3, OCO-2',
     'operation_mode': 'Snapshot Area Mapping [SAM] + Target',
     'processing_level': 'L3',
     'contacts': 'Riley Kuttruff <Riley.K.Kuttruff@jpl.nasa.gov>; '
