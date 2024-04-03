@@ -95,12 +95,17 @@ def create_backup(src_path: str, store_type: Literal['local', 's3'], store_param
             files = [join(dp, f) for dp, dn, filenames in os.walk(src_path) for f in filenames]
 
             with tarfile.open(join(src_dirname, dst_basename), 'w') as tar:
-                for f in files:
+                for i, f in enumerate(files, 1):
                     arc_f = f.removeprefix(src_dirname).lstrip('/')
                     logger.debug(f'a {arc_f}')
                     tar.add(f, arcname=arc_f)
+
+                    if i % 10000 == 0:
+                        logger.info(f'Added {i:,} objects to backup {backup_id}')
         else:
             copytree(src_path, join(src_dirname, dst_basename))
+
+        logger.info(f'Finished backup {backup_id}')
 
         return join(src_dirname, dst_basename)
     elif store_type == 's3':
@@ -146,6 +151,8 @@ def create_backup(src_path: str, store_type: Literal['local', 's3'], store_param
 
             for f in futures:
                 f.result()
+
+        logger.info(f'Finished backup {backup_id}')
 
         return f's3://{bucket}/{dst_key_prefix}'
     else:

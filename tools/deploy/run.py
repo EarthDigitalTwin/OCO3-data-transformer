@@ -501,9 +501,11 @@ def main(phase_override=None):
         logger.info('Comparing CMR results to state')
 
         import warnings
-        warnings.warn('HAVE TO ALTER METHOD OF STORING AND CHECKING AGAINST STATE TO ACCOUNT FOR MULTIPLE DATASETS. '
-                      'DATA CAN _ONLY_ BE PROCESSED IF ALL POSSIBLE GRANULES ARE PRESENT AND CURRENTLY THAT IS NOT '
-                      'ENFORCED!!!', UserWarning)
+        warnings.warn('2024-04-02:: We have to ensure we only select days to process if we\'re sure all data up'
+                      ' to the end of the date range is either present or we know it will never exist. The idea of this'
+                      ' is to avoid triggering repair functionality due to duplicate time slices from processing '
+                      'the same day of data from different sources in different invocations. We have a preliminary '
+                      'method here to implement that but it needs a bit more validation.', UserWarning)
 
         cmr_feature_count = 0
         cmr_features = {}
