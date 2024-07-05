@@ -20,12 +20,16 @@ output:  # required; one-of
 #      accessKeyID: foo
 #      secretAccessKey: bar
   local: file:///tmp/oco3/
+  global: false
   naming:   # Filename of output Zarr root
-    pre_qf: pre_qf_root_name.zarr
-    post_qf: post_qf_root_name.zarr
+    pre_qf: pre_qf_root_name
+    post_qf: post_qf_root_name
   title:    # Dataset title in metadata, uses output.naming values (w/o '.zarr') if omitted
     pre_qf: pre_qf_root_title
     post_qf: post_qf_root_title
+  cog:
+    output:
+      local: file:///tmp/oco3/cog/
 input: # required; one of
   files:
     - /tmp/oco3/oco3_LtCO2_200303_B10400Br_220318000013s.nc4
@@ -212,13 +216,13 @@ exclude-groups:
   - /Sounding
   - /Retrieval
 grid:
-  latitude: 18000
-  longitude: 36000
-  method: linear
-  resolution_attr: 1km
+  latitude: 800
+  longitude: 800
+  method: nearest
 chunking:
-  latitude: 250
-  longitude: 250
-  time: 5
+  latitude: 800
+  longitude: 800
+  time: 14
 max-workers: 1
 mask-scaling: 1
+target-file: /tmp/targets.json

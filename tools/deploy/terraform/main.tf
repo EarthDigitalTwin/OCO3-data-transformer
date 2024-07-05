@@ -29,7 +29,6 @@ provider "aws" {
     tags = {
       DeploymentName = "OCO3 Transformer"
       TestDeploy     = tostring(var.testing)
-      ChunkConfig    = local.chunk_config
     }
   }
 }
@@ -116,10 +115,22 @@ data "aws_s3_bucket" "s3_bucket" {
   bucket = var.s3_bucket
 }
 
+data "local_file" "target_file" {
+  filename = var.s3_target_config_source
+}
+
 resource "aws_s3_object" "rct" {
   bucket  = data.aws_s3_bucket.s3_bucket.id
   key     = var.s3_rc_template_key
   content = local.rc_template
+}
+
+resource "aws_s3_object" "target_json" {
+  bucket  = data.aws_s3_bucket.s3_bucket.id
+  key     = var.s3_target_config_key
+  content = data.local_file.target_file.content
+
+  count = var.global_product ? 0 : 1
 }
 
 /*
@@ -136,7 +147,7 @@ resource "aws_cloudwatch_log_group" "log_group" {
   lifecycle {
     ignore_changes = [
       tags,
-      retention_in_days
+#      retention_in_days
     ]
   }
 }
@@ -308,6 +319,7 @@ resource "aws_lambda_function" "init_lambda" {
     variables = {
       BUCKET           = var.s3_bucket
       RCT_KEY          = var.s3_rc_template_key
+      TARGET_KEY       = var.global_product ? null : var.s3_target_config_key
       ZARR_BACKUP_FILE = "/mnt/transform/oco_pipeline_zarr_state/ZARR_WRITE.json"
     }
   }
@@ -384,6 +396,7 @@ resource "aws_lambda_function" "transform_lambda" {
       LAMBDA_STAGE_DIR     = "/mnt/transform/inputs/"
       LAMBDA_STATE         = "/mnt/transform/state.json"
       LAMBDA_GAP_FILE      = "/mnt/transform/gaps.json"
+      LAMBDA_TARGET_FILE   = "/mnt/transform/targets.json"
     }
   }
 
@@ -564,6 +577,7 @@ EventBridge
 
 resource "aws_scheduler_schedule" "schedule" {
   name                         = local.schedule_name
+  description                  = "Schedule to regularly invoke process State Machine"
   schedule_expression          = local.invoke_frequency[var.schedule_frequency]
   schedule_expression_timezone = "America/Los_Angeles"
   state                        = !var.disable_schedule ? "ENABLED" : "DISABLED"

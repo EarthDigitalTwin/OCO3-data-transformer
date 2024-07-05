@@ -14,5 +14,10 @@
 
 
 from sam_extract.processors.Processor import Processor, PROCESSORS
-from sam_extract.processors.OCO3SamProcessor import OCO3SamProcessor
-from sam_extract.processors.OCO2Processor import OCO2Processor
+
+from sam_extract.processors import (
+    OCO3SamProcessor,
+    OCO3SamGlobalProcessor,
+    OCO2Processor,
+    OCO2GlobalProcessor
+)

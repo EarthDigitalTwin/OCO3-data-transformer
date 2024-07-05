@@ -51,6 +51,8 @@ S3_ROOT_PREFIX = os.getenv('S3_ROOT_PREFIX')
 S3_BUCKET = os.getenv('S3_BUCKET')
 PRE_QF_NAME = os.getenv('PRE_QF_NAME')
 POST_QF_NAME = os.getenv('POST_QF_NAME')
+COG_DIR = os.getenv('COG_DIR')
+COG_DIR_S3 = os.getenv('COG_DIR_S3')
 DRYRUN = os.getenv('DRYRUN') is not None
 
 RC_FILE_OVERRIDE = os.getenv('RC_FILE_OVERRIDE')
@@ -69,6 +71,12 @@ if RC_FILE_OVERRIDE is not None and os.path.exists(RC_FILE_OVERRIDE):
         LOCAL_ROOT = urlparse(out_cfg['local']).path
         PRE_QF_NAME = out_cfg['naming']['pre_qf']
         POST_QF_NAME = out_cfg['naming']['post_qf']
+
+        if 'cog' in out_cfg and 'local' in out_cfg['cog'].get('output', {}):
+            COG_DIR = urlparse(out_cfg['cog']['output']['local']).path
+        else:
+            logger.info('No CoG dir defined')
+            COG_DIR = None
     except Exception as e:
         logger.error('Failed to load specified RC file. Will use env instead')
         logger.exception(e)
@@ -99,7 +107,13 @@ def plan(local_dir, bucket, prefix, s3) -> Tuple[List[Tuple[str, str]], List[str
                      f'should not happen!')
         exit(1)
 
-    local_list = [strip_prefix(os.path.join(dp, f), local_dir) for dp, dn, filenames in os.walk(local_dir) for f in filenames]
+    logger.info(f'Listing local directory {local_dir}')
+
+    local_list = [
+        strip_prefix(os.path.join(dp, f), local_dir) for dp, dn, filenames in os.walk(local_dir) for f in filenames
+    ]
+
+    logger.info(f'Comparing S3 to local...')
 
     for zarr_key in local_list:
         file_abs_path = os.path.join(local_dir, zarr_key)
@@ -152,6 +166,10 @@ def main():
         logger.error('Not all required params are set')
         return 1
 
+    if COG_DIR is not None and COG_DIR_S3 is None:
+        logger.error('Not all required CoG params are set')
+        return 1
+
     if not os.path.exists(LOCAL_ROOT):
         logger.info(f'Local dir "{LOCAL_ROOT}" does not exist')
         return 2
@@ -181,7 +199,18 @@ def main():
     to_upload.extend(post_qf_upload)
     to_delete.extend(post_qf_delete)
 
-    logger.info(f'Found {len(to_upload):,} new or modified Zarr objects to upload to S3')
+    if COG_DIR is not None:
+        cog_upload, cog_delete = plan(
+            COG_DIR,
+            S3_BUCKET,
+            f'{S3_ROOT_PREFIX.strip("/")}/{COG_DIR_S3}_cog',
+            s3
+        )
+
+        to_upload.extend(cog_upload)
+        to_delete.extend(cog_delete)
+
+    logger.info(f'Found {len(to_upload):,} new or modified objects to upload to S3')
     logger.info(f'Found {len(to_delete):,} missing objects to delete from S3')
 
     if DRYRUN:

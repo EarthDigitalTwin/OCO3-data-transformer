@@ -117,6 +117,17 @@ variable "s3_rc_template_key" {
   default     = "deploy/run-config.yaml"
 }
 
+variable "s3_target_config_key" {
+  description = "Key for the target config (JSON file) object in S3"
+  type        = string
+  default     = "deploy/targets.json"
+}
+
+variable "s3_target_config_source" {
+  description = "Path to source target JSON file to copy to S3"
+  type        = string
+}
+
 variable "s3_outputs_prefix" {
   description = "Key prefix for output products"
   type        = string
@@ -220,7 +231,7 @@ variable "output_chunk_time" {
 }
 
 variable "output_grid_lat_resolution" {
-  description = "Size of the output dataset's latitude dimension. The longitude dimension will be set to 2x this value. Must be an integer >= 1800."
+  description = "Size of the output dataset's latitude dimension. The longitude dimension will be set to 2x this value. Must be an integer >= 180."
   type        = number
   default     = 18000
 
@@ -230,8 +241,8 @@ variable "output_grid_lat_resolution" {
   }
 
   validation {
-    condition     = var.output_grid_lat_resolution >= 1800
-    error_message = "Output grid res must be >= 1800"
+    condition     = var.output_grid_lat_resolution >= 180
+    error_message = "Output grid res must be >= 180"
   }
 }
 
@@ -251,8 +262,8 @@ variable "input_granule_limit" {
   type        = number
 
   validation {
-    condition     = var.input_granule_limit >= 1 && var.input_granule_limit <= 32 && var.input_granule_limit == floor(var.input_granule_limit)
-    error_message = "Granule limit should be an integer between 1 and 32"
+    condition     = var.input_granule_limit >= 1 && var.input_granule_limit <= 365 && var.input_granule_limit == floor(var.input_granule_limit)
+    error_message = "Granule limit should be an integer between 1 and 365 (1 day to 1 year). For global products, it is advised this be kept <= 32."
   }
 }
 
@@ -271,19 +282,24 @@ variable "mprof_interval" {
   }
 }
 
-variable "interpolate_max_parallel" {
+variable "interpolate_max_parallel_global" {
   type        = number
-  description = "Maximum number of threads that can interpolate SAM data to grid in parallel. Must be between 1 and 4 (-1 to use process image default)"
+  description = "Maximum number of threads that can interpolate SAM data to grid in parallel when producing a global product. Must be between 1 and 4 (-1 to use process image default)"
   default     = -1
 
   validation {
-    condition     = var.interpolate_max_parallel == -1 || (var.interpolate_max_parallel >= 1 && var.interpolate_max_parallel <= 4)
+    condition     = var.interpolate_max_parallel_global == -1 || (var.interpolate_max_parallel_global >= 1 && var.interpolate_max_parallel_global <= 4)
     error_message = "interpolate_max_parallel must be between 1 and 4 (-1 to use process image default)"
   }
   validation {
-    condition     = var.interpolate_max_parallel == floor(var.interpolate_max_parallel)
+    condition     = var.interpolate_max_parallel_global == floor(var.interpolate_max_parallel_global)
     error_message = "interpolate_max_parallel must be an integer"
   }
+}
+
+variable "global_product" {
+  type        = bool
+  description = "Produce a global product if true and a site-focused product if false. Site-focused products currently only use OCO-3 data and also produce cloud-optimized geoTIFF outputs."
 }
 
 variable "disable_schedule" {
@@ -304,7 +320,7 @@ variable "image" {
 
 variable "image_tag" {
   type        = string
-  description = "Docker image tag version to use for data processing, sync and restore. Format: <tag>. <tag> should be formatted as \"YYYY.MM.DD[-[a-z0-9-_]+]\". Minimum version: 2024.01.25"
+  description = "Docker image tag version to use for data processing, sync and restore. Format: <tag>. <tag> should be formatted as \"YYYY.MM.DD[-[a-z0-9-_]+]\". Minimum version: 2024.06.06"
 
   validation {
     condition     = can(regex("^\\d{4}\\.\\d{2}\\.\\d{2}(-[a-z0-9-_]+)?$", var.image_tag))
@@ -312,9 +328,16 @@ variable "image_tag" {
   }
 
   validation {
-    condition     = element(sort([substr(var.image_tag, 0, 10), "2024.03.12"]), 0) == "2024.03.12"
+    condition     = element(sort([substr(var.image_tag, 0, 10), "2024.06.06"]), 0) == "2024.06.06"
     error_message = "Docker image tag is too old"
   }
+}
+
+variable "cog_options" {
+  type = map(any)
+  description = "Options to pass to CoG driver (https://gdal.org/drivers/raster/cog.html#raster-cog)"
+  default = {}
+  nullable = false
 }
 
 variable "verbose" {

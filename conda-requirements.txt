@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-python>=3.9
+python>=3.9,<3.12
 xarray>=2023.8.0
 numpy
 dask
@@ -33,3 +33,4 @@ pika
 schema
 requests
 psutil
+rioxarray

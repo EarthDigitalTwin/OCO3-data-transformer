@@ -39,12 +39,20 @@ locals {
     output = {
       local = "/var/outputs"
       naming = {
-        pre_qf  = "${var.output_ds_name}_pre_qf.zarr"
-        post_qf = "${var.output_ds_name}_post_qf.zarr"
+        pre_qf  = var.global_product ? "${var.output_ds_name}_pre_qf.zarr" : "${var.output_ds_name}_pre_qf"
+        post_qf = var.global_product ? "${var.output_ds_name}_post_qf.zarr" : "${var.output_ds_name}_post_qf"
       }
       title = {
         pre_qf  = upper("${var.output_ds_name}_pre_qf")
         post_qf = upper("${var.output_ds_name}_post_qf")
+      }
+      global = var.global_product
+      cog = var.global_product ? null : {
+        efs = true,
+        output = {
+          local = "/var/outputs/${var.output_ds_name}_cog/"
+        }
+        options = var.cog_options
       }
     }
     input = {
@@ -372,7 +380,7 @@ locals {
     ]
     grid = {
       latitude        = var.output_grid_lat_resolution
-      longitude       = var.output_grid_lat_resolution * 2
+      longitude       = var.output_grid_lat_resolution * (var.global_product ? 2 : 1)
       method          = var.output_interpolation_method
       resolution_attr = var.output_grid_lat_resolution == 18000 ? "1km" : var.output_grid_lat_resolution == 1800 ? "10km" : null
     }
@@ -381,8 +389,9 @@ locals {
       longitude = var.output_chunk_lon
       time      = var.output_chunk_time
     }
-    max-workers  = 4
+    max-workers  = var.global_product ? 4 : 16
     mask-scaling = 1.00
+    target-file : var.global_product ? null : "/var/targets.json"
   })
 
   batch_definition_containerprops_search = jsonencode({
@@ -536,7 +545,7 @@ locals {
       },
       {
         name  = "LOG_LEVEL",
-        value = "10"
+        value = var.verbose ? "10" : "20"
       },
       {
         name  = "STAC_JSON",
@@ -620,10 +629,10 @@ locals {
           value = tostring(var.mprof_interval)
         }
       ] : [],
-      var.interpolate_max_parallel != -1 ? [
+      var.interpolate_max_parallel_global != -1 ? [
         {
           name  = "INTERP_MAX_PARALLEL"
-          value = tostring(var.interpolate_max_parallel)
+          value = tostring(var.interpolate_max_parallel_global)
         }
       ] : []
     )
@@ -694,6 +703,10 @@ locals {
       {
         name  = "RC_FILE_OVERRIDE",
         value = "/var/pipeline-rc.yaml"
+      },
+      {
+        name  = "COG_DIR_S3",
+        value = var.output_ds_name
       }
     ]
     mountPoints = [
@@ -1487,7 +1500,7 @@ locals {
       "Comment": "There's nothing new to process..."
     }
   },
-  "Comment": "Queries NASA Earthdata CMR for OCO-3 data granules, filters out a list of granules to be processed based on a state file in EFS and an optional, configurable limit, download the files to EFS, then process them into gridded SAM data, which is written as Zarr to S3. Downloaded data and temp files are then cleaned up. If a stage fails, a notice message is published to SNS.\nCurrent version: 0.5\nPlanned versions:\n0.5: Basic workflow [DONE]\n1.0: Check for critical failures from process job; attempt to restore backup in that case. If that fails, disable further automatic invocations of this function\n2.0: Separate write S3 destination from prod S3 destination, use something like DataSync to push to prod upon successful update"
+  "Comment": "Queries NASA Earthdata CMR for OCO-3 data granules, filters out a list of granules to be processed based on a state file in EFS and an optional, configurable limit, download the files to EFS, then process them into gridded SAM data, which is written as Zarr to S3. Downloaded data and temp files are then cleaned up. If a stage fails, a notice message is published to SNS."
 }
 EOF
 }

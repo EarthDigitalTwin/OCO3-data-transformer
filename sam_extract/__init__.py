@@ -21,3 +21,21 @@ try:
     __version__ = _version('oco3_sam_zarr')
 except Exception:
     __version__ = '999'
+
+import logging
+TRACE = 5
+
+
+def log_trace(self, message, *args, **kwargs):
+    if self.isEnabledFor(TRACE):
+        self._log(TRACE, message, args, **kwargs)
+
+
+def log_trace_to_root(message, *args, **kwargs):
+    logging.log(TRACE, message, *args, **kwargs)
+
+
+logging.addLevelName(TRACE, 'TRACE')
+setattr(logging, 'TRACE', TRACE)
+setattr(logging, 'trace', log_trace_to_root)
+setattr(logging.getLoggerClass(), 'trace', log_trace)

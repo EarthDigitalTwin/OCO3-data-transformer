@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+import json
 import logging
-import os
 import re
-from datetime import datetime
+import warnings
+from datetime import datetime, timezone
 from typing import Dict
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import numpy as np
 import xarray as xr
@@ -25,39 +27,45 @@ from sam_extract.exceptions import *
 from sam_extract.processors import Processor
 from sam_extract.processors.Processor import PROCESSORS
 from sam_extract.readers import GranuleReader
-from sam_extract.targets import FILL_VALUE as TARGET_FILL
-from sam_extract.targets import extract_id, determine_id_type
-from sam_extract.utils import INTERP_SEMA, get_f_xi, get_xi
-from sam_extract.writers import ZarrWriter
-from sam_extract.writers.ZarrWriter import ENCODINGS
 from scipy.interpolate import griddata
 from shapely.affinity import scale
-from shapely.geometry import Polygon, box, MultiPolygon
-from shapely.ops import unary_union
+from shapely.geometry import Polygon, box
 
 logger = logging.getLogger(__name__)
 
 OPERATION_MODE_SAM = 4
 OPERATION_MODE_TARGET = 2
 
-PROCESSOR_PREFIX = 'OCO3'
+PROCESSOR_PREFIX = ''
+
+WARN_ON_UNKNOWN_TARGET = True
 
 
 def tr(s: str, chars: str = None):
     return re.sub(rf'([{chars}])(\1+)', r'\1', s)
 
 
-def fit_data_to_grid(sams, cfg):
+def fit_data_to_grid(sam, target, bounds, cfg):
     logger.debug('Concatenating extracted datasets for interpolation')
 
-    if len(sams) == 0:
+    if len(sam) == 0:
         return None
 
-    interp_ds = {group: xr.concat([sam[group] for sam in sams], 'sounding_id') for group in sams[0]}
+    if target not in bounds or bounds[target]['bbox'] is None:
+        if WARN_ON_UNKNOWN_TARGET:
+            logger.error(f'Could not find bounds for {target} in provided targets list. Will have to omit this target '
+                         f'from the output')
+            return None
+        else:
+            raise KeyError(target)
 
-    lats = interp_ds['/'].latitude.to_numpy()
-    lons = interp_ds['/'].longitude.to_numpy()
-    time = np.array([datetime(*interp_ds['/'].date[0].to_numpy()[:3].astype(int)).timestamp()])
+    bbox_dict = bounds[target]['bbox']
+
+    sam = sam.copy()
+
+    lats = sam['/'].latitude.to_numpy()
+    lons = sam['/'].longitude.to_numpy()
+    time = np.array([datetime(*sam['/'].date[0].to_numpy().astype(int)).replace(tzinfo=timezone.utc).timestamp()])
 
     points = list(zip(lons, lats))
 
@@ -73,13 +81,16 @@ def fit_data_to_grid(sams, cfg):
                       'solar_azimuth_angle', 'target_id', 'target_name']
     }
 
-    logger.info('Dropping variables that will be excluded from interpolation (ie, non-numeric values)')
+    logger.debug('Dropping variables that will be excluded from interpolation (ie, non-numeric values)')
 
     for group in drop_dims:
-        if group in interp_ds:
-            interp_ds[group] = interp_ds[group].drop_vars(drop_dims[group], errors='ignore')
+        if group in sam:
+            sam[group] = sam[group].drop_vars(drop_dims[group], errors='ignore')
 
-    _, lon_coord, lat_coord = get_xi(cfg)
+    lon_grid, lat_grid = np.mgrid[bbox_dict['min_lon']:bbox_dict['max_lon']:complex(0, cfg['grid']['longitude']),
+                                  bbox_dict['min_lat']:bbox_dict['max_lat']:complex(0, cfg['grid']['latitude'])].astype(
+        np.dtype('float32')
+    )
 
     logger.debug('Building attribute and coordinate dictionaries')
 
@@ -110,15 +121,15 @@ def fit_data_to_grid(sams, cfg):
     }
 
     coords = {
-        'longitude': ('longitude', lon_coord, lon_attrs),
-        'latitude': ('latitude', lat_coord, lat_attrs),
+        'longitude': ('longitude', lon_grid.T[0], lon_attrs),
+        'latitude': ('latitude', lat_grid[0], lat_attrs),
         'time': ('time', time, time_attrs)
     }
 
     gridded_ds = {}
 
-    logger.info(f"Interpolating retained data variables to {cfg['grid']['longitude']:,} by {cfg['grid']['latitude']:,}"
-                f" grid")
+    logger.debug(f"Interpolating retained data variables to {cfg['grid']['longitude']:,} by {cfg['grid']['latitude']:,}"
+                 f" grid")
 
     desired_method = cfg['grid'].get('method', Processor.DEFAULT_INTERPOLATE_METHOD)
 
@@ -132,46 +143,46 @@ def fit_data_to_grid(sams, cfg):
         method = desired_method
 
     def interpolate(in_grp, grp: str, var_name, m):
-        logger.info(f'Interpolating variable {var_name} in group {grp}')
+        logger.debug(f'Interpolating variable {var_name} in group {grp}')
 
-        xi = np.load(get_f_xi(), mmap_mode='r')
+        input_a = in_grp[grp][var_name].to_numpy()
 
         grid = griddata(
             points,
-            in_grp[grp][var_name].to_numpy(),
-            xi,
+            input_a,
+            (lon_grid, lat_grid),
             method=m,
-            fill_value=in_grp[grp][var_name].attrs['missing_value']
-        ).transpose()
+            # fill_value=in_grp[grp][var_name].attrs['missing_value']
+            fill_value=np.nan
+        )
 
-        try:
-            getattr(xi, '_mmap').close()
-        except:
-            pass
-        finally:
-            del xi
+        # I don't recall why I was pulling fill_value from attrs but then deleting the attrs...
 
-        return [grid]
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            logger.trace(f'stats: {np.min(input_a)} {np.nanmin(input_a)} {np.nanmax(input_a)} -> '
+                         f'{np.min(grid)} {np.nanmin(grid)} {np.nanmax(grid)}')
 
-    for group in interp_ds:
-        with INTERP_SEMA:
-            logger.debug(f'Acquired semaphore {repr(INTERP_SEMA)}')
+        return [grid.T]
 
-            gridded_ds[group] = xr.Dataset(
-                data_vars={
-                    f'{PROCESSOR_PREFIX}_{var_name}':
-                        (('time', 'latitude', 'longitude'), interpolate(interp_ds, group, var_name, method))
-                    for var_name in interp_ds[group].data_vars
-                },
-                coords=coords,
-            )
+    for group in sam:
+        gridded_ds[group] = xr.Dataset(
+            data_vars={
+                f'{PROCESSOR_PREFIX}{var_name}':
+                    (('time', 'latitude', 'longitude'), interpolate(sam, group, var_name, method))
+                for var_name in sam[group].data_vars
+            },
+            coords=coords,
+        )
 
-        logger.debug(f'Released semaphore {repr(INTERP_SEMA)}')
+        for var in sam[group]:
+            gridded_ds[group][f'{PROCESSOR_PREFIX}{var}'].attrs = sam[group][var].attrs
+            if 'missing_value' in gridded_ds[group][f'{PROCESSOR_PREFIX}{var}'].attrs:
+                del gridded_ds[group][f'{PROCESSOR_PREFIX}{var}'].attrs['missing_value']
+            if '_FillValue' in gridded_ds[group][f'{PROCESSOR_PREFIX}{var}'].attrs:
+                del gridded_ds[group][f'{PROCESSOR_PREFIX}{var}'].attrs['_FillValue']
 
-        for var in interp_ds[group]:
-            gridded_ds[group][f'{PROCESSOR_PREFIX}_{var}'].attrs = interp_ds[group][var].attrs
-
-    logger.info('Completed interpolations to grid')
+    logger.debug('Completed interpolations to grid')
 
     gridded_ds['/'].attrs['interpolation_method'] = cfg['grid'].get('method', Processor.DEFAULT_INTERPOLATE_METHOD)
 
@@ -183,110 +194,69 @@ def fit_data_to_grid(sams, cfg):
     return gridded_ds
 
 
-def mask_data(sams, targets, op_modes, grid_ds, cfg):
-    if sams is None:
+def mask_data(sam, grid_ds, cfg) -> Dict[str, xr.Dataset] | None:
+    if sam is None:
         return None
 
     if grid_ds is None:
         return None
 
-    assert len(sams) == len(targets)
-
-    logger.info('Constructing polygons to build mask')
+    logger.debug('Constructing polygons to build mask')
 
     latitudes = grid_ds['/'].latitude.to_numpy()
     longitudes = grid_ds['/'].longitude.to_numpy()
 
-    sam_polys = []
-
-    scaling = cfg.get('mask-scaling', 1)
-    scaling = min(max(scaling, 1), 1.5)
-
-    logger.debug(f'Footprint scaling factor: {scaling}')
-
-    meta_dict = {}
-
-    for i, (sam, target, op_mode) in enumerate(zip(sams, targets, op_modes)):
-        logger.info(f'Creating bounding polys for region of {len(sam["/"].vertex_latitude):,} footprints '
-                    f'[{i+1}/{len(sams)}]')
-
-        footprint_polygons = []
-
-        for lats, lons, tid, tn in zip(
-                sam['/'].vertex_latitude.to_numpy(),
-                sam['/'].vertex_longitude.to_numpy(),
-                target.target_id.to_numpy(),
-                target.target_name.to_numpy(),
-        ):
-            vertices = [(lons[i].item(), lats[i].item()) for i in range(len(lats))]
-            vertices.append((lons[0].item(), lats[0].item()))
-            if scaling != 1.0:
-                p: Polygon = scale(Polygon(vertices), scaling, scaling)
-            else:
-                p = Polygon(vertices)
-
-            tid, tn = tid, tn
-
-            if isinstance(tid, np.ndarray):
-                tid = tid.item()
-
-            if isinstance(tn, np.ndarray):
-                tn = tn.item()
-
-            meta_dict[p.wkt] = (tid, tn, op_mode)
-            footprint_polygons.append(p)
-
-        if scaling != 1.0:
-            bounding_poly = unary_union(footprint_polygons)
-        else:
-            bounding_poly = MultiPolygon(footprint_polygons)
-
-        logger.debug(f'Created poly with bbox {bounding_poly.bounds}')
-
-        sam_polys.append((bounding_poly.bounds, footprint_polygons))
-
-    logger.info('Producing geo mask from generated polys')
-
     geo_mask = np.full((len(latitudes), len(longitudes)), False)
-    target_ids = np.full((len(latitudes), len(longitudes)), TARGET_FILL, dtype='int')
-    target_types = np.full((len(latitudes), len(longitudes)), TARGET_FILL, dtype='byte')
-    operation_mode = np.full((len(latitudes), len(longitudes)), TARGET_FILL, dtype='byte')
 
     lon_len = longitudes[1] - longitudes[0]
     lat_len = latitudes[1] - latitudes[0]
 
-    for i, (bounds, polys) in enumerate(sam_polys):
+    scaling = cfg.get('mask-scaling', 1)
+    scaling = min(max(scaling, 1), 1.5)
+
+    logger.trace(f'Footprint scaling factor: {scaling}')
+    logger.trace(f'Creating bounding polys for region of {len(sam["/"].vertex_latitude):,} footprints')
+
+    for lats, lons in zip(
+            sam['/'].vertex_latitude.to_numpy(),
+            sam['/'].vertex_longitude.to_numpy()
+    ):
+        vertices = [(lons[i].item(), lats[i].item()) for i in range(len(lats))]
+        vertices.append((lons[0].item(), lats[0].item()))
+        if scaling != 1.0:
+            p: Polygon = scale(Polygon(vertices), scaling, scaling)
+        else:
+            p = Polygon(vertices)
+
+        logger.trace(f'Created poly with bbox {p.bounds}')
+
         indices = []
 
-        logger.debug(f'Determining coordinates from {len(polys)} sub-polygons in bounds {bounds}')
+        minx, miny, maxx, maxy = p.bounds
 
-        for poly in polys:
-            minx, miny, maxx, maxy = poly.bounds
+        # Expand bounds to fill pixels
+        minx -= (lon_len / 2)
+        miny -= (lat_len / 2)
+        maxx += (lon_len / 2)
+        maxy += (lat_len / 2)
 
-            # Expand bounds to fill pixels
-            minx -= (lon_len / 2)
-            miny -= (lat_len / 2)
-            maxx += (lon_len / 2)
-            maxy += (lat_len / 2)
-
-            indices.append((
-                np.argwhere(np.logical_and(miny <= latitudes, latitudes <= maxy)),
-                np.argwhere(np.logical_and(minx <= longitudes, longitudes <= maxx)),
-                meta_dict.get(poly.wkt, ('UNKNOWN', 'UNKNOWN')),
-                poly
-            ))
+        indices.append((
+            np.argwhere(np.logical_and(miny <= latitudes, latitudes <= maxy)),
+            np.argwhere(np.logical_and(minx <= longitudes, longitudes <= maxx)),
+            p
+        ))
 
         n_lats = sum([len(ind[0]) for ind in indices])
         n_lons = sum([len(ind[1]) for ind in indices])
         n_pts = sum([len(ind[0]) * len(ind[1]) for ind in indices])
 
-        logger.debug(f'Checking for polys in ({bounds})')
-        logger.info(f'Applying bounding poly to geo mask across {n_lats:,} latitudes, {n_lons:,} '
-                    f'longitudes. {n_pts:,} total points. [{i+1}/{len(sam_polys)}]')
+        logger.trace(f'Checking for polys in ({p.bounds})')
+        logger.trace(f'Applying bounding poly to geo mask across {n_lats:,} latitudes, {n_lons:,} '
+                     f'longitudes. {n_pts:,} total points.')
 
         valid_points = 0
 
-        for lat_indices, lon_indices, (tid, tn, op_mode), poly in indices:
+        for lat_indices, lon_indices, poly in indices:
             for lon_i in lon_indices:
                 for lat_i in lat_indices:
                     lon_i = tuple(lon_i)
@@ -305,87 +275,14 @@ def mask_data(sams, targets, op_modes, grid_ds, cfg):
                         geo_mask[lat_i][lon_i] = True
                         valid_points += 1
 
-                        id_type = determine_id_type(tid)
-
-                        if target_ids[lat_i][lon_i] == TARGET_FILL:
-                            target_ids[lat_i][lon_i] = extract_id(tid, id_type)
-
-                        if target_types[lat_i][lon_i] == TARGET_FILL:
-                            target_types[lat_i][lon_i] = id_type
-
-                        if operation_mode[lat_i][lon_i] == TARGET_FILL:
-                            operation_mode[lat_i][lon_i] = op_mode
-
-        logger.debug(f'Finished applying polys in ({bounds}) to geo mask. Added {valid_points:,} valid points')
-
     # Apply mask RIGHT AWAY, seems to be BAD for memory otherwise
-
     mask = np.array([geo_mask])
 
-    logger.info('Applying mask to dataset')
+    logger.debug('Applying mask to dataset')
 
     for group in grid_ds:
         for var in grid_ds[group].data_vars:
             grid_ds[group][var] = grid_ds[group][var].where(mask)
-
-    logger.info('Adding target id and name variables to dataset')
-
-    target_id_attrs = dict(
-        units='none',
-        long_name='OCO-3 Target (or SAM) ID numerical component',
-        comment='ID number is derived for target types ECOSTRESS and SIF as they are non-numerical. Special value of 0 '
-                'is used for non-numerical ids for other types'
-    )
-
-    target_type_attrs = dict(
-        units='none',
-        long_name='OCO-3 Target (or SAM) ID target type: 1=fossil, 2=ecostress, 3=sif, 4=volcano, 5=tccon, 6=other',
-    )
-
-    operation_mode_attrs = dict(
-        units='none',
-        long_name='OCO-3 Operation Mode: 2=Target, 4=Snapshot Area Map',
-    )
-
-    target_ids_da = xr.DataArray(
-        data=np.array([target_ids], dtype='int'),
-        coords={dim: grid_ds['/'].coords[dim] for dim in grid_ds['/'].coords},
-        dims=[
-            'time',
-            'latitude',
-            'longitude'
-        ],
-        name=f'{PROCESSOR_PREFIX}_target_id',
-        attrs=target_id_attrs
-    )
-
-    target_types_da = xr.DataArray(
-        data=np.array([target_types], dtype='byte'),
-        coords={dim: grid_ds['/'].coords[dim] for dim in grid_ds['/'].coords},
-        dims=[
-            'time',
-            'latitude',
-            'longitude'
-        ],
-        name=f'{PROCESSOR_PREFIX}_target_type',
-        attrs=target_type_attrs
-    )
-
-    operation_mode_da = xr.DataArray(
-        data=np.array([operation_mode], dtype='byte'),
-        coords={dim: grid_ds['/'].coords[dim] for dim in grid_ds['/'].coords},
-        dims=[
-            'time',
-            'latitude',
-            'longitude'
-        ],
-        name=f'{PROCESSOR_PREFIX}_operation_mode',
-        attrs=operation_mode_attrs
-    )
-
-    grid_ds['/'][f'{PROCESSOR_PREFIX}_target_id'] = target_ids_da
-    grid_ds['/'][f'{PROCESSOR_PREFIX}_target_type'] = target_types_da
-    grid_ds['/'][f'{PROCESSOR_PREFIX}_operation_mode'] = operation_mode_da
 
     return grid_ds
 
@@ -399,7 +296,7 @@ class OCO3SamProcessor(Processor):
             temp_dir,
             output_pre_qf=True,
             exclude_groups: Optional[List[str]] = None
-    ) -> Tuple[Optional[Dict[str, xr.Dataset]], Optional[Dict[str, xr.Dataset]], bool, str]:
+    ):
         additional_params = {'drop_dims': cfg['drop-dims']}
 
         if exclude_groups is None:
@@ -435,6 +332,7 @@ class OCO3SamProcessor(Processor):
         try:
             with GranuleReader(path, **additional_params) as ds:
                 mode_array = ds['/Sounding']['operation_mode']
+                target_array = ds['/Sounding']['target_id']
 
                 logger.info('Splitting into individual SAM regions')
 
@@ -444,63 +342,89 @@ class OCO3SamProcessor(Processor):
                 region_slices = []
                 in_region = False
                 start = None
+                target_id = None
 
-                for i, mode in enumerate(mode_array.to_numpy()):
+                for i, (mode, target) in enumerate(zip(mode_array.to_numpy(), target_array.to_numpy())):
+                    # print('SAM', region_slices[-1:], i, mode, target, in_region, start, target_id, n_sams)
+
                     if mode.item() == OPERATION_MODE_SAM:
                         if not in_region:
                             in_region = True
+                            target_id = target
                             start = i
-                    else:
+                        elif target != target_id:
+                            region_slices.append((slice(start, i), target_id))
+                            target_id = target
+                            start = i
+                            n_sams += 1
+
+                    if mode.item() != OPERATION_MODE_SAM:
                         if in_region:
+                            region_slices.append((slice(start, i), target_id))
+                            target_id = None
                             in_region = False
-                            region_slices.append((slice(start, i), OPERATION_MODE_SAM))
                             n_sams += 1
 
                 if in_region:
-                    region_slices.append((slice(start, i), OPERATION_MODE_SAM))
+                    region_slices.append((slice(start, i+1), target_id))
                     n_sams += 1
 
                 logger.info('Splitting into individual target regions')
 
                 in_region = False
                 start = None
+                target_id = None
 
-                for i, mode in enumerate(mode_array.to_numpy()):
+                for i, (mode, target) in enumerate(zip(mode_array.to_numpy(), target_array.to_numpy())):
+                    # print('Target', region_slices[-1:], i, mode, target, in_region, start, target_id, n_sams)
+
                     if mode.item() == OPERATION_MODE_TARGET:
                         if not in_region:
                             in_region = True
+                            target_id = target
                             start = i
-                    else:
+                        elif target != target_id:
+                            region_slices.append((slice(start, i), target_id))
+                            target_id = target
+                            start = i
+                            n_targets += 1
+
+                    if mode.item() != OPERATION_MODE_TARGET:
                         if in_region:
+                            region_slices.append((slice(start, i), target_id))
+                            target_id = None
                             in_region = False
-                            region_slices.append((slice(start, i), OPERATION_MODE_TARGET))
                             n_targets += 1
 
                 if in_region:
-                    region_slices.append((slice(start, i), OPERATION_MODE_TARGET))
+                    region_slices.append((slice(start, i+1), target_id))
                     n_targets += 1
+                #
+                # dbg_slice = region_slices[-1]
+                # print(dbg_slice)
+                # dbg_slice = dbg_slice[0]
+                #
+                # print(ds['/'].isel(sounding_id=dbg_slice))
+                #
+                # print(ds['/'].isel(sounding_id=slice(dbg_slice.start - 1, dbg_slice.stop + 1)))
 
                 extracted_sams_pre_qf = []
                 extracted_sams_post_qf = []
 
-                extracted_targets_pre_qf = []
-                extracted_targets_post_qf = []
-
-                extracted_op_modes_pre_qf = []
-                extracted_op_modes_post_qf = []
-
                 logger.info(f'Identified {n_sams} SAM regions and {n_targets} Target regions')
-
                 logger.info('Filtering out bad quality soundings in selected ranges')
 
-                for s, op_mode in region_slices:
+                for s, target in region_slices:
+                    if target in ['Missing', 'missing']:
+                        logger.error(f'Region from sounding_id range {ds["/"].sounding_id[s.start].item()} to '
+                                     f'{ds["/"].sounding_id[s.stop-1].item()} does not have a defined target and will '
+                                     f'need to be excluded')
+                        continue
+
                     sam_group = {group: ds[group].isel(sounding_id=s) for group in ds if group not in exclude_groups}
-                    tid_group = ds['/Sounding'].isel(sounding_id=s)[['target_id', 'target_name']]
 
                     if output_pre_qf:
-                        extracted_sams_pre_qf.append(sam_group)
-                        extracted_targets_pre_qf.append(tid_group)
-                        extracted_op_modes_pre_qf.append(op_mode)
+                        extracted_sams_pre_qf.append((sam_group, target))
 
                     quality = sam_group['/'].xco2_quality_flag == 0
 
@@ -508,19 +432,13 @@ class OCO3SamProcessor(Processor):
                     if not any(quality):
                         logger.info(f'Dropping region from sounding_id range '
                                     f'{ds["/"].sounding_id[s.start].item()} to '
-                                    f'{ds["/"].sounding_id[s.stop].item()} ({len(quality):,} soundings) as there are no '
-                                    f'points flagged as good.')
+                                    f'{ds["/"].sounding_id[s.stop-1].item()} ({len(quality):,} soundings) as there are '
+                                    f'no points flagged as good.')
                         continue
 
-                    tid_group.load()
-
                     extracted_sams_post_qf.append(
-                        {group: sam_group[group].where(quality, drop=True) for group in sam_group}
+                        ({group: sam_group[group].where(quality, drop=True) for group in sam_group}, target)
                     )
-                    extracted_targets_post_qf.append(
-                        tid_group.where(quality, drop=True)
-                    )
-                    extracted_op_modes_post_qf.append(op_mode)
 
                 if output_pre_qf:
                     logger.info(f'Extracted {len(extracted_sams_pre_qf)} regions total, {len(extracted_sams_post_qf)} '
@@ -528,82 +446,64 @@ class OCO3SamProcessor(Processor):
                 else:
                     logger.info(f'Extracted {len(extracted_sams_post_qf)} regions with good data')
 
-                chunking: Tuple[int, int, int] = cfg['chunking']['config']
+                processed_sams_pre_qf = []
+                processed_sams_post_qf = []
+
+                with open(cfg['target-file']) as fp:
+                    target_bounds = json.load(fp)
 
                 if output_pre_qf:
-                    logger.info('Fitting unfiltered data to output grid')
-
                     if len(extracted_sams_pre_qf) > 0:
-                        gridded_groups_pre_qf = mask_data(
-                            extracted_sams_pre_qf, extracted_targets_pre_qf, extracted_op_modes_pre_qf,
-                            fit_data_to_grid(
-                                extracted_sams_pre_qf,
-                                cfg
-                            ),
-                            cfg
-                        )
+                        for i, (sam, target) in enumerate(extracted_sams_pre_qf, start=1):
+                            logger.info(f'Gridding unfiltered region for target: {target} '
+                                        f'({target_bounds.get(target, dict()).get("name", "")}). '
+                                        f'[{i}/{len(extracted_sams_pre_qf)}]')
+                            processed_sams_pre_qf.append(
+                                (mask_data(
+                                    sam,
+                                    fit_data_to_grid(
+                                        sam,
+                                        target,
+                                        target_bounds,
+                                        cfg
+                                    ),
+                                    cfg
+                                ), target)
+                            )
                     else:
-                        logger.info('No pre-qf data to extract, creating an empty day of data')
-                        gridded_groups_pre_qf = OCO3SamProcessor.empty_dataset(
-                            datetime(*ds['/'].date[0].to_numpy()[:3].astype(int)),
-                            cfg
-                        )
+                        logger.info('No pre-qf data to extract.')
 
                     extracted_sams_pre_qf.clear()
-                    extracted_targets_pre_qf.clear()
-                    del extracted_sams_pre_qf, extracted_targets_pre_qf
+                    del extracted_sams_pre_qf
 
-                    if gridded_groups_pre_qf is not None:
-                        temp_path_pre = os.path.join(temp_dir, 'pre_qf', os.path.basename(input_file)) + '.zarr'
-
-                        logger.info('Outputting unfiltered product slice to temporary Zarr array')
-
-                        writer = ZarrWriter(temp_path_pre, chunking, overwrite=True, verify=False)
-                        writer.write(gridded_groups_pre_qf)
-
-                        del gridded_groups_pre_qf
-
-                        ret_pre_qf = ZarrWriter.open_zarr_group(temp_path_pre, 'local', None)
-                    else:
-                        ret_pre_qf = None
-
-                logger.info('Fitting filtered data to output grid')
+                logger.debug('Fitting filtered data to output grid')
 
                 if len(extracted_sams_post_qf) > 0:
-                    gridded_groups_post_qf = mask_data(
-                        extracted_sams_post_qf, extracted_targets_post_qf, extracted_op_modes_post_qf,
-                        fit_data_to_grid(
-                            extracted_sams_post_qf,
-                            cfg
-                        ),
-                        cfg
-                    )
+                    for i, (sam, target) in enumerate(extracted_sams_post_qf, start=1):
+                        logger.info(f'Gridding filtered region for target: {target} '
+                                    f'({target_bounds.get(target, dict()).get("name", "")}). '
+                                    f'[{i}/{len(extracted_sams_post_qf)}]')
+                        processed_sams_post_qf.append(
+                            (mask_data(
+                                sam,
+                                fit_data_to_grid(
+                                    sam,
+                                    target,
+                                    target_bounds,
+                                    cfg
+                                ),
+                                cfg
+                            ), target)
+                        )
                 else:
-                    logger.info('No post-qf data to extract, creating an empty day of data')
-                    gridded_groups_post_qf = OCO3SamProcessor.empty_dataset(
-                        datetime(*ds['/'].date[0].to_numpy()[:3].astype(int)),
-                        cfg
-                    )
+                    logger.info('No post-qf data to extract.')
 
                 extracted_sams_post_qf.clear()
-                extracted_targets_post_qf.clear()
-                del extracted_sams_post_qf, extracted_targets_post_qf
-
-                if gridded_groups_post_qf is not None:
-                    temp_path_post = os.path.join(temp_dir, 'post_qf', os.path.basename(input_file)) + '.zarr'
-
-                    logger.info('Outputting filtered SAM product slice to temporary Zarr array')
-
-                    writer = ZarrWriter(temp_path_post, chunking, overwrite=True, verify=False)
-                    writer.write(gridded_groups_post_qf)
-
-                    ret_post_qf = ZarrWriter.open_zarr_group(temp_path_post, 'local', None)
-                else:
-                    ret_post_qf = None
+                del extracted_sams_post_qf
 
                 logger.info(f'Finished processing input at {path}')
 
-                return ret_pre_qf, ret_post_qf, True, path
+                return processed_sams_pre_qf, processed_sams_post_qf, True, path
         except ReaderException:
             return None, None, False, path
         except Exception as err:
@@ -613,73 +513,7 @@ class OCO3SamProcessor(Processor):
 
     @staticmethod
     def _empty_dataset(date: datetime, cfg):
-        variables = [
-            f'{PROCESSOR_PREFIX}_xco2',
-            f'{PROCESSOR_PREFIX}_xco2_uncertainty',
-            f'{PROCESSOR_PREFIX}_target_id',
-            f'{PROCESSOR_PREFIX}_target_type',
-            f'{PROCESSOR_PREFIX}_operation_mode',
-        ]
-
-        _, lon_coord, lat_coord = get_xi(cfg)
-        time = np.array([date.timestamp()])
-
-        lat_attrs = {
-            'long_name': 'latitude',
-            'standard_name': 'latitude',
-            'axis': 'Y',
-            'units': 'degrees_north',
-            'valid_min': -90.0,
-            'valid_max': 90.0,
-        }
-
-        lon_attrs = {
-            'long_name': 'longitude',
-            'standard_name': 'longitude',
-            'axis': 'X',
-            'units': 'degrees_east',
-            'valid_min': -180.0,
-            'valid_max': 180.0,
-        }
-
-        time_attrs = {
-            'long_name': 'time',
-            'standard_name': 'time',
-            'axis': 'T',
-            'units': 'seconds since 1970-01-01 00:00:00',
-            'comment': 'Day of the source L2 Lite file from which the data at this time slice was extracted at midnight UTC'
-        }
-
-        coords = {
-            'longitude': ('longitude', lon_coord, lon_attrs),
-            'latitude': ('latitude', lat_coord, lat_attrs),
-            'time': ('time', time, time_attrs)
-        }
-
-        shape = (1, cfg['grid']['latitude'], cfg['grid']['longitude'])
-
-        gridded_ds = {
-            '/': xr.Dataset(
-                data_vars={
-                    var: (
-                        ('time', 'latitude', 'longitude'),
-                        np.full(
-                            shape,
-                            ENCODINGS['/'][var]['_FillValue'] if var in ENCODINGS['/'] else np.nan,
-                            ENCODINGS['/'][var]['dtype'] if var in ENCODINGS['/'] else 'float64'
-                        )
-                    ) for var in variables
-                },
-                coords=coords
-            )
-        }
-
-        return gridded_ds
+        raise NotImplementedError()
 
 
-ENCODINGS['/'] = {
-    f'{PROCESSOR_PREFIX}_target_id': {'_FillValue': TARGET_FILL, 'dtype': 'int32'},
-    f'{PROCESSOR_PREFIX}_target_type': {'_FillValue': TARGET_FILL, 'dtype': 'int8'},
-    f'{PROCESSOR_PREFIX}_operation_mode': {'_FillValue': TARGET_FILL, 'dtype': 'int8'},
-}
-PROCESSORS['oco3'] = OCO3SamProcessor
+PROCESSORS['local']['oco3'] = OCO3SamProcessor

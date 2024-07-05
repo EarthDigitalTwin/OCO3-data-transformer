@@ -37,11 +37,12 @@ except ImportError:
 
 # Env vars for Lambda
 #
-# LAMBDA_STATE       : Path to state JSON file in mounted filesystem
-# LAMBDA_RC_TEMPLATE : Path to RC template file in mounted filesystem
-# LAMBDA_STAC_PATH   : Path to CMR search result file in mounted filesystem
-# LAMBDA_STAGE_PATH  : Path to data stage output file in mounted filesystem
-# LAMBDA_GAP_FILE    : Path to gap file (see --gapfile arg)
+# LAMBDA_STATE          : Path to state JSON file in mounted filesystem
+# LAMBDA_RC_TEMPLATE    : Path to RC template file in mounted filesystem
+# LAMBDA_STAC_PATH      : Path to CMR search result file in mounted filesystem
+# LAMBDA_STAGE_PATH     : Path to data stage output file in mounted filesystem
+# LAMBDA_GAP_FILE       : Path to gap file (see --gapfile arg)
+# LAMBDA_TARGET_FILE    : Path to target file
 
 
 STATE_SCHEMA = Schema({
@@ -105,7 +106,7 @@ def load_state(path: str):
     if not os.path.exists(path):
         logger.warning(f'No state file present at {path}; initializing a new one')
 
-        state = dict(count=0, granules=0, processed={})
+        state = dict(days=0, granules=0, processed={})
 
         if IN_LAMBDA:
             with open(path, 'w') as fp:
@@ -257,6 +258,9 @@ def stac_filter(cmr_features, state, gap_file):
         for collection in ['oco2', 'oco3']:
             if collection in features:
                 date_map.setdefault(date, {})[collection] = 'PRESENT'
+            elif collection == 'oco2' and not global_product:
+                # Temporarily null out oco2 for non-global
+                date_map.setdefault(date, {})[collection] = 'EXPECTED ABSENT'
             else:
                 date_dt = datetime.strptime(date, '%Y-%m-%d')
 
@@ -389,6 +393,14 @@ parser.add_argument(
          'Fmt: [{mission: {start: dt, end: dt/null}}]'
 )
 
+parser.add_argument(
+    '--target-file',
+    dest='target_file',
+    help='Path to JSON file containing SAM target data. '
+         'Fmt: {target_id: {name: str, bbox: {min_lon: f, min_lat: f, max_lon: f, max_lat: f}}',
+    default=os.getenv('LAMBDA_TARGET_FILE')
+)
+
 args = parser.parse_args()
 
 start_time = datetime.now()
@@ -436,6 +448,8 @@ if dc is None and not IN_LAMBDA:
     logger.error('docker-compose command could not be found in PATH')
     raise OSError('docker-compose command could not be found in PATH')
 
+with open(args.rc) as fp:
+    global_product = load(fp, Loader=Loader)['output'].get('global', True)
 
 def main(phase_override=None):
     the_time = datetime.now()
@@ -500,12 +514,12 @@ def main(phase_override=None):
 
         logger.info('Comparing CMR results to state')
 
-        import warnings
-        warnings.warn('2024-04-02:: We have to ensure we only select days to process if we\'re sure all data up'
-                      ' to the end of the date range is either present or we know it will never exist. The idea of this'
-                      ' is to avoid triggering repair functionality due to duplicate time slices from processing '
-                      'the same day of data from different sources in different invocations. We have a preliminary '
-                      'method here to implement that but it needs a bit more validation.', UserWarning)
+        # import warnings
+        # warnings.warn('2024-04-02:: We have to ensure we only select days to process if we\'re sure all data up'
+        #               ' to the end of the date range is either present or we know it will never exist. The idea of this'
+        #               ' is to avoid triggering repair functionality due to duplicate time slices from processing '
+        #               'the same day of data from different sources in different invocations. We have a preliminary '
+        #               'method here to implement that but it needs a bit more validation.', UserWarning)
 
         cmr_feature_count = 0
         cmr_features = {}
@@ -513,6 +527,10 @@ def main(phase_override=None):
         for collection in stac_files:
             with open(stac_files[collection]) as fp:
                 cmr_results = json.load(fp)
+
+            if collection == 'oco2' and not global_product:
+                # Temporarily null out oco2 for non-global
+                cmr_results['features'] = []
 
             for f in cmr_results['features']:
                 cmr_feature_count += 1
@@ -683,6 +701,12 @@ def main(phase_override=None):
                         p_args.extend([
                             '-v',
                             f'{output_mount_dir}:/var/outputs/',
+                        ])
+
+                    if not global_product:
+                        p_args.extend([
+                            '-v',
+                            f'{args.target_file}:/etc/targets.json'
                         ])
 
                     p_args.extend([

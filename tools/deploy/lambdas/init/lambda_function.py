@@ -46,6 +46,11 @@ def lambda_handler(event, context):
     logger.info('Copying RC template file')
 
     s3.download_file(bucket, key, '/mnt/transform/run-config.yaml')
+    target_key = os.getenv('TARGET_KEY')
+
+    if target_key is not None:
+        logger.info('Copying target JSON file')
+        s3.download_file(bucket, target_key, '/mnt/transform/targets.json')
 
     try:
         logger.info('Trying to purge the staging dir if it exists...')

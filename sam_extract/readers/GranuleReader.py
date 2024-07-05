@@ -50,6 +50,7 @@ class GranuleReader:
             s3_auth: Dict[str, str] = None
     ):
         self.__url = path
+        self.__ds_dict: Dict[str, xr.Dataset] | None = None
         self.__s3_file = None
         self.__s3_region = s3_region
         self.__drop = drop_dims if drop_dims else []
@@ -62,6 +63,14 @@ class GranuleReader:
         if self.__s3_file:
             logger.info(f'Deleting temporary input file {self.__s3_file.name}')
             self.__s3_file.close()
+            self.__s3_file = None
+
+        if self.__ds_dict:
+            for group in list(self.__ds_dict.keys()):
+                self.__ds_dict[group].close()
+                del self.__ds_dict[group]
+
+            self.__ds_dict = None
 
     def open(self) -> Dict[str, xr.Dataset]:
         url = urlparse(self.__url)
@@ -113,6 +122,8 @@ class GranuleReader:
         for group in ds_dict:
             for var in ds_dict[group].data_vars:
                 ds_dict[group][var].attrs['_FillValue'] = float('nan')
+
+        self.__ds_dict = ds_dict
 
         return ds_dict
 

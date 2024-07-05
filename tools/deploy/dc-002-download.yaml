@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-version: "3.7"
 services:
   cumulus_granules_download:
     image: ghcr.io/unity-sds/unity-data-services:5.3.2

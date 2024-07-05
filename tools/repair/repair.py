@@ -17,6 +17,7 @@ import argparse
 import json
 import logging
 import os
+import subprocess
 import sys
 import tarfile
 from concurrent.futures import ThreadPoolExecutor
@@ -65,29 +66,34 @@ for each in root_logger.handlers:
 def delete_group(
         path: str,
         store_type: Literal['local', 's3'],
-        store_params: AWSConfig = None
+        store_params: AWSConfig = None,
+        verify=True
 ):
     path = path.rstrip('/')
 
     logger.info(f'Deleting potentially corrupted data at {path}')
 
-    try:
-        # Check that the path we're deleting is actually Zarr data
-        if not path.endswith('.tar'):
-            ZarrWriter.open_zarr_group(path, store_type, store_params, root=True)
-        else:
-            likely_zarr = False
-            with tarfile.open(path, 'r') as tar:
-                for f in tar.getnames():
-                    if os.path.basename(f) == '.zgroup':
-                        likely_zarr = True
-                        break
-            if not likely_zarr:
-                logger.error(f'Backup archive file at {path} does not appear to be a Zarr group')
-                return False
-    except Exception as e:
-        logger.warning(f'Zarr group at path {path} could not be opened. Maybe it does not exist. Error: {repr(e)}')
-        return False
+    if verify:
+        try:
+            # Check that the path we're deleting is actually Zarr data
+            if not path.endswith('.tar'):
+                ZarrWriter.open_zarr_group(path, store_type, store_params, root=True)
+            else:
+                likely_zarr = False
+                with tarfile.open(path, 'r') as tar:
+                    for f in tar.getnames():
+                        if os.path.basename(f) == '.zgroup':
+                            likely_zarr = True
+                            break
+                if not likely_zarr:
+                    logger.error(f'Backup archive file at {path} does not appear to be a Zarr group')
+                    return False
+        except Exception as e:
+            logger.warning(f'Zarr group at path {path} could not be opened. Maybe it does not exist. Error: {repr(e)}')
+            return False
+    else:
+        logger.info('Skipping verification for Zarr backup. Should only do this if we\'re certain the provided path '
+                    'is a backup')
 
     if store_type == 'local':
         try:
@@ -149,7 +155,27 @@ def restore_backup(
     if store_type == 'local':
         if not src_path.endswith('.tar'):
             logger.info(f'Copying files on local fs')
-            copytree(src_path, dst_path)
+
+            if sys.platform.startswith('win'):
+                cmd = ['xcopy', src_path, dst_path]
+            else:
+                cmd = ['cp', '-rf', src_path, dst_path]
+
+            try:
+                p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                err = p.wait()
+
+                if err != 0:
+                    stdout, _ = p.communicate()
+
+                    stdout = stdout.decode('utf-8')[-32:]
+
+                    raise RuntimeError(f'Something went wrong. Exit code, stdout (last 32 bytes)'
+                                       f': {err} {stdout}')
+            except Exception as e:
+                logger.exception(e)
+                logger.warning('Subprocess copy failed, using shutil fallback (will take longer)')
+                copytree(src_path, dst_path, dirs_exist_ok=True)
         else:
             logger.info(f'Extracting {src_path}')
             dst_path = os.path.dirname(urlparse(dst_path).path)
@@ -223,6 +249,10 @@ def main():
     with open(args.run_config) as fp:
         out_cfg = load(fp, Loader=Loader)['output']
 
+    global_product = out_cfg.get('global', False)
+
+    logger.info(f'{global_product=}')
+
     store_type: Literal['local', 's3']
 
     if 'local' in out_cfg:
@@ -243,10 +273,10 @@ def main():
     pre_qf_dst = os.path.join(path_root, out_cfg['naming']['pre_qf'])
     post_qf_dst = os.path.join(path_root, out_cfg['naming']['post_qf'])
 
-    if not delete_group(pre_qf_dst, store_type, aws_config):
+    if not delete_group(pre_qf_dst, store_type, aws_config, global_product):
         raise RuntimeError(f'Failed to delete corrupted data!')
 
-    if not delete_group(post_qf_dst, store_type, aws_config):
+    if not delete_group(post_qf_dst, store_type, aws_config, global_product):
         raise RuntimeError(f'Failed to delete corrupted data!')
 
     pre_qf_backup = backups['pre_qf_backup']

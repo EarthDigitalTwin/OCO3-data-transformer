@@ -1,0 +1,5700 @@
+{
+    "cal001": {
+        "bbox": {
+            "max_lat": 39.997,
+            "max_lon": -114.1902,
+            "min_lat": 36.997,
+            "min_lon": -117.1902
+        },
+        "centroid_wkt": "POINT(-115.6902 38.497)",
+        "id": "cal001",
+        "name": "railroadValley"
+    },
+    "cal002": {
+        "bbox": {
+            "max_lat": 31.54,
+            "max_lon": 7.09,
+            "min_lat": 28.54,
+            "min_lon": 4.09
+        },
+        "centroid_wkt": "POINT(5.59 30.04)",
+        "id": "cal002",
+        "name": "calibration_Algeria4"
+    },
+    "cal003": {
+        "bbox": {
+            "max_lat": 23.07,
+            "max_lon": 9.46,
+            "min_lat": 20.07,
+            "min_lon": 6.46
+        },
+        "centroid_wkt": "POINT(7.96 21.57)",
+        "id": "cal003",
+        "name": "calibration_Niger3"
+    },
+    "cal004": {
+        "bbox": {
+            "max_lat": 28.62,
+            "max_lon": 27.6,
+            "min_lat": 25.62,
+            "min_lon": 24.6
+        },
+        "centroid_wkt": "POINT(26.1 27.12)",
+        "id": "cal004",
+        "name": "calibration_Egypt1"
+    },
+    "cal005": {
+        "bbox": {
+            "max_lat": 20.38,
+            "max_lon": 48.26,
+            "min_lat": 17.38,
+            "min_lon": 45.26
+        },
+        "centroid_wkt": "POINT(46.76 18.88)",
+        "id": "cal005",
+        "name": "calibration_Arabia5"
+    },
+    "cal006": {
+        "bbox": {
+            "max_lat": 25.3,
+            "max_lon": 1.1,
+            "min_lat": 22.3,
+            "min_lon": -1.9
+        },
+        "centroid_wkt": "POINT(-0.4 23.8)",
+        "id": "cal006",
+        "name": "calibration_Algeria1"
+    },
+    "cal007": {
+        "bbox": {
+            "max_lat": 20.9,
+            "max_lon": -7.800000000000001,
+            "min_lat": 17.9,
+            "min_lon": -10.8
+        },
+        "centroid_wkt": "POINT(-9.3 19.4)",
+        "id": "cal007",
+        "name": "calibration_Mauritania1"
+    },
+    "cal008": {
+        "bbox": {
+            "max_lat": 30.05,
+            "max_lon": 24.89,
+            "min_lat": 27.05,
+            "min_lon": 21.89
+        },
+        "centroid_wkt": "POINT(23.39 28.55)",
+        "id": "cal008",
+        "name": "calibration_Libya4"
+    },
+    "cal009": {
+        "bbox": {
+            "max_lat": 27.59,
+            "max_lon": 0.1200000000000001,
+            "min_lat": 24.59,
+            "min_lon": -2.88
+        },
+        "centroid_wkt": "POINT(-1.38 26.09)",
+        "id": "cal009",
+        "name": "calibration_Algeria2"
+    },
+    "cal010": {
+        "bbox": {
+            "max_lat": 21.17,
+            "max_lon": 11.31,
+            "min_lat": 18.17,
+            "min_lon": 8.31
+        },
+        "centroid_wkt": "POINT(9.81 19.67)",
+        "id": "cal010",
+        "name": "calibration_Niger1"
+    },
+    "cal011": {
+        "bbox": {
+            "max_lat": 22.35,
+            "max_lon": -7.279999999999999,
+            "min_lat": 19.35,
+            "min_lon": -10.28
+        },
+        "centroid_wkt": "POINT(-8.78 20.85)",
+        "id": "cal011",
+        "name": "calibration_Mauritania2"
+    },
+    "coccon100": {
+        "bbox": {
+            "max_lat": 42.13,
+            "max_lon": 24.47,
+            "min_lat": 39.13,
+            "min_lon": 21.47
+        },
+        "centroid_wkt": "POINT(22.97 40.63)",
+        "id": "coccon100",
+        "name": "val_Thessaloniki_Greece"
+    },
+    "coccon101": {
+        "bbox": {
+            "max_lat": -22.06,
+            "max_lon": 16.54,
+            "min_lat": -25.06,
+            "min_lon": 13.54
+        },
+        "centroid_wkt": "POINT(15.04 -23.56)",
+        "id": "coccon101",
+        "name": "val_Gobabeb_Namibia"
+    },
+    "coccon102": {
+        "bbox": {
+            "max_lat": -21.09,
+            "max_lon": 28.62,
+            "min_lat": -24.09,
+            "min_lon": 25.62
+        },
+        "centroid_wkt": "POINT(27.12 -22.59)",
+        "id": "coccon102",
+        "name": "val_Biust_Botswana"
+    },
+    "coccon103": {
+        "bbox": {
+            "max_lat": 2.003,
+            "max_lon": 34.709,
+            "min_lat": -0.997,
+            "min_lon": 31.709000000000003
+        },
+        "centroid_wkt": "POINT(33.209 0.503)",
+        "id": "coccon103",
+        "name": "val_Jinja_Uganda"
+    },
+    "coccon104": {
+        "bbox": {
+            "max_lat": -7.273999999999999,
+            "max_lon": -62.37,
+            "min_lat": -10.274,
+            "min_lon": -65.37
+        },
+        "centroid_wkt": "POINT(-63.87 -8.774)",
+        "id": "coccon104",
+        "name": "validation_portovelho"
+    },
+    "desert0000": {
+        "bbox": {
+            "max_lat": 32.0,
+            "max_lon": 4.49,
+            "min_lat": 29.0,
+            "min_lon": 1.4900000000000002
+        },
+        "centroid_wkt": "POINT(2.99 30.5)",
+        "id": "desert0000",
+        "name": "Flat_Desert_Test_0000"
+    },
+    "desert0001": {
+        "bbox": {
+            "max_lat": 29.9,
+            "max_lon": 25.8,
+            "min_lat": 26.9,
+            "min_lon": 22.8
+        },
+        "centroid_wkt": "POINT(24.3 28.4)",
+        "id": "desert0001",
+        "name": "Flat_Desert_Test_0001"
+    },
+    "desert0002": {
+        "bbox": {
+            "max_lat": -22.49,
+            "max_lon": 141.35,
+            "min_lat": -25.49,
+            "min_lon": 138.35
+        },
+        "centroid_wkt": "POINT(139.85 -23.99)",
+        "id": "desert0002",
+        "name": "Flat_Desert_Test_0002"
+    },
+    "desert0003": {
+        "bbox": {
+            "max_lat": 32.34,
+            "max_lon": 11.5,
+            "min_lat": 29.34,
+            "min_lon": 8.5
+        },
+        "centroid_wkt": "POINT(10 30.84)",
+        "id": "desert0003",
+        "name": "Flat_Desert_Test_0003"
+    },
+    "desert0004": {
+        "bbox": {
+            "max_lat": 27.63,
+            "max_lon": 32.36,
+            "min_lat": 24.63,
+            "min_lon": 29.36
+        },
+        "centroid_wkt": "POINT(30.86 26.13)",
+        "id": "desert0004",
+        "name": "Flat_Desert_Test_0004"
+    },
+    "desert0005": {
+        "bbox": {
+            "max_lat": -20.4,
+            "max_lon": 122.95,
+            "min_lat": -23.4,
+            "min_lon": 119.95
+        },
+        "centroid_wkt": "POINT(121.45 -21.9)",
+        "id": "desert0005",
+        "name": "Flat_Desert_Test_0005"
+    },
+    "desert0006": {
+        "bbox": {
+            "max_lat": 33.39,
+            "max_lon": 9.02,
+            "min_lat": 30.39,
+            "min_lon": 6.02
+        },
+        "centroid_wkt": "POINT(7.52 31.89)",
+        "id": "desert0006",
+        "name": "Flat_Desert_Test_0006"
+    },
+    "desert0007": {
+        "bbox": {
+            "max_lat": -17.81,
+            "max_lon": 127.25,
+            "min_lat": -20.81,
+            "min_lon": 124.25
+        },
+        "centroid_wkt": "POINT(125.75 -19.31)",
+        "id": "desert0007",
+        "name": "Flat_Desert_Test_0007"
+    },
+    "desert0008": {
+        "bbox": {
+            "max_lat": 32.86,
+            "max_lon": 0.5,
+            "min_lat": 29.86,
+            "min_lon": -2.5
+        },
+        "centroid_wkt": "POINT(-1 31.36)",
+        "id": "desert0008",
+        "name": "Flat_Desert_Test_0008"
+    },
+    "desert0009": {
+        "bbox": {
+            "max_lat": 29.72,
+            "max_lon": 20.34,
+            "min_lat": 26.72,
+            "min_lon": 17.34
+        },
+        "centroid_wkt": "POINT(18.84 28.22)",
+        "id": "desert0009",
+        "name": "Flat_Desert_Test_0009"
+    },
+    "desert0010": {
+        "bbox": {
+            "max_lat": 34.26,
+            "max_lon": 8.8,
+            "min_lat": 31.259999999999998,
+            "min_lon": 5.8
+        },
+        "centroid_wkt": "POINT(7.3 32.76)",
+        "id": "desert0010",
+        "name": "Flat_Desert_Test_0010"
+    },
+    "desert0011": {
+        "bbox": {
+            "max_lat": 30.25,
+            "max_lon": 27.06,
+            "min_lat": 27.25,
+            "min_lon": 24.06
+        },
+        "centroid_wkt": "POINT(25.56 28.75)",
+        "id": "desert0011",
+        "name": "Flat_Desert_Test_0011"
+    },
+    "desert0012": {
+        "bbox": {
+            "max_lat": 32.86,
+            "max_lon": 12.5,
+            "min_lat": 29.86,
+            "min_lon": 9.5
+        },
+        "centroid_wkt": "POINT(11 31.36)",
+        "id": "desert0012",
+        "name": "Flat_Desert_Test_0012"
+    },
+    "desert0013": {
+        "bbox": {
+            "max_lat": -20.61,
+            "max_lon": 124.22,
+            "min_lat": -23.61,
+            "min_lon": 121.22
+        },
+        "centroid_wkt": "POINT(122.72 -22.11)",
+        "id": "desert0013",
+        "name": "Flat_Desert_Test_0013"
+    },
+    "ecostress_afln": {
+        "bbox": {
+            "max_lat": 54.810312,
+            "max_lon": -2.791142,
+            "min_lat": 51.810312,
+            "min_lon": -5.791142
+        },
+        "centroid_wkt": "POINT(-4.291142 53.310312)",
+        "id": "ecostress_afln",
+        "name": "ecostress_afln"
+    },
+    "ecostress_ar_slu": {
+        "bbox": {
+            "max_lat": -31.964799999999997,
+            "max_lon": -64.9598,
+            "min_lat": -34.9648,
+            "min_lon": -67.9598
+        },
+        "centroid_wkt": "POINT(-66.4598 -33.4648)",
+        "id": "ecostress_ar_slu",
+        "name": "ecostress_ar_slu"
+    },
+    "ecostress_ar_vir": {
+        "bbox": {
+            "max_lat": -26.7395,
+            "max_lon": -54.6886,
+            "min_lat": -29.7395,
+            "min_lon": -57.6886
+        },
+        "centroid_wkt": "POINT(-56.1886 -28.2395)",
+        "id": "ecostress_ar_vir",
+        "name": "ecostress_ar_vir"
+    },
+    "ecostress_au_asm": {
+        "bbox": {
+            "max_lat": -20.783,
+            "max_lon": 134.749,
+            "min_lat": -23.783,
+            "min_lon": 131.749
+        },
+        "centroid_wkt": "POINT(133.249 -22.283)",
+        "id": "ecostress_au_asm",
+        "name": "ecostress_au_asm"
+    },
+    "ecostress_au_cum": {
+        "bbox": {
+            "max_lat": -32.1153,
+            "max_lon": 152.2236,
+            "min_lat": -35.1153,
+            "min_lon": 149.2236
+        },
+        "centroid_wkt": "POINT(150.7236 -33.6153)",
+        "id": "ecostress_au_cum",
+        "name": "ecostress_au_cum"
+    },
+    "ecostress_au_das": {
+        "bbox": {
+            "max_lat": -12.6592,
+            "max_lon": 132.8881,
+            "min_lat": -15.6592,
+            "min_lon": 129.8881
+        },
+        "centroid_wkt": "POINT(131.3881 -14.1592)",
+        "id": "ecostress_au_das",
+        "name": "ecostress_au_das"
+    },
+    "ecostress_au_dry": {
+        "bbox": {
+            "max_lat": -13.7588,
+            "max_lon": 133.8706,
+            "min_lat": -16.7588,
+            "min_lon": 130.8706
+        },
+        "centroid_wkt": "POINT(132.3706 -15.2588)",
+        "id": "ecostress_au_dry",
+        "name": "ecostress_au_dry"
+    },
+    "ecostress_au_how": {
+        "bbox": {
+            "max_lat": -10.9952,
+            "max_lon": 132.65005,
+            "min_lat": -13.9952,
+            "min_lon": 129.65005
+        },
+        "centroid_wkt": "POINT(131.15005 -12.4952)",
+        "id": "ecostress_au_how",
+        "name": "ecostress_au_how"
+    },
+    "ecostress_au_lit": {
+        "bbox": {
+            "max_lat": -11.679,
+            "max_lon": 132.2945,
+            "min_lat": -14.679,
+            "min_lon": 129.2945
+        },
+        "centroid_wkt": "POINT(130.7945 -13.179)",
+        "id": "ecostress_au_lit",
+        "name": "ecostress_au_lit"
+    },
+    "ecostress_au_stp": {
+        "bbox": {
+            "max_lat": -15.6508,
+            "max_lon": 134.8503,
+            "min_lat": -18.6508,
+            "min_lon": 131.8503
+        },
+        "centroid_wkt": "POINT(133.3503 -17.1508)",
+        "id": "ecostress_au_stp",
+        "name": "ecostress_au_stp"
+    },
+    "ecostress_au_tum": {
+        "bbox": {
+            "max_lat": -34.1566,
+            "max_lon": 149.6517,
+            "min_lat": -37.1566,
+            "min_lon": 146.6517
+        },
+        "centroid_wkt": "POINT(148.1517 -35.6566)",
+        "id": "ecostress_au_tum",
+        "name": "ecostress_au_tum"
+    },
+    "ecostress_au_wom": {
+        "bbox": {
+            "max_lat": -35.9222,
+            "max_lon": 145.5944,
+            "min_lat": -38.9222,
+            "min_lon": 142.5944
+        },
+        "centroid_wkt": "POINT(144.0944 -37.4222)",
+        "id": "ecostress_au_wom",
+        "name": "ecostress_au_wom"
+    },
+    "ecostress_au_ync": {
+        "bbox": {
+            "max_lat": -33.4893,
+            "max_lon": 147.7907,
+            "min_lat": -36.4893,
+            "min_lon": 144.7907
+        },
+        "centroid_wkt": "POINT(146.2907 -34.9893)",
+        "id": "ecostress_au_ync",
+        "name": "ecostress_au_ync"
+    },
+    "ecostress_bdog": {
+        "bbox": {
+            "max_lat": 53.030216,
+            "max_lon": 0.018064999999999998,
+            "min_lat": 50.030216,
+            "min_lon": -2.981935
+        },
+        "centroid_wkt": "POINT(-1.481935 51.530216)",
+        "id": "ecostress_bdog",
+        "name": "ecostress_bdog"
+    },
+    "ecostress_be_lon": {
+        "bbox": {
+            "max_lat": 51.805,
+            "max_lon": 7.4981,
+            "min_lat": 48.805,
+            "min_lon": 4.4981
+        },
+        "centroid_wkt": "POINT(5.9981 50.305)",
+        "id": "ecostress_be_lon",
+        "name": "ecostress_be_lon"
+    },
+    "ecostress_be_vie": {
+        "bbox": {
+            "max_lat": 52.05184000000001,
+            "max_lon": 6.246112999999999,
+            "min_lat": 49.05184000000001,
+            "min_lon": 3.2461129999999994
+        },
+        "centroid_wkt": "POINT(4.746112999999999 50.55184000000001)",
+        "id": "ecostress_be_vie",
+        "name": "ecostress_be_vie"
+    },
+    "ecostress_br_cmt": {
+        "bbox": {
+            "max_lat": -11.7875,
+            "max_lon": -54.5882,
+            "min_lat": -14.7875,
+            "min_lon": -57.5882
+        },
+        "centroid_wkt": "POINT(-56.0882 -13.2875)",
+        "id": "ecostress_br_cmt",
+        "name": "ecostress_br_cmt"
+    },
+    "ecostress_br_no": {
+        "bbox": {
+            "max_lat": -15.116667,
+            "max_lon": -55.26666700000001,
+            "min_lat": -18.116667,
+            "min_lon": -58.26666700000001
+        },
+        "centroid_wkt": "POINT(-56.76666700000001 -16.616667)",
+        "id": "ecostress_br_no",
+        "name": "ecostress_br_no"
+    },
+    "ecostress_ca_pr_emss": {
+        "bbox": {
+            "max_lat": 58.2438,
+            "max_lon": -116.844,
+            "min_lat": 55.2438,
+            "min_lon": -119.844
+        },
+        "centroid_wkt": "POINT(-118.344 56.7438)",
+        "id": "ecostress_ca_pr_emss",
+        "name": "ecostress_ca_pr_emss"
+    },
+    "ecostress_ca_tp": {
+        "bbox": {
+            "max_lat": 44.213075,
+            "max_lon": -78.931,
+            "min_lat": 41.213075,
+            "min_lon": -81.931
+        },
+        "centroid_wkt": "POINT(-80.431 42.713075)",
+        "id": "ecostress_ca_tp",
+        "name": "ecostress_ca_tp"
+    },
+    "ecostress_ch_dav": {
+        "bbox": {
+            "max_lat": 48.315333,
+            "max_lon": 11.355917,
+            "min_lat": 45.315333,
+            "min_lon": 8.355917
+        },
+        "centroid_wkt": "POINT(9.855917 46.815333)",
+        "id": "ecostress_ch_dav",
+        "name": "ecostress_ch_dav"
+    },
+    "ecostress_ch_fru": {
+        "bbox": {
+            "max_lat": 48.615833,
+            "max_lon": 10.037778,
+            "min_lat": 45.615833,
+            "min_lon": 7.037777999999999
+        },
+        "centroid_wkt": "POINT(8.537778 47.115833)",
+        "id": "ecostress_ch_fru",
+        "name": "ecostress_ch_fru"
+    },
+    "ecostress_ch_lae": {
+        "bbox": {
+            "max_lat": 48.978333,
+            "max_lon": 9.864389,
+            "min_lat": 45.978333,
+            "min_lon": 6.864388999999999
+        },
+        "centroid_wkt": "POINT(8.364389 47.478333)",
+        "id": "ecostress_ch_lae",
+        "name": "ecostress_ch_lae"
+    },
+    "ecostress_cr_fsc": {
+        "bbox": {
+            "max_lat": 11.9189,
+            "max_lon": -83.9732,
+            "min_lat": 8.9189,
+            "min_lon": -86.9732
+        },
+        "centroid_wkt": "POINT(-85.4732 10.4189)",
+        "id": "ecostress_cr_fsc",
+        "name": "ecostress_cr_fsc"
+    },
+    "ecostress_cr_srnp_emss": {
+        "bbox": {
+            "max_lat": 12.3418,
+            "max_lon": -84.1156,
+            "min_lat": 9.3418,
+            "min_lon": -87.1156
+        },
+        "centroid_wkt": "POINT(-85.6156 10.8418)",
+        "id": "ecostress_cr_srnp_emss",
+        "name": "ecostress_cr_srnp_emss"
+    },
+    "ecostress_cz_bk1": {
+        "bbox": {
+            "max_lat": 51.0021,
+            "max_lon": 20.0369,
+            "min_lat": 48.0021,
+            "min_lon": 17.0369
+        },
+        "centroid_wkt": "POINT(18.5369 49.5021)",
+        "id": "ecostress_cz_bk1",
+        "name": "ecostress_cz_bk1"
+    },
+    "ecostress_de_rus": {
+        "bbox": {
+            "max_lat": 52.3659,
+            "max_lon": 7.9472,
+            "min_lat": 49.3659,
+            "min_lon": 4.9472
+        },
+        "centroid_wkt": "POINT(6.4472 50.8659)",
+        "id": "ecostress_de_rus",
+        "name": "ecostress_de_rus"
+    },
+    "ecostress_de_tha": {
+        "bbox": {
+            "max_lat": 52.46235,
+            "max_lon": 15.06516,
+            "min_lat": 49.46235,
+            "min_lon": 12.06516
+        },
+        "centroid_wkt": "POINT(13.56516 50.96235)",
+        "id": "ecostress_de_tha",
+        "name": "ecostress_de_tha"
+    },
+    "ecostress_efgf": {
+        "bbox": {
+            "max_lat": 53.970474,
+            "max_lon": 1.307015,
+            "min_lat": 50.970474,
+            "min_lon": -1.692985
+        },
+        "centroid_wkt": "POINT(-0.192985 52.470474)",
+        "id": "ecostress_efgf",
+        "name": "ecostress_efgf"
+    },
+    "ecostress_fr_fon": {
+        "bbox": {
+            "max_lat": 49.9764,
+            "max_lon": 4.2801,
+            "min_lat": 46.9764,
+            "min_lon": 1.2801
+        },
+        "centroid_wkt": "POINT(2.7801 48.4764)",
+        "id": "ecostress_fr_fon",
+        "name": "ecostress_fr_fon"
+    },
+    "ecostress_il_yat": {
+        "bbox": {
+            "max_lat": 32.8451,
+            "max_lon": 36.5519,
+            "min_lat": 29.8451,
+            "min_lon": 33.5519
+        },
+        "centroid_wkt": "POINT(35.0519 31.3451)",
+        "id": "ecostress_il_yat",
+        "name": "ecostress_il_yat"
+    },
+    "ecostress_it_cp2": {
+        "bbox": {
+            "max_lat": 43.2043,
+            "max_lon": 13.8573,
+            "min_lat": 40.2043,
+            "min_lon": 10.8573
+        },
+        "centroid_wkt": "POINT(12.3573 41.7043)",
+        "id": "ecostress_it_cp2",
+        "name": "ecostress_it_cp2"
+    },
+    "ecostress_it_tor": {
+        "bbox": {
+            "max_lat": 47.3444,
+            "max_lon": 9.0781,
+            "min_lat": 44.3444,
+            "min_lon": 6.0781
+        },
+        "centroid_wkt": "POINT(7.5781 45.8444)",
+        "id": "ecostress_it_tor",
+        "name": "ecostress_it_tor"
+    },
+    "ecostress_ke_mak": {
+        "bbox": {
+            "max_lat": -1.9258060000000001,
+            "max_lon": 39.640667,
+            "min_lat": -4.925806,
+            "min_lon": 36.640667
+        },
+        "centroid_wkt": "POINT(38.140667 -3.425806)",
+        "id": "ecostress_ke_mak",
+        "name": "ecostress_ke_mak"
+    },
+    "ecostress_kr_gck": {
+        "bbox": {
+            "max_lat": 39.248333,
+            "max_lon": 128.66222199999999,
+            "min_lat": 36.248333,
+            "min_lon": 125.662222
+        },
+        "centroid_wkt": "POINT(127.162222 37.748333)",
+        "id": "ecostress_kr_gck",
+        "name": "ecostress_kr_gck"
+    },
+    "ecostress_ne_waf": {
+        "bbox": {
+            "max_lat": 15.14758138,
+            "max_lon": 4.13368891,
+            "min_lat": 12.14758138,
+            "min_lon": 1.13368891
+        },
+        "centroid_wkt": "POINT(2.63368891 13.64758138)",
+        "id": "ecostress_ne_waf",
+        "name": "ecostress_ne_waf"
+    },
+    "ecostress_npbb": {
+        "bbox": {
+            "max_lat": 56.19600000000001,
+            "max_lon": -0.8879999999999999,
+            "min_lat": 53.19600000000001,
+            "min_lon": -3.888
+        },
+        "centroid_wkt": "POINT(-2.388 54.69600000000001)",
+        "id": "ecostress_npbb",
+        "name": "ecostress_npbb"
+    },
+    "ecostress_nz_bfm": {
+        "bbox": {
+            "max_lat": -42.093,
+            "max_lon": 173.428,
+            "min_lat": -45.093,
+            "min_lon": 170.428
+        },
+        "centroid_wkt": "POINT(171.928 -43.593)",
+        "id": "ecostress_nz_bfm",
+        "name": "ecostress_nz_bfm"
+    },
+    "ecostress_nz_kop": {
+        "bbox": {
+            "max_lat": -35.88800000000001,
+            "max_lon": 177.054,
+            "min_lat": -38.88800000000001,
+            "min_lon": 174.054
+        },
+        "centroid_wkt": "POINT(175.554 -37.38800000000001)",
+        "id": "ecostress_nz_kop",
+        "name": "ecostress_nz_kop"
+    },
+    "ecostress_nz_oxf": {
+        "bbox": {
+            "max_lat": -41.7619,
+            "max_lon": 173.7108,
+            "min_lat": -44.7619,
+            "min_lon": 170.7108
+        },
+        "centroid_wkt": "POINT(172.2108 -43.2619)",
+        "id": "ecostress_nz_oxf",
+        "name": "ecostress_nz_oxf"
+    },
+    "ecostress_nz_sco": {
+        "bbox": {
+            "max_lat": -35.96,
+            "max_lon": 176.72,
+            "min_lat": -38.96,
+            "min_lon": 173.72
+        },
+        "centroid_wkt": "POINT(175.22 -37.46)",
+        "id": "ecostress_nz_sco",
+        "name": "ecostress_nz_sco"
+    },
+    "ecostress_sleg": {
+        "bbox": {
+            "max_lat": 52.707282,
+            "max_lon": -1.3285049999999998,
+            "min_lat": 49.707282,
+            "min_lon": -4.328505
+        },
+        "centroid_wkt": "POINT(-2.828505 51.207282)",
+        "id": "ecostress_sleg",
+        "name": "ecostress_sleg"
+    },
+    "ecostress_ssh_czo_cal": {
+        "bbox": {
+            "max_lat": 36.10811,
+            "max_lon": -80.22247,
+            "min_lat": 33.10811,
+            "min_lon": -83.22247
+        },
+        "centroid_wkt": "POINT(-81.72247 34.60811)",
+        "id": "ecostress_ssh_czo_cal",
+        "name": "ecostress_ssh_czo_cal"
+    },
+    "ecostress_ssh_czo_shale": {
+        "bbox": {
+            "max_lat": 42.16573,
+            "max_lon": -76.404076,
+            "min_lat": 39.16573,
+            "min_lon": -79.404076
+        },
+        "centroid_wkt": "POINT(-77.904076 40.66573)",
+        "id": "ecostress_ssh_czo_shale",
+        "name": "ecostress_ssh_czo_shale"
+    },
+    "ecostress_us_arm": {
+        "bbox": {
+            "max_lat": 38.1058,
+            "max_lon": -95.9888,
+            "min_lat": 35.1058,
+            "min_lon": -98.9888
+        },
+        "centroid_wkt": "POINT(-97.4888 36.6058)",
+        "id": "ecostress_us_arm",
+        "name": "ecostress_us_arm"
+    },
+    "ecostress_us_bar": {
+        "bbox": {
+            "max_lat": 45.5646,
+            "max_lon": -69.78808000000001,
+            "min_lat": 42.5646,
+            "min_lon": -72.78808000000001
+        },
+        "centroid_wkt": "POINT(-71.28808000000001 44.0646)",
+        "id": "ecostress_us_bar",
+        "name": "ecostress_us_bar"
+    },
+    "ecostress_us_bi1": {
+        "bbox": {
+            "max_lat": 39.6022,
+            "max_lon": -120.0042,
+            "min_lat": 36.6022,
+            "min_lon": -123.0042
+        },
+        "centroid_wkt": "POINT(-121.5042 38.1022)",
+        "id": "ecostress_us_bi1",
+        "name": "ecostress_us_bi1"
+    },
+    "ecostress_us_bsg": {
+        "bbox": {
+            "max_lat": 44.9712,
+            "max_lon": -118.1909,
+            "min_lat": 41.9712,
+            "min_lon": -121.1909
+        },
+        "centroid_wkt": "POINT(-119.6909 43.4712)",
+        "id": "ecostress_us_bsg",
+        "name": "ecostress_us_bsg"
+    },
+    "ecostress_us_ced": {
+        "bbox": {
+            "max_lat": 41.3379,
+            "max_lon": -72.8791,
+            "min_lat": 38.3379,
+            "min_lon": -75.8791
+        },
+        "centroid_wkt": "POINT(-74.3791 39.8379)",
+        "id": "ecostress_us_ced",
+        "name": "ecostress_us_ced"
+    },
+    "ecostress_us_cf1": {
+        "bbox": {
+            "max_lat": 48.2815,
+            "max_lon": -115.5821,
+            "min_lat": 45.2815,
+            "min_lon": -118.5821
+        },
+        "centroid_wkt": "POINT(-117.0821 46.7815)",
+        "id": "ecostress_us_cf1",
+        "name": "ecostress_us_cf1"
+    },
+    "ecostress_us_cs1": {
+        "bbox": {
+            "max_lat": 45.603051,
+            "max_lon": -88.03785500000001,
+            "min_lat": 42.603051,
+            "min_lon": -91.03785500000001
+        },
+        "centroid_wkt": "POINT(-89.53785500000001 44.103051)",
+        "id": "ecostress_us_cs1",
+        "name": "ecostress_us_cs1"
+    },
+    "ecostress_us_cz1": {
+        "bbox": {
+            "max_lat": 38.609,
+            "max_lon": -118.231,
+            "min_lat": 35.609,
+            "min_lon": -121.231
+        },
+        "centroid_wkt": "POINT(-119.731 37.109)",
+        "id": "ecostress_us_cz1",
+        "name": "ecostress_us_cz1"
+    },
+    "ecostress_us_cz2": {
+        "bbox": {
+            "max_lat": 38.531,
+            "max_lon": -117.756,
+            "min_lat": 35.531,
+            "min_lon": -120.756
+        },
+        "centroid_wkt": "POINT(-119.256 37.031)",
+        "id": "ecostress_us_cz2",
+        "name": "ecostress_us_cz2"
+    },
+    "ecostress_us_hn1": {
+        "bbox": {
+            "max_lat": 47.908889,
+            "max_lon": -117.775,
+            "min_lat": 44.908889,
+            "min_lon": -120.775
+        },
+        "centroid_wkt": "POINT(-119.275 46.408889)",
+        "id": "ecostress_us_hn1",
+        "name": "ecostress_us_hn1"
+    },
+    "ecostress_us_hn2": {
+        "bbox": {
+            "max_lat": 48.188861,
+            "max_lon": -117.964111,
+            "min_lat": 45.188861,
+            "min_lon": -120.964111
+        },
+        "centroid_wkt": "POINT(-119.464111 46.688861)",
+        "id": "ecostress_us_hn2",
+        "name": "ecostress_us_hn2"
+    },
+    "ecostress_us_kfs": {
+        "bbox": {
+            "max_lat": 40.5561,
+            "max_lon": -93.6907,
+            "min_lat": 37.5561,
+            "min_lon": -96.6907
+        },
+        "centroid_wkt": "POINT(-95.1907 39.0561)",
+        "id": "ecostress_us_kfs",
+        "name": "ecostress_us_kfs"
+    },
+    "ecostress_us_kon": {
+        "bbox": {
+            "max_lat": 40.5824,
+            "max_lon": -95.0603,
+            "min_lat": 37.5824,
+            "min_lon": -98.0603
+        },
+        "centroid_wkt": "POINT(-96.5603 39.0824)",
+        "id": "ecostress_us_kon",
+        "name": "ecostress_us_kon"
+    },
+    "ecostress_us_los": {
+        "bbox": {
+            "max_lat": 47.5827,
+            "max_lon": -88.4792,
+            "min_lat": 44.5827,
+            "min_lon": -91.4792
+        },
+        "centroid_wkt": "POINT(-89.9792 46.0827)",
+        "id": "ecostress_us_los",
+        "name": "ecostress_us_los"
+    },
+    "ecostress_us_me2": {
+        "bbox": {
+            "max_lat": 45.9523,
+            "max_lon": -120.057,
+            "min_lat": 42.9523,
+            "min_lon": -123.057
+        },
+        "centroid_wkt": "POINT(-121.557 44.4523)",
+        "id": "ecostress_us_me2",
+        "name": "ecostress_us_me2"
+    },
+    "ecostress_us_men": {
+        "bbox": {
+            "max_lat": 44.57725,
+            "max_lon": -87.902984,
+            "min_lat": 41.57725,
+            "min_lon": -90.902984
+        },
+        "centroid_wkt": "POINT(-89.402984 43.07725)",
+        "id": "ecostress_us_men",
+        "name": "ecostress_us_men"
+    },
+    "ecostress_us_mms": {
+        "bbox": {
+            "max_lat": 40.8232,
+            "max_lon": -84.9131,
+            "min_lat": 37.8232,
+            "min_lon": -87.9131
+        },
+        "centroid_wkt": "POINT(-86.4131 39.3232)",
+        "id": "ecostress_us_mms",
+        "name": "ecostress_us_mms"
+    },
+    "ecostress_us_mrf": {
+        "bbox": {
+            "max_lat": 46.1465,
+            "max_lon": -122.051,
+            "min_lat": 43.1465,
+            "min_lon": -125.051
+        },
+        "centroid_wkt": "POINT(-123.551 44.6465)",
+        "id": "ecostress_us_mrf",
+        "name": "ecostress_us_mrf"
+    },
+    "ecostress_us_ro4": {
+        "bbox": {
+            "max_lat": 46.1781,
+            "max_lon": -91.5723,
+            "min_lat": 43.1781,
+            "min_lon": -94.5723
+        },
+        "centroid_wkt": "POINT(-93.0723 44.6781)",
+        "id": "ecostress_us_ro4",
+        "name": "ecostress_us_ro4"
+    },
+    "ecostress_us_rr": {
+        "bbox": {
+            "max_lat": 40.057845,
+            "max_lon": -120.363457,
+            "min_lat": 37.057845,
+            "min_lon": -123.363457
+        },
+        "centroid_wkt": "POINT(-121.863457 38.557845)",
+        "id": "ecostress_us_rr",
+        "name": "ecostress_us_rr"
+    },
+    "ecostress_us_scc": {
+        "bbox": {
+            "max_lat": 35.11,
+            "max_lon": -114.95,
+            "min_lat": 32.11,
+            "min_lon": -117.95
+        },
+        "centroid_wkt": "POINT(-116.45 33.61)",
+        "id": "ecostress_us_scc",
+        "name": "ecostress_us_scc"
+    },
+    "ecostress_us_scs": {
+        "bbox": {
+            "max_lat": 35.234,
+            "max_lon": -116.196,
+            "min_lat": 32.234,
+            "min_lon": -119.196
+        },
+        "centroid_wkt": "POINT(-117.696 33.734)",
+        "id": "ecostress_us_scs",
+        "name": "ecostress_us_scs"
+    },
+    "ecostress_us_ses": {
+        "bbox": {
+            "max_lat": 35.8349,
+            "max_lon": -105.2442,
+            "min_lat": 32.8349,
+            "min_lon": -108.2442
+        },
+        "centroid_wkt": "POINT(-106.7442 34.3349)",
+        "id": "ecostress_us_ses",
+        "name": "ecostress_us_ses"
+    },
+    "ecostress_us_slt": {
+        "bbox": {
+            "max_lat": 41.4138,
+            "max_lon": -73.096,
+            "min_lat": 38.4138,
+            "min_lon": -76.096
+        },
+        "centroid_wkt": "POINT(-74.596 39.9138)",
+        "id": "ecostress_us_slt",
+        "name": "ecostress_us_slt"
+    },
+    "ecostress_us_sp": {
+        "bbox": {
+            "max_lat": 37.734696,
+            "max_lon": -118.424671,
+            "min_lat": 34.734696,
+            "min_lon": -121.424671
+        },
+        "centroid_wkt": "POINT(-119.924671 36.234696)",
+        "id": "ecostress_us_sp",
+        "name": "ecostress_us_sp"
+    },
+    "ecostress_us_syv": {
+        "bbox": {
+            "max_lat": 47.742,
+            "max_lon": -87.8477,
+            "min_lat": 44.742,
+            "min_lon": -90.8477
+        },
+        "centroid_wkt": "POINT(-89.3477 46.242)",
+        "id": "ecostress_us_syv",
+        "name": "ecostress_us_syv"
+    },
+    "ecostress_us_tx2": {
+        "bbox": {
+            "max_lat": 32.980199999999996,
+            "max_lon": -95.3827,
+            "min_lat": 29.9802,
+            "min_lon": -98.3827
+        },
+        "centroid_wkt": "POINT(-96.8827 31.4802)",
+        "id": "ecostress_us_tx2",
+        "name": "ecostress_us_tx2"
+    },
+    "ecostress_us_tx5": {
+        "bbox": {
+            "max_lat": 32.0328,
+            "max_lon": -94.9252,
+            "min_lat": 29.0328,
+            "min_lon": -97.9252
+        },
+        "centroid_wkt": "POINT(-96.4252 30.5328)",
+        "id": "ecostress_us_tx5",
+        "name": "ecostress_us_tx5"
+    },
+    "ecostress_us_tx6": {
+        "bbox": {
+            "max_lat": 29.1666,
+            "max_lon": -96.7089,
+            "min_lat": 26.1666,
+            "min_lon": -99.7089
+        },
+        "centroid_wkt": "POINT(-98.2089 27.6666)",
+        "id": "ecostress_us_tx6",
+        "name": "ecostress_us_tx6"
+    },
+    "ecostress_us_tx9": {
+        "bbox": {
+            "max_lat": 30.280508,
+            "max_lon": -94.114367,
+            "min_lat": 27.280508,
+            "min_lon": -97.114367
+        },
+        "centroid_wkt": "POINT(-95.614367 28.780508)",
+        "id": "ecostress_us_tx9",
+        "name": "ecostress_us_tx9"
+    },
+    "ecostress_us_var": {
+        "bbox": {
+            "max_lat": 39.9133,
+            "max_lon": -119.4507,
+            "min_lat": 36.9133,
+            "min_lon": -122.4507
+        },
+        "centroid_wkt": "POINT(-120.9507 38.4133)",
+        "id": "ecostress_us_var",
+        "name": "ecostress_us_var"
+    },
+    "ecostress_us_vcm": {
+        "bbox": {
+            "max_lat": 37.3884,
+            "max_lon": -105.0321,
+            "min_lat": 34.3884,
+            "min_lon": -108.0321
+        },
+        "centroid_wkt": "POINT(-106.5321 35.8884)",
+        "id": "ecostress_us_vcm",
+        "name": "ecostress_us_vcm"
+    },
+    "ecostress_us_wjs": {
+        "bbox": {
+            "max_lat": 35.9255,
+            "max_lon": -104.3615,
+            "min_lat": 32.9255,
+            "min_lon": -107.3615
+        },
+        "centroid_wkt": "POINT(-105.8615 34.4255)",
+        "id": "ecostress_us_wjs",
+        "name": "ecostress_us_wjs"
+    },
+    "ecostress_us_wkg": {
+        "bbox": {
+            "max_lat": 33.2365,
+            "max_lon": -108.4419,
+            "min_lat": 30.2365,
+            "min_lon": -111.4419
+        },
+        "centroid_wkt": "POINT(-109.9419 31.7365)",
+        "id": "ecostress_us_wkg",
+        "name": "ecostress_us_wkg"
+    },
+    "ecostress_us_wpp": {
+        "bbox": {
+            "max_lat": 45.6368,
+            "max_lon": -121.682,
+            "min_lat": 42.6368,
+            "min_lon": -124.682
+        },
+        "centroid_wkt": "POINT(-123.182 44.1368)",
+        "id": "ecostress_us_wpp",
+        "name": "ecostress_us_wpp"
+    },
+    "ecostress_us_wwt": {
+        "bbox": {
+            "max_lat": 46.6089,
+            "max_lon": -121.166,
+            "min_lat": 43.6089,
+            "min_lon": -124.166
+        },
+        "centroid_wkt": "POINT(-122.666 45.1089)",
+        "id": "ecostress_us_wwt",
+        "name": "ecostress_us_wwt"
+    },
+    "fossil0001": {
+        "bbox": {
+            "max_lat": 39.06826000000007,
+            "max_lon": 128.47782999999998,
+            "min_lat": 36.06826000000007,
+            "min_lon": 125.47783
+        },
+        "centroid_wkt": "POINT(126.97783 37.56826000000007)",
+        "id": "fossil0001",
+        "name": "fossil_Seoul_South_Korea"
+    },
+    "fossil0002": {
+        "bbox": {
+            "max_lat": 24.61667000000006,
+            "max_lon": 114.7500000000001,
+            "min_lat": 21.61667000000006,
+            "min_lon": 111.7500000000001
+        },
+        "centroid_wkt": "POINT(113.2500000000001 23.11667000000006)",
+        "id": "fossil0002",
+        "name": "fossil_Guangzhou_China"
+    },
+    "fossil0003": {
+        "bbox": {
+            "max_lat": 42.21455000000003,
+            "max_lon": -72.50713999999994,
+            "min_lat": 39.21455000000003,
+            "min_lon": -75.50713999999994
+        },
+        "centroid_wkt": "POINT(-74.00713999999994 40.71455000000003)",
+        "id": "fossil0003",
+        "name": "fossil_New_York_USA"
+    },
+    "fossil0004": {
+        "bbox": {
+            "max_lat": 23.86472318200003,
+            "max_lon": 115.633713499,
+            "min_lat": 20.86472318200003,
+            "min_lon": 112.633713499
+        },
+        "centroid_wkt": "POINT(114.133713499 22.36472318200003)",
+        "id": "fossil0004",
+        "name": "fossil_Hong_Kong_China"
+    },
+    "fossil0005": {
+        "bbox": {
+            "max_lat": 35.55349000000007,
+            "max_lon": -116.74532,
+            "min_lat": 32.55349000000007,
+            "min_lon": -119.74532
+        },
+        "centroid_wkt": "POINT(-118.24532 34.05349000000007)",
+        "id": "fossil0005",
+        "name": "fossil_Los_Angeles_USA"
+    },
+    "fossil0006": {
+        "bbox": {
+            "max_lat": 32.72222000000005,
+            "max_lon": 122.95806,
+            "min_lat": 29.72222000000005,
+            "min_lon": 119.95806
+        },
+        "centroid_wkt": "POINT(121.45806 31.22222000000005)",
+        "id": "fossil0006",
+        "name": "fossil_Shanghai_China"
+    },
+    "fossil0007": {
+        "bbox": {
+            "max_lat": 2.9647800000000757,
+            "max_lon": 105.2571100000001,
+            "min_lat": -0.03521999999992409,
+            "min_lon": 102.2571100000001
+        },
+        "centroid_wkt": "POINT(103.7571100000001 1.464780000000076)",
+        "id": "fossil0007",
+        "name": "fossil_Singapore_Singapore"
+    },
+    "fossil0008": {
+        "bbox": {
+            "max_lat": 43.38425000000007,
+            "max_lon": -86.13244999999995,
+            "min_lat": 40.38425000000007,
+            "min_lon": -89.13244999999995
+        },
+        "centroid_wkt": "POINT(-87.63244999999995 41.88425000000007)",
+        "id": "fossil0008",
+        "name": "fossil_Chicago_USA"
+    },
+    "fossil0009": {
+        "bbox": {
+            "max_lat": 37.18945633100003,
+            "max_lon": 141.1917160900001,
+            "min_lat": 34.18945633100003,
+            "min_lon": 138.1917160900001
+        },
+        "centroid_wkt": "POINT(139.6917160900001 35.68945633100003)",
+        "id": "fossil0009",
+        "name": "fossil_Tokyo_Japan"
+    },
+    "fossil0010": {
+        "bbox": {
+            "max_lat": 26.18218000000007,
+            "max_lon": 48.18719000000004,
+            "min_lat": 23.18218000000007,
+            "min_lon": 45.18719000000004
+        },
+        "centroid_wkt": "POINT(46.68719000000004 24.68218000000007)",
+        "id": "fossil0010",
+        "name": "fossil_Riyadh_Saudi_Arabia"
+    },
+    "fossil0011": {
+        "bbox": {
+            "max_lat": 26.76951000000003,
+            "max_lon": 56.80884000000003,
+            "min_lat": 23.76951000000003,
+            "min_lon": 53.80884000000003
+        },
+        "centroid_wkt": "POINT(55.30884000000003 25.26951000000003)",
+        "id": "fossil0011",
+        "name": "fossil_Dubai_UAE"
+    },
+    "fossil0012": {
+        "bbox": {
+            "max_lat": 33.06887000000006,
+            "max_lon": 121.78857,
+            "min_lat": 30.06887000000006,
+            "min_lon": 118.78857
+        },
+        "centroid_wkt": "POINT(120.28857 31.56887000000006)",
+        "id": "fossil0012",
+        "name": "fossil_Wuxi_China"
+    },
+    "fossil0013": {
+        "bbox": {
+            "max_lat": -24.70490999999993,
+            "max_lon": 29.54006000000004,
+            "min_lat": -27.70490999999993,
+            "min_lon": 26.54006000000004
+        },
+        "centroid_wkt": "POINT(28.04006000000004 -26.20490999999993)",
+        "id": "fossil0013",
+        "name": "fossil_Johannesburg_South_Africa"
+    },
+    "fossil0014": {
+        "bbox": {
+            "max_lat": 37.19439000000006,
+            "max_lon": 52.92151000000007,
+            "min_lat": 34.19439000000006,
+            "min_lon": 49.92151000000007
+        },
+        "centroid_wkt": "POINT(51.42151000000007 35.69439000000006)",
+        "id": "fossil0014",
+        "name": "fossil_Tehran_Iran"
+    },
+    "fossil0015": {
+        "bbox": {
+            "max_lat": 53.00642000000005,
+            "max_lon": 1.372790000000066,
+            "min_lat": 50.00642000000005,
+            "min_lon": -1.627209999999934
+        },
+        "centroid_wkt": "POINT(-0.1272099999999341 51.50642000000005)",
+        "id": "fossil0015",
+        "name": "fossil_London_UK"
+    },
+    "fossil0016": {
+        "bbox": {
+            "max_lat": 31.95906000000008,
+            "max_lon": 32.67858000000007,
+            "min_lat": 28.95906000000008,
+            "min_lon": 29.67858000000007
+        },
+        "centroid_wkt": "POINT(31.17858000000007 30.45906000000008)",
+        "id": "fossil0016",
+        "name": "fossil_Benha_Egypt"
+    },
+    "fossil0017": {
+        "bbox": {
+            "max_lat": 41.40750000000003,
+            "max_lon": 117.89723,
+            "min_lat": 38.40750000000003,
+            "min_lon": 114.89723
+        },
+        "centroid_wkt": "POINT(116.39723 39.90750000000003)",
+        "id": "fossil0017",
+        "name": "fossil_Beijing_China"
+    },
+    "fossil0018": {
+        "bbox": {
+            "max_lat": -4.671479999999974,
+            "max_lon": 108.3264800000001,
+            "min_lat": -7.671479999999974,
+            "min_lon": 105.3264800000001
+        },
+        "centroid_wkt": "POINT(106.8264800000001 -6.171479999999974)",
+        "id": "fossil0018",
+        "name": "fossil_Jakarta_Indonesia"
+    },
+    "fossil0019": {
+        "bbox": {
+            "max_lat": 30.59426000000008,
+            "max_lon": 49.57602000000003,
+            "min_lat": 27.59426000000008,
+            "min_lon": 46.57602000000003
+        },
+        "centroid_wkt": "POINT(48.07602000000003 29.09426000000008)",
+        "id": "fossil0019",
+        "name": "fossil_Al-Ahmadi_Kuwait"
+    },
+    "fossil0020": {
+        "bbox": {
+            "max_lat": 27.27481000000006,
+            "max_lon": -78.69772999999998,
+            "min_lat": 24.27481000000006,
+            "min_lon": -81.69772999999998
+        },
+        "centroid_wkt": "POINT(-80.19772999999998 25.77481000000006)",
+        "id": "fossil0020",
+        "name": "fossil_Miami_USA"
+    },
+    "fossil0021": {
+        "bbox": {
+            "max_lat": 15.09946800439462,
+            "max_lon": 102.0968872263649,
+            "min_lat": 12.09946800439462,
+            "min_lon": 99.0968872263649
+        },
+        "centroid_wkt": "POINT(100.5968872263649 13.59946800439462)",
+        "id": "fossil0021",
+        "name": "fossil_Samut_Prakan_Thailand"
+    },
+    "fossil0022": {
+        "bbox": {
+            "max_lat": 50.35717000000005,
+            "max_lon": 3.841400000000021,
+            "min_lat": 47.35717000000005,
+            "min_lon": 0.841400000000021
+        },
+        "centroid_wkt": "POINT(2.341400000000021 48.85717000000005)",
+        "id": "fossil0022",
+        "name": "fossil_Paris_France"
+    },
+    "fossil0023": {
+        "bbox": {
+            "max_lat": 34.27815000000004,
+            "max_lon": -95.29539999999997,
+            "min_lat": 31.27815000000004,
+            "min_lon": -98.29539999999997
+        },
+        "centroid_wkt": "POINT(-96.79539999999997 32.77815000000004)",
+        "id": "fossil0023",
+        "name": "fossil_Dallas_USA"
+    },
+    "fossil0024": {
+        "bbox": {
+            "max_lat": 40.64222000000007,
+            "max_lon": 118.6766700000001,
+            "min_lat": 37.64222000000007,
+            "min_lon": 115.6766700000001
+        },
+        "centroid_wkt": "POINT(117.1766700000001 39.14222000000007)",
+        "id": "fossil0024",
+        "name": "fossil_Tianjin_China"
+    },
+    "fossil0025": {
+        "bbox": {
+            "max_lat": 42.51384000000007,
+            "max_lon": 30.44966000000005,
+            "min_lat": 39.51384000000007,
+            "min_lon": 27.44966000000005
+        },
+        "centroid_wkt": "POINT(28.94966000000005 41.01384000000007)",
+        "id": "fossil0025",
+        "name": "fossil_Istanbul_Turkey"
+    },
+    "fossil0026": {
+        "bbox": {
+            "max_lat": 43.83168000000006,
+            "max_lon": -81.54799999999994,
+            "min_lat": 40.83168000000006,
+            "min_lon": -84.54799999999994
+        },
+        "centroid_wkt": "POINT(-83.04799999999994 42.33168000000006)",
+        "id": "fossil0026",
+        "name": "fossil_Detroit_USA"
+    },
+    "fossil0027": {
+        "bbox": {
+            "max_lat": 41.45222000000007,
+            "max_lon": -73.66217999999998,
+            "min_lat": 38.45222000000007,
+            "min_lon": -76.66217999999998
+        },
+        "centroid_wkt": "POINT(-75.16217999999998 39.95222000000007)",
+        "id": "fossil0027",
+        "name": "fossil_Philadelphia_USA"
+    },
+    "fossil0028": {
+        "bbox": {
+            "max_lat": 38.83865000000003,
+            "max_lon": -120.38542,
+            "min_lat": 35.83865000000003,
+            "min_lon": -123.38542
+        },
+        "centroid_wkt": "POINT(-121.88542 37.33865000000003)",
+        "id": "fossil0028",
+        "name": "fossil_San_Jose_USA"
+    },
+    "fossil0029": {
+        "bbox": {
+            "max_lat": 30.13095000000004,
+            "max_lon": 78.71728000000007,
+            "min_lat": 27.13095000000004,
+            "min_lon": 75.71728000000007
+        },
+        "centroid_wkt": "POINT(77.21728000000007 28.63095000000004)",
+        "id": "fossil0029",
+        "name": "fossil_New_Delhi_India"
+    },
+    "fossil0030": {
+        "bbox": {
+            "max_lat": 52.44167000000004,
+            "max_lon": 8.455160000000035,
+            "min_lat": 49.44167000000004,
+            "min_lon": 5.455160000000035
+        },
+        "centroid_wkt": "POINT(6.955160000000035 50.94167000000004)",
+        "id": "fossil0030",
+        "name": "fossil_Cologne_Germany"
+    },
+    "fossil0031": {
+        "bbox": {
+            "max_lat": 31.26058000000006,
+            "max_lon": -93.86967999999996,
+            "min_lat": 28.26058000000006,
+            "min_lon": -96.86967999999996
+        },
+        "centroid_wkt": "POINT(-95.36967999999996 29.76058000000006)",
+        "id": "fossil0031",
+        "name": "fossil_Houston_USA"
+    },
+    "fossil0032": {
+        "bbox": {
+            "max_lat": 22.98172000000005,
+            "max_lon": 40.68279000000007,
+            "min_lat": 19.98172000000005,
+            "min_lon": 37.68279000000007
+        },
+        "centroid_wkt": "POINT(39.18279000000007 21.48172000000005)",
+        "id": "fossil0032",
+        "name": "fossil_Jeddah_Saudi_Arabia"
+    },
+    "fossil0033": {
+        "bbox": {
+            "max_lat": 40.39037000000008,
+            "max_lon": -75.53195999999997,
+            "min_lat": 37.39037000000008,
+            "min_lon": -78.53195999999997
+        },
+        "centroid_wkt": "POINT(-77.03195999999997 38.89037000000008)",
+        "id": "fossil0033",
+        "name": "fossil_Washington_DC_USA"
+    },
+    "fossil0034": {
+        "bbox": {
+            "max_lat": 36.19372590900008,
+            "max_lon": 137.0021619520001,
+            "min_lat": 33.19372590900008,
+            "min_lon": 134.0021619520001
+        },
+        "centroid_wkt": "POINT(135.5021619520001 34.69372590900008)",
+        "id": "fossil0034",
+        "name": "fossil_Osaka_Japan"
+    },
+    "fossil0035": {
+        "bbox": {
+            "max_lat": -33.10848999999996,
+            "max_lon": -56.87343999999996,
+            "min_lat": -36.10848999999996,
+            "min_lon": -59.87343999999996
+        },
+        "centroid_wkt": "POINT(-58.37343999999996 -34.60848999999996)",
+        "id": "fossil0035",
+        "name": "fossil_Buenos_Aires_Argentina"
+    },
+    "fossil0036": {
+        "bbox": {
+            "max_lat": 20.93194000000005,
+            "max_lon": -97.63314999999994,
+            "min_lat": 17.93194000000005,
+            "min_lon": -100.63314999999994
+        },
+        "centroid_wkt": "POINT(-99.13314999999994 19.43194000000005)",
+        "id": "fossil0036",
+        "name": "fossil_Mexico_City_Mexico"
+    },
+    "fossil0037": {
+        "bbox": {
+            "max_lat": 4.591980000000035,
+            "max_lon": 102.9942800000001,
+            "min_lat": 1.591980000000035,
+            "min_lon": 99.9942800000001
+        },
+        "centroid_wkt": "POINT(101.4942800000001 3.091980000000035)",
+        "id": "fossil0037",
+        "name": "fossil_Shah_Alam_Malaysia"
+    },
+    "fossil0038": {
+        "bbox": {
+            "max_lat": 26.53737000000007,
+            "max_lon": 123.0635500000001,
+            "min_lat": 23.53737000000007,
+            "min_lon": 120.0635500000001
+        },
+        "centroid_wkt": "POINT(121.5635500000001 25.03737000000007)",
+        "id": "fossil0038",
+        "name": "fossil_Taipei_Taiwan"
+    },
+    "fossil0039": {
+        "bbox": {
+            "max_lat": 34.94825000000003,
+            "max_lon": -110.5758,
+            "min_lat": 31.94825000000003,
+            "min_lon": -113.5758
+        },
+        "centroid_wkt": "POINT(-112.0758 33.44825000000003)",
+        "id": "fossil0039",
+        "name": "fossil_Phoenix_USA"
+    },
+    "fossil0040": {
+        "bbox": {
+            "max_lat": 32.143530000000055,
+            "max_lon": 115.8247200000001,
+            "min_lat": 29.14353000000006,
+            "min_lon": 112.8247200000001
+        },
+        "centroid_wkt": "POINT(114.3247200000001 30.64353000000006)",
+        "id": "fossil0040",
+        "name": "fossil_Wuhan_China"
+    },
+    "fossil0041": {
+        "bbox": {
+            "max_lat": 31.79365000000007,
+            "max_lon": 121.66142,
+            "min_lat": 28.79365000000007,
+            "min_lon": 118.66142
+        },
+        "centroid_wkt": "POINT(120.16142 30.29365000000007)",
+        "id": "fossil0041",
+        "name": "fossil_Hangzhou_China"
+    },
+    "fossil0042": {
+        "bbox": {
+            "max_lat": 45.14869000000004,
+            "max_lon": -77.88543999999996,
+            "min_lat": 42.14869000000004,
+            "min_lon": -80.88543999999996
+        },
+        "centroid_wkt": "POINT(-79.38543999999996 43.64869000000004)",
+        "id": "fossil0042",
+        "name": "fossil_Toronto_Canada"
+    },
+    "fossil0043": {
+        "bbox": {
+            "max_lat": 33.56167000000005,
+            "max_lon": 120.27778,
+            "min_lat": 30.56167000000005,
+            "min_lon": 117.27778
+        },
+        "centroid_wkt": "POINT(118.77778 32.06167000000005)",
+        "id": "fossil0043",
+        "name": "fossil_Nanjing_China"
+    },
+    "fossil0044": {
+        "bbox": {
+            "max_lat": 43.29222000000004,
+            "max_lon": 124.9327800000001,
+            "min_lat": 40.29222000000004,
+            "min_lon": 121.9327800000001
+        },
+        "centroid_wkt": "POINT(123.4327800000001 41.79222000000004)",
+        "id": "fossil0044",
+        "name": "fossil_Shenyang_China"
+    },
+    "fossil0045": {
+        "bbox": {
+            "max_lat": -36.31748999999996,
+            "max_lon": 146.4671500000001,
+            "min_lat": -39.31748999999996,
+            "min_lon": 143.4671500000001
+        },
+        "centroid_wkt": "POINT(144.9671500000001 -37.81748999999996)",
+        "id": "fossil0045",
+        "name": "fossil_Melbourne_Australia"
+    },
+    "fossil0046": {
+        "bbox": {
+            "max_lat": 24.86814000000004,
+            "max_lon": 118.2147900000001,
+            "min_lat": 21.86814000000004,
+            "min_lon": 115.2147900000001
+        },
+        "centroid_wkt": "POINT(116.7147900000001 23.36814000000004)",
+        "id": "fossil0046",
+        "name": "fossil_Shantou_China"
+    },
+    "fossil0047": {
+        "bbox": {
+            "max_lat": 41.92028000000005,
+            "max_lon": -2.205769999999973,
+            "min_lat": 38.92028000000005,
+            "min_lon": -5.205769999999973
+        },
+        "centroid_wkt": "POINT(-3.705769999999973 40.42028000000005)",
+        "id": "fossil0047",
+        "name": "fossil_Madrid_Spain"
+    },
+    "fossil0048": {
+        "bbox": {
+            "max_lat": 24.07054000000005,
+            "max_lon": 89.87124000000006,
+            "min_lat": 21.07054000000005,
+            "min_lon": 86.87124000000006
+        },
+        "centroid_wkt": "POINT(88.37124000000006 22.57054000000005)",
+        "id": "fossil0048",
+        "name": "fossil_Kolkata_India"
+    },
+    "fossil0049": {
+        "bbox": {
+            "max_lat": 36.81,
+            "max_lon": 130.5402800000001,
+            "min_lat": 33.81,
+            "min_lon": 127.54028000000011
+        },
+        "centroid_wkt": "POINT(129.0402800000001 35.31)",
+        "id": "fossil0049",
+        "name": "fossil_Pusan_South_Korea"
+    },
+    "fossil0050": {
+        "bbox": {
+            "max_lat": -32.36959999999993,
+            "max_lon": 152.7069100000001,
+            "min_lat": -35.36959999999993,
+            "min_lon": 149.7069100000001
+        },
+        "centroid_wkt": "POINT(151.2069100000001 -33.86959999999993)",
+        "id": "fossil0050",
+        "name": "fossil_Sydney_Australia"
+    },
+    "fossil0051": {
+        "bbox": {
+            "max_lat": 35.77050000000003,
+            "max_lon": 110.42512,
+            "min_lat": 32.77050000000003,
+            "min_lon": 107.42512
+        },
+        "centroid_wkt": "POINT(108.92512 34.27050000000003)",
+        "id": "fossil0051",
+        "name": "fossil_Xian_China"
+    },
+    "fossil0052": {
+        "bbox": {
+            "max_lat": 32.17190000000005,
+            "max_lon": 105.5758000000001,
+            "min_lat": 29.17190000000005,
+            "min_lon": 102.5758000000001
+        },
+        "centroid_wkt": "POINT(104.0758000000001 30.67190000000005)",
+        "id": "fossil0052",
+        "name": "fossil_Chengdu_China"
+    },
+    "fossil0053": {
+        "bbox": {
+            "max_lat": 27.26444000000004,
+            "max_lon": 120.04583,
+            "min_lat": 24.26444000000004,
+            "min_lon": 117.04583
+        },
+        "centroid_wkt": "POINT(118.54583 25.76444000000004)",
+        "id": "fossil0053",
+        "name": "fossil_Huhot_China"
+    },
+    "fossil0054": {
+        "bbox": {
+            "max_lat": 43.85866000000004,
+            "max_lon": -69.55673999999993,
+            "min_lat": 40.85866000000004,
+            "min_lon": -72.55673999999993
+        },
+        "centroid_wkt": "POINT(-71.05673999999993 42.35866000000004)",
+        "id": "fossil0054",
+        "name": "fossil_Boston_USA"
+    },
+    "fossil0055": {
+        "bbox": {
+            "max_lat": 42.15222000000006,
+            "max_lon": 111.3222200000001,
+            "min_lat": 39.15222000000006,
+            "min_lon": 108.3222200000001
+        },
+        "centroid_wkt": "POINT(109.8222200000001 40.65222000000006)",
+        "id": "fossil0055",
+        "name": "fossil_Baotou_China"
+    },
+    "fossil0056": {
+        "bbox": {
+            "max_lat": 39.38141000000007,
+            "max_lon": 114.04952,
+            "min_lat": 36.38141000000007,
+            "min_lon": 111.04952
+        },
+        "centroid_wkt": "POINT(112.54952 37.88141000000007)",
+        "id": "fossil0056",
+        "name": "fossil_Taiyuan_China"
+    },
+    "fossil0057": {
+        "bbox": {
+            "max_lat": 41.24001000000004,
+            "max_lon": -103.49202,
+            "min_lat": 38.24001000000004,
+            "min_lon": -106.49202
+        },
+        "centroid_wkt": "POINT(-104.99202 39.74001000000004)",
+        "id": "fossil0057",
+        "name": "fossil_Denver_USA"
+    },
+    "fossil0058": {
+        "bbox": {
+            "max_lat": 39.47614000000004,
+            "max_lon": 25.23640000000006,
+            "min_lat": 36.47614000000004,
+            "min_lon": 22.23640000000006
+        },
+        "centroid_wkt": "POINT(23.73640000000006 37.97614000000004)",
+        "id": "fossil0058",
+        "name": "fossil_Athens_Greece"
+    },
+    "fossil0059": {
+        "bbox": {
+            "max_lat": 35.24831000000006,
+            "max_lon": -82.89110999999997,
+            "min_lat": 32.24831000000006,
+            "min_lon": -85.89110999999997
+        },
+        "centroid_wkt": "POINT(-84.39110999999997 33.74831000000006)",
+        "id": "fossil0059",
+        "name": "fossil_Atlanta_USA"
+    },
+    "fossil0060": {
+        "bbox": {
+            "max_lat": 49.10357000000005,
+            "max_lon": -120.82945,
+            "min_lat": 46.10357000000005,
+            "min_lon": -123.82945
+        },
+        "centroid_wkt": "POINT(-122.32945 47.60357000000005)",
+        "id": "fossil0060",
+        "name": "fossil_Seattle_USA"
+    },
+    "fossil0061": {
+        "bbox": {
+            "max_lat": 39.96662000000003,
+            "max_lon": 107.7652100000001,
+            "min_lat": 36.96662000000003,
+            "min_lon": 104.7652100000001
+        },
+        "centroid_wkt": "POINT(106.2652100000001 38.46662000000003)",
+        "id": "fossil0061",
+        "name": "fossil_Yinchuan_China"
+    },
+    "fossil0062": {
+        "bbox": {
+            "max_lat": -22.06286999999998,
+            "max_lon": -45.15467999999998,
+            "min_lat": -25.06286999999998,
+            "min_lon": -48.15467999999998
+        },
+        "centroid_wkt": "POINT(-46.65467999999998 -23.56286999999998)",
+        "id": "fossil0062",
+        "name": "fossil_Sao_Paulo_Brazil"
+    },
+    "fossil0063": {
+        "bbox": {
+            "max_lat": 54.01604000000003,
+            "max_lon": 14.87691000000007,
+            "min_lat": 51.01604000000003,
+            "min_lon": 11.87691000000007
+        },
+        "centroid_wkt": "POINT(13.37691000000007 52.51604000000003)",
+        "id": "fossil0063",
+        "name": "fossil_Berlin_Germany"
+    },
+    "fossil0064": {
+        "bbox": {
+            "max_lat": 46.47902000000005,
+            "max_lon": -91.76493999999997,
+            "min_lat": 43.47902000000005,
+            "min_lon": -94.76493999999997
+        },
+        "centroid_wkt": "POINT(-93.26493999999997 44.97902000000005)",
+        "id": "fossil0064",
+        "name": "fossil_Minneapolis_USA"
+    },
+    "fossil0065": {
+        "bbox": {
+            "max_lat": 36.25778000000003,
+            "max_lon": 115.1486100000001,
+            "min_lat": 33.25778000000003,
+            "min_lon": 112.1486100000001
+        },
+        "centroid_wkt": "POINT(113.6486100000001 34.75778000000003)",
+        "id": "fossil0065",
+        "name": "fossil_Zhengzhou_China"
+    },
+    "fossil0066": {
+        "bbox": {
+            "max_lat": 31.06278000000003,
+            "max_lon": 108.05278,
+            "min_lat": 28.06278000000003,
+            "min_lon": 105.05278
+        },
+        "centroid_wkt": "POINT(106.55278 29.56278000000003)",
+        "id": "fossil0066",
+        "name": "fossil_Chongqing_China"
+    },
+    "fossil0067": {
+        "bbox": {
+            "max_lat": 26.79502000000008,
+            "max_lon": 53.01907000000006,
+            "min_lat": 23.79502000000008,
+            "min_lon": 50.01907000000006
+        },
+        "centroid_wkt": "POINT(51.51907000000006 25.29502000000008)",
+        "id": "fossil0067",
+        "name": "fossil_Doha_Qatar"
+    },
+    "fossil0068": {
+        "bbox": {
+            "max_lat": 20.44017000000002,
+            "max_lon": 74.33486000000005,
+            "min_lat": 17.44017000000002,
+            "min_lon": 71.33486000000005
+        },
+        "centroid_wkt": "POINT(72.83486000000005 18.94017000000002)",
+        "id": "fossil0068",
+        "name": "fossil_Mumbai_India"
+    },
+    "fossil0069": {
+        "bbox": {
+            "max_lat": 27.94041000000004,
+            "max_lon": 51.56027000000006,
+            "min_lat": 24.94041000000004,
+            "min_lon": 48.56027000000006
+        },
+        "centroid_wkt": "POINT(50.06027000000006 26.44041000000004)",
+        "id": "fossil0069",
+        "name": "fossil_Ad_Damman_Saudi_Arabia"
+    },
+    "fossil0070": {
+        "bbox": {
+            "max_lat": 29.49942000000004,
+            "max_lon": 122.16682,
+            "min_lat": 26.49942000000004,
+            "min_lon": 119.16682
+        },
+        "centroid_wkt": "POINT(120.66682 27.99942000000004)",
+        "id": "fossil0070",
+        "name": "fossil_Wenzhou_China"
+    },
+    "fossil0071": {
+        "bbox": {
+            "max_lat": 26.41197000000005,
+            "max_lon": 120.0805200000001,
+            "min_lat": 23.41197000000005,
+            "min_lon": 117.0805200000001
+        },
+        "centroid_wkt": "POINT(118.5805200000001 24.91197000000005)",
+        "id": "fossil0071",
+        "name": "fossil_Quanzhou_China"
+    },
+    "fossil0072": {
+        "bbox": {
+            "max_lat": -25.96843999999993,
+            "max_lon": 154.5233400000001,
+            "min_lat": -28.96843999999993,
+            "min_lon": 151.5233400000001
+        },
+        "centroid_wkt": "POINT(153.0233400000001 -27.46843999999993)",
+        "id": "fossil0072",
+        "name": "fossil_Brisbane_Australia"
+    },
+    "fossil0073": {
+        "bbox": {
+            "max_lat": 40.41222000000005,
+            "max_lon": 123.1022200000001,
+            "min_lat": 37.41222000000005,
+            "min_lon": 120.1022200000001
+        },
+        "centroid_wkt": "POINT(121.6022200000001 38.91222000000005)",
+        "id": "fossil0073",
+        "name": "fossil_Dalian_China"
+    },
+    "fossil0074": {
+        "bbox": {
+            "max_lat": 33.58556000000004,
+            "max_lon": 36.28953000000007,
+            "min_lat": 30.585560000000036,
+            "min_lon": 33.28953000000007
+        },
+        "centroid_wkt": "POINT(34.78953000000007 32.08556000000004)",
+        "id": "fossil0074",
+        "name": "fossil_Tel_Aviv-Yafo_Israel"
+    },
+    "fossil0075": {
+        "bbox": {
+            "max_lat": 46.96796000000006,
+            "max_lon": 10.68178000000006,
+            "min_lat": 43.96796000000006,
+            "min_lon": 7.68178000000006
+        },
+        "centroid_wkt": "POINT(9.18178000000006 45.46796000000006)",
+        "id": "fossil0075",
+        "name": "fossil_Milan_Italy"
+    },
+    "fossil0076": {
+        "bbox": {
+            "max_lat": 25.96918000000005,
+            "max_lon": 55.87173000000007,
+            "min_lat": 22.96918000000005,
+            "min_lon": 52.87173000000007
+        },
+        "centroid_wkt": "POINT(54.37173000000007 24.46918000000005)",
+        "id": "fossil0076",
+        "name": "fossil_Abu_Dhabi_UAE"
+    },
+    "fossil0077": {
+        "bbox": {
+            "max_lat": 41.42109000000005,
+            "max_lon": 34.35391000000004,
+            "min_lat": 38.42109000000005,
+            "min_lon": 31.35391000000004
+        },
+        "centroid_wkt": "POINT(32.85391000000004 39.92109000000005)",
+        "id": "fossil0077",
+        "name": "fossil_Ankara_Turkey"
+    },
+    "fossil0078": {
+        "bbox": {
+            "max_lat": 37.59861000000006,
+            "max_lon": 121.8719400000001,
+            "min_lat": 34.59861000000006,
+            "min_lon": 118.8719400000001
+        },
+        "centroid_wkt": "POINT(120.3719400000001 36.09861000000006)",
+        "id": "fossil0078",
+        "name": "fossil_Qingdao_China"
+    },
+    "fossil0079": {
+        "bbox": {
+            "max_lat": 36.68142047000003,
+            "max_lon": 138.406683388,
+            "min_lat": 33.68142047000003,
+            "min_lon": 135.406683388
+        },
+        "centroid_wkt": "POINT(136.906683388 35.18142047000003)",
+        "id": "fossil0079",
+        "name": "fossil_Nagoya_Japan"
+    },
+    "fossil0080": {
+        "bbox": {
+            "max_lat": 47.01240000000007,
+            "max_lon": -72.05468999999994,
+            "min_lat": 44.01240000000007,
+            "min_lon": -75.05468999999994
+        },
+        "centroid_wkt": "POINT(-73.55468999999994 45.51240000000007)",
+        "id": "fossil0080",
+        "name": "fossil_Montreal_Canada"
+    },
+    "fossil0081": {
+        "bbox": {
+            "max_lat": 40.12775000000005,
+            "max_lon": -88.69955999999996,
+            "min_lat": 37.12775000000005,
+            "min_lon": -91.69955999999996
+        },
+        "centroid_wkt": "POINT(-90.19955999999996 38.62775000000005)",
+        "id": "fossil0081",
+        "name": "fossil_St_Louis_USA"
+    },
+    "fossil0082": {
+        "bbox": {
+            "max_lat": 34.21568000000008,
+            "max_lon": -115.66171,
+            "min_lat": 31.215680000000077,
+            "min_lon": -118.66171
+        },
+        "centroid_wkt": "POINT(-117.16171 32.71568000000008)",
+        "id": "fossil0082",
+        "name": "fossil_San_Diego_USA"
+    },
+    "fossil0083": {
+        "bbox": {
+            "max_lat": 38.16833000000003,
+            "max_lon": 118.4972200000001,
+            "min_lat": 35.16833000000003,
+            "min_lon": 115.4972200000001
+        },
+        "centroid_wkt": "POINT(116.9972200000001 36.66833000000003)",
+        "id": "fossil0083",
+        "name": "fossil_Jinan_China"
+    },
+    "fossil0084": {
+        "bbox": {
+            "max_lat": -31.937219999999968,
+            "max_lon": -69.15001999999998,
+            "min_lat": -34.93721999999997,
+            "min_lon": -72.15001999999998
+        },
+        "centroid_wkt": "POINT(-70.65001999999998 -33.43721999999997)",
+        "id": "fossil0084",
+        "name": "fossil_Santiago_Chile"
+    },
+    "fossil0085": {
+        "bbox": {
+            "max_lat": 53.42282000000006,
+            "max_lon": 5.978480000000047,
+            "min_lat": 50.42282000000006,
+            "min_lon": 2.9784800000000473
+        },
+        "centroid_wkt": "POINT(4.478480000000047 51.92282000000006)",
+        "id": "fossil0085",
+        "name": "fossil_Rotterdam_Netherlands"
+    },
+    "fossil0086": {
+        "bbox": {
+            "max_lat": -32.41908999999998,
+            "max_lon": 19.92198000000008,
+            "min_lat": -35.41908999999998,
+            "min_lon": 16.92198000000008
+        },
+        "centroid_wkt": "POINT(18.42198000000008 -33.91908999999998)",
+        "id": "fossil0086",
+        "name": "fossil_Cape_Town_South_Africa"
+    },
+    "fossil0087": {
+        "bbox": {
+            "max_lat": 18.89487000000003,
+            "max_lon": 79.97076000000004,
+            "min_lat": 15.89487000000003,
+            "min_lon": 76.97076000000004
+        },
+        "centroid_wkt": "POINT(78.47076000000004 17.39487000000003)",
+        "id": "fossil0087",
+        "name": "fossil_Hyderabad_India"
+    },
+    "fossil0088": {
+        "bbox": {
+            "max_lat": 12.27822000000003,
+            "max_lon": 108.20322,
+            "min_lat": 9.27822000000003,
+            "min_lon": 105.20322
+        },
+        "centroid_wkt": "POINT(106.70322 10.77822000000003)",
+        "id": "fossil0088",
+        "name": "fossil_Ho_Chi_Minh_City_Vietnam"
+    },
+    "fossil0089": {
+        "bbox": {
+            "max_lat": 42.88804000000005,
+            "max_lon": 3.670010000000048,
+            "min_lat": 39.88804000000005,
+            "min_lon": 0.670010000000048
+        },
+        "centroid_wkt": "POINT(2.170010000000048 41.38804000000005)",
+        "id": "fossil0089",
+        "name": "fossil_Barcelona_Spain"
+    },
+    "fossil0090": {
+        "bbox": {
+            "max_lat": 40.79058000000003,
+            "max_lon": -75.10925999999995,
+            "min_lat": 37.79058000000003,
+            "min_lon": -78.10925999999995
+        },
+        "centroid_wkt": "POINT(-76.60925999999995 39.29058000000003)",
+        "id": "fossil0090",
+        "name": "fossil_Baltimore_USA"
+    },
+    "fossil0091": {
+        "bbox": {
+            "max_lat": 45.38415000000003,
+            "max_lon": 126.8036800000001,
+            "min_lat": 42.38415000000003,
+            "min_lon": 123.8036800000001
+        },
+        "centroid_wkt": "POINT(125.3036800000001 43.88415000000003)",
+        "id": "fossil0091",
+        "name": "fossil_Changchun_China"
+    },
+    "fossil0092": {
+        "bbox": {
+            "max_lat": 44.75066000000004,
+            "max_lon": 78.38814000000008,
+            "min_lat": 41.75066000000004,
+            "min_lon": 75.38814000000008
+        },
+        "centroid_wkt": "POINT(76.88814000000008 43.25066000000004)",
+        "id": "fossil0092",
+        "name": "fossil_Almaty_Kazakhstan"
+    },
+    "fossil0093": {
+        "bbox": {
+            "max_lat": 53.97891000000004,
+            "max_lon": -0.40591999999998096,
+            "min_lat": 50.97891000000004,
+            "min_lon": -3.405919999999981
+        },
+        "centroid_wkt": "POINT(-1.905919999999981 52.47891000000004)",
+        "id": "fossil0093",
+        "name": "fossil_Birmingham_UK"
+    },
+    "fossil0094": {
+        "bbox": {
+            "max_lat": 33.363890000000026,
+            "max_lon": 118.78083,
+            "min_lat": 30.36389000000003,
+            "min_lon": 115.78083
+        },
+        "centroid_wkt": "POINT(117.28083 31.86389000000003)",
+        "id": "fossil0094",
+        "name": "fossil_Hefei_China"
+    },
+    "fossil0095": {
+        "bbox": {
+            "max_lat": 39.54139000000004,
+            "max_lon": 115.9786100000001,
+            "min_lat": 36.54139000000004,
+            "min_lon": 112.9786100000001
+        },
+        "centroid_wkt": "POINT(114.4786100000001 38.04139000000004)",
+        "id": "fossil0095",
+        "name": "fossil_Shijiazhuang_China"
+    },
+    "fossil0096": {
+        "bbox": {
+            "max_lat": 47.25553000000008,
+            "max_lon": 128.1395100000001,
+            "min_lat": 44.25553000000008,
+            "min_lon": 125.1395100000001
+        },
+        "centroid_wkt": "POINT(126.6395100000001 45.75553000000008)",
+        "id": "fossil0096",
+        "name": "fossil_Harbin_China"
+    },
+    "fossil0097": {
+        "bbox": {
+            "max_lat": 43.00473000000005,
+            "max_lon": -80.19073999999995,
+            "min_lat": 40.00473000000005,
+            "min_lon": -83.19073999999995
+        },
+        "centroid_wkt": "POINT(-81.69073999999995 41.50473000000005)",
+        "id": "fossil0097",
+        "name": "fossil_Cleveland_USA"
+    },
+    "fossil0098": {
+        "bbox": {
+            "max_lat": -30.547319999999957,
+            "max_lon": 117.25351,
+            "min_lat": -33.54731999999996,
+            "min_lon": 114.25351
+        },
+        "centroid_wkt": "POINT(115.75351 -32.04731999999996)",
+        "id": "fossil0098",
+        "name": "fossil_Fremantle_Australia"
+    },
+    "fossil0099": {
+        "bbox": {
+            "max_lat": -28.34704999999997,
+            "max_lon": 32.525900000000036,
+            "min_lat": -31.34704999999997,
+            "min_lon": 29.52590000000004
+        },
+        "centroid_wkt": "POINT(31.02590000000004 -29.84704999999997)",
+        "id": "fossil0099",
+        "name": "fossil_Durban_South_Africa"
+    },
+    "fossil0100": {
+        "bbox": {
+            "max_lat": 37.67193000000003,
+            "max_lon": -113.64001,
+            "min_lat": 34.67193000000003,
+            "min_lon": -116.64001
+        },
+        "centroid_wkt": "POINT(-115.14001 36.17193000000003)",
+        "id": "fossil0100",
+        "name": "fossil_Las_Vegas_USA"
+    },
+    "fossil0101": {
+        "bbox": {
+            "max_lat": -10.54317999999995,
+            "max_lon": -75.52823999999998,
+            "min_lat": -13.54317999999995,
+            "min_lon": -78.52823999999998
+        },
+        "centroid_wkt": "POINT(-77.02823999999998 -12.04317999999995)",
+        "id": "fossil0101",
+        "name": "fossil_Lima_Peru"
+    },
+    "fossil0102": {
+        "bbox": {
+            "max_lat": 37.81559000000004,
+            "max_lon": 61.06796000000003,
+            "min_lat": 34.81559000000004,
+            "min_lon": 58.06796000000003
+        },
+        "centroid_wkt": "POINT(59.56796000000003 36.31559000000004)",
+        "id": "fossil0102",
+        "name": "fossil_Mashhad_Iran"
+    },
+    "fossil0103": {
+        "bbox": {
+            "max_lat": 40.60344000000003,
+            "max_lon": -93.08310999999998,
+            "min_lat": 37.60344000000003,
+            "min_lon": -96.08310999999998
+        },
+        "centroid_wkt": "POINT(-94.58310999999998 39.10344000000003)",
+        "id": "fossil0103",
+        "name": "fossil_Kansas_City_USA"
+    },
+    "fossil0104": {
+        "bbox": {
+            "max_lat": 28.07242000000008,
+            "max_lon": 108.19473,
+            "min_lat": 25.07242000000008,
+            "min_lon": 105.19473
+        },
+        "centroid_wkt": "POINT(106.69473 26.57242000000008)",
+        "id": "fossil0104",
+        "name": "fossil_Guiyang_China"
+    },
+    "fossil0105": {
+        "bbox": {
+            "max_lat": 14.58362000000005,
+            "max_lon": 81.78252000000003,
+            "min_lat": 11.58362000000005,
+            "min_lon": 78.78252000000003
+        },
+        "centroid_wkt": "POINT(80.28252000000003 13.08362000000005)",
+        "id": "fossil0105",
+        "name": "fossil_Chennai_India"
+    },
+    "fossil0106": {
+        "bbox": {
+            "max_lat": 11.98801000000003,
+            "max_lon": -65.37918999999994,
+            "min_lat": 8.98801000000003,
+            "min_lon": -68.37918999999994
+        },
+        "centroid_wkt": "POINT(-66.87918999999994 10.48801000000003)",
+        "id": "fossil0106",
+        "name": "fossil_Caracas_Venezuela"
+    },
+    "fossil0107": {
+        "bbox": {
+            "max_lat": 14.46685000000002,
+            "max_lon": 79.08742000000007,
+            "min_lat": 11.46685000000002,
+            "min_lon": 76.08742000000007
+        },
+        "centroid_wkt": "POINT(77.58742000000007 12.96685000000002)",
+        "id": "fossil0107",
+        "name": "fossil_Bangalore_India"
+    },
+    "fossil0108": {
+        "bbox": {
+            "max_lat": 30.03823000000006,
+            "max_lon": -79.87738999999993,
+            "min_lat": 27.03823000000006,
+            "min_lon": -82.87738999999993
+        },
+        "centroid_wkt": "POINT(-81.37738999999993 28.53823000000006)",
+        "id": "fossil0108",
+        "name": "fossil_Orlando_USA"
+    },
+    "fossil0109": {
+        "bbox": {
+            "max_lat": 34.84213000000005,
+            "max_lon": 45.89309000000003,
+            "min_lat": 31.842130000000047,
+            "min_lon": 42.89309000000003
+        },
+        "centroid_wkt": "POINT(44.39309000000003 33.34213000000005)",
+        "id": "fossil0109",
+        "name": "fossil_Baghdad_Iraq"
+    },
+    "fossil0110": {
+        "bbox": {
+            "max_lat": 40.07944000000003,
+            "max_lon": -119.99085,
+            "min_lat": 37.07944000000003,
+            "min_lon": -122.99085
+        },
+        "centroid_wkt": "POINT(-121.49085 38.57944000000003)",
+        "id": "fossil0110",
+        "name": "fossil_Sacramento_USA"
+    },
+    "fossil0111": {
+        "bbox": {
+            "max_lat": 6.114960000000053,
+            "max_lon": -72.56940999999995,
+            "min_lat": 3.1149600000000532,
+            "min_lon": -75.56940999999995
+        },
+        "centroid_wkt": "POINT(-74.06940999999995 4.614960000000053)",
+        "id": "fossil0111",
+        "name": "fossil_Bogota_Colombia"
+    },
+    "fossil0112": {
+        "bbox": {
+            "max_lat": 37.37028000000004,
+            "max_lon": 130.0911100000001,
+            "min_lat": 34.37028000000004,
+            "min_lon": 127.0911100000001
+        },
+        "centroid_wkt": "POINT(128.5911100000001 35.87028000000004)",
+        "id": "fossil0112",
+        "name": "fossil_Taegu_South_Korea"
+    },
+    "fossil0113": {
+        "bbox": {
+            "max_lat": 45.28787000000005,
+            "max_lon": 89.08627000000007,
+            "min_lat": 42.28787000000005,
+            "min_lon": 86.08627000000007
+        },
+        "centroid_wkt": "POINT(87.58627000000007 43.78787000000005)",
+        "id": "fossil0113",
+        "name": "fossil_Urumqi_China"
+    },
+    "fossil0114": {
+        "bbox": {
+            "max_lat": 49.70263000000006,
+            "max_lon": 17.86842000000007,
+            "min_lat": 46.70263000000006,
+            "min_lon": 14.868420000000071
+        },
+        "centroid_wkt": "POINT(16.36842000000007 48.20263000000006)",
+        "id": "fossil0114",
+        "name": "fossil_Vienna_Austria"
+    },
+    "fossil0115": {
+        "bbox": {
+            "max_lat": 16.088640000000048,
+            "max_lon": 122.48454,
+            "min_lat": 13.08864000000005,
+            "min_lon": 119.48454
+        },
+        "centroid_wkt": "POINT(120.98454 14.58864000000005)",
+        "id": "fossil0115",
+        "name": "fossil_Manila_Philippines"
+    },
+    "fossil0116": {
+        "bbox": {
+            "max_lat": 41.46199000000007,
+            "max_lon": -81.50274999999993,
+            "min_lat": 38.46199000000007,
+            "min_lon": -84.50274999999993
+        },
+        "centroid_wkt": "POINT(-83.00274999999993 39.96199000000007)",
+        "id": "fossil0116",
+        "name": "fossil_Columbus_USA"
+    },
+    "fossil0117": {
+        "bbox": {
+            "max_lat": 34.15722000000005,
+            "max_lon": 53.17761000000007,
+            "min_lat": 31.157220000000052,
+            "min_lon": 50.17761000000007
+        },
+        "centroid_wkt": "POINT(51.67761000000007 32.65722000000005)",
+        "id": "fossil0117",
+        "name": "fossil_Esfahan_Iran"
+    },
+    "fossil0118": {
+        "bbox": {
+            "max_lat": 47.01179000000008,
+            "max_lon": -121.17563,
+            "min_lat": 44.01179000000008,
+            "min_lon": -124.17563
+        },
+        "centroid_wkt": "POINT(-122.67563 45.51179000000008)",
+        "id": "fossil0118",
+        "name": "fossil_Portland_USA"
+    },
+    "fossil0119": {
+        "bbox": {
+            "max_lat": 41.26691000000005,
+            "max_lon": -84.64995999999996,
+            "min_lat": 38.26691000000005,
+            "min_lon": -87.64995999999996
+        },
+        "centroid_wkt": "POINT(-86.14995999999996 39.76691000000005)",
+        "id": "fossil0119",
+        "name": "fossil_Indianapolis_USA"
+    },
+    "fossil0120": {
+        "bbox": {
+            "max_lat": 38.29056000000003,
+            "max_lon": 119.5633300000001,
+            "min_lat": 35.29056000000003,
+            "min_lon": 116.5633300000001
+        },
+        "centroid_wkt": "POINT(118.0633300000001 36.79056000000003)",
+        "id": "fossil0120",
+        "name": "fossil_Zibo_China"
+    },
+    "fossil0121": {
+        "bbox": {
+            "max_lat": 30.92458000000005,
+            "max_lon": -96.99460999999997,
+            "min_lat": 27.92458000000005,
+            "min_lon": -99.99460999999997
+        },
+        "centroid_wkt": "POINT(-98.49460999999997 29.42458000000005)",
+        "id": "fossil0121",
+        "name": "fossil_San_Antonio_USA"
+    },
+    "fossil0122": {
+        "bbox": {
+            "max_lat": 37.58139000000006,
+            "max_lon": 128.68972000000008,
+            "min_lat": 34.58139000000006,
+            "min_lon": 125.6897200000001
+        },
+        "centroid_wkt": "POINT(127.1897200000001 36.08139000000006)",
+        "id": "fossil0122",
+        "name": "fossil_Taejon_South_Korea"
+    },
+    "fossil0123": {
+        "bbox": {
+            "max_lat": 43.77207000000004,
+            "max_lon": 120.4549300000001,
+            "min_lat": 40.77207000000004,
+            "min_lon": 117.4549300000001
+        },
+        "centroid_wkt": "POINT(118.9549300000001 42.27207000000004)",
+        "id": "fossil0123",
+        "name": "fossil_Chifeng_China"
+    },
+    "fossil0124": {
+        "bbox": {
+            "max_lat": 55.05375000000004,
+            "max_lon": 11.49183000000005,
+            "min_lat": 52.05375000000004,
+            "min_lon": 8.49183000000005
+        },
+        "centroid_wkt": "POINT(9.99183000000005 53.55375000000004)",
+        "id": "fossil0124",
+        "name": "fossil_Hamburg_Germany"
+    },
+    "fossil0125": {
+        "bbox": {
+            "max_lat": 20.00422000000003,
+            "max_lon": 75.35302000000007,
+            "min_lat": 17.00422000000003,
+            "min_lon": 72.35302000000007
+        },
+        "centroid_wkt": "POINT(73.85302000000007 18.50422000000003)",
+        "id": "fossil0125",
+        "name": "fossil_Pune_India"
+    },
+    "fossil0126": {
+        "bbox": {
+            "max_lat": 25.70739000000003,
+            "max_lon": 57.18635000000006,
+            "min_lat": 22.70739000000003,
+            "min_lon": 54.18635000000006
+        },
+        "centroid_wkt": "POINT(55.68635000000006 24.20739000000003)",
+        "id": "fossil0126",
+        "name": "fossil_Al_Ain_UAE"
+    },
+    "fossil0127": {
+        "bbox": {
+            "max_lat": 22.92111000000006,
+            "max_lon": 41.32222000000007,
+            "min_lat": 19.92111000000006,
+            "min_lon": 38.32222000000007
+        },
+        "centroid_wkt": "POINT(39.82222000000007 21.42111000000006)",
+        "id": "fossil0127",
+        "name": "fossil_Mecca_Saudi_Arabia"
+    },
+    "fossil0128": {
+        "bbox": {
+            "max_lat": 50.76038000000005,
+            "max_lon": -121.6133599999999,
+            "min_lat": 47.76038000000005,
+            "min_lon": -124.6133599999999
+        },
+        "centroid_wkt": "POINT(-123.1133599999999 49.26038000000005)",
+        "id": "fossil0128",
+        "name": "fossil_Vancouver_Canada"
+    },
+    "fossil0129": {
+        "bbox": {
+            "max_lat": 41.59361000000007,
+            "max_lon": 114.7913900000001,
+            "min_lat": 38.59361000000007,
+            "min_lon": 111.7913900000001
+        },
+        "centroid_wkt": "POINT(113.2913900000001 40.09361000000007)",
+        "id": "fossil0129",
+        "name": "fossil_Datong_Shanxi_China"
+    },
+    "fossil0130": {
+        "bbox": {
+            "max_lat": 26.04404000000005,
+            "max_lon": 119.62774,
+            "min_lat": 23.04404000000005,
+            "min_lon": 116.62774
+        },
+        "centroid_wkt": "POINT(118.12774 24.54404000000005)",
+        "id": "fossil0130",
+        "name": "fossil_Xiamen_China"
+    },
+    "fossil0131": {
+        "bbox": {
+            "max_lat": 31.36569000000003,
+            "max_lon": 123.03916,
+            "min_lat": 28.36569000000003,
+            "min_lon": 120.03916
+        },
+        "centroid_wkt": "POINT(121.53916 29.86569000000003)",
+        "id": "fossil0131",
+        "name": "fossil_Ningbo_China"
+    },
+    "fossil0132": {
+        "bbox": {
+            "max_lat": 25.66324000000003,
+            "max_lon": 122.1482100000001,
+            "min_lat": 22.66324000000003,
+            "min_lon": 119.1482100000001
+        },
+        "centroid_wkt": "POINT(120.6482100000001 24.16324000000003)",
+        "id": "fossil0132",
+        "name": "fossil_Taichung_Taiwan"
+    },
+    "fossil0133": {
+        "bbox": {
+            "max_lat": -21.41215999999997,
+            "max_lon": -41.67500999999993,
+            "min_lat": -24.41215999999997,
+            "min_lon": -44.67500999999993
+        },
+        "centroid_wkt": "POINT(-43.17500999999993 -22.91215999999997)",
+        "id": "fossil0133",
+        "name": "fossil_Rio_de_Janeiro_Brazil"
+    },
+    "fossil0134": {
+        "bbox": {
+            "max_lat": 29.27119000000005,
+            "max_lon": -81.13875999999993,
+            "min_lat": 26.27119000000005,
+            "min_lon": -84.13875999999993
+        },
+        "centroid_wkt": "POINT(-82.63875999999993 27.77119000000005)",
+        "id": "fossil0134",
+        "name": "fossil_St_Petersburg_USA"
+    },
+    "fossil0135": {
+        "bbox": {
+            "max_lat": 27.17093000000006,
+            "max_lon": -98.80999,
+            "min_lat": 24.17093000000006,
+            "min_lon": -101.80999
+        },
+        "centroid_wkt": "POINT(-100.30999 25.67093000000006)",
+        "id": "fossil0135",
+        "name": "fossil_Monterrey_Mexico"
+    },
+    "fossil0136": {
+        "bbox": {
+            "max_lat": 22.52888000000007,
+            "max_lon": 107.3546400000001,
+            "min_lat": 19.52888000000007,
+            "min_lon": 104.3546400000001
+        },
+        "centroid_wkt": "POINT(105.8546400000001 21.02888000000007)",
+        "id": "fossil0136",
+        "name": "fossil_Hanoi_Vietnam"
+    },
+    "fossil0137": {
+        "bbox": {
+            "max_lat": 43.40322000000003,
+            "max_lon": 13.99565000000007,
+            "min_lat": 40.40322000000003,
+            "min_lon": 10.99565000000007
+        },
+        "centroid_wkt": "POINT(12.49565000000007 41.90322000000003)",
+        "id": "fossil0137",
+        "name": "fossil_Rome_Italy"
+    },
+    "fossil0138": {
+        "bbox": {
+            "max_lat": 31.45370000000003,
+            "max_lon": -88.57774999999998,
+            "min_lat": 28.45370000000003,
+            "min_lon": -91.57774999999998
+        },
+        "centroid_wkt": "POINT(-90.07774999999998 29.95370000000003)",
+        "id": "fossil0138",
+        "name": "fossil_New_Orleans_USA"
+    },
+    "fossil0139": {
+        "bbox": {
+            "max_lat": 26.86824000000007,
+            "max_lon": 51.08751000000007,
+            "min_lat": 23.86824000000007,
+            "min_lon": 48.08751000000007
+        },
+        "centroid_wkt": "POINT(49.58751000000007 25.36824000000007)",
+        "id": "fossil0139",
+        "name": "fossil_Al_Hofuf_Saudi_Arabia"
+    },
+    "fossil0140": {
+        "bbox": {
+            "max_lat": 41.69208000000003,
+            "max_lon": 30.54675000000003,
+            "min_lat": 38.69208000000003,
+            "min_lon": 27.54675000000003
+        },
+        "centroid_wkt": "POINT(29.04675000000003 40.19208000000003)",
+        "id": "fossil0140",
+        "name": "fossil_Chios_Turkey"
+    },
+    "fossil0141": {
+        "bbox": {
+            "max_lat": 42.34014000000008,
+            "max_lon": 15.75226000000004,
+            "min_lat": 39.34014000000008,
+            "min_lon": 12.75226000000004
+        },
+        "centroid_wkt": "POINT(14.25226000000004 40.84014000000008)",
+        "id": "fossil0141",
+        "name": "fossil_Naples_Italy"
+    },
+    "fossil0142": {
+        "bbox": {
+            "max_lat": 22.18758000000003,
+            "max_lon": -101.85104,
+            "min_lat": 19.18758000000003,
+            "min_lon": -104.85104
+        },
+        "centroid_wkt": "POINT(-103.35104 20.68758000000003)",
+        "id": "fossil0142",
+        "name": "fossil_Guadalajara_Mexico"
+    },
+    "fossil0143": {
+        "bbox": {
+            "max_lat": 24.12014000000005,
+            "max_lon": 121.81226,
+            "min_lat": 21.12014000000005,
+            "min_lon": 118.81226
+        },
+        "centroid_wkt": "POINT(120.31226 22.62014000000005)",
+        "id": "fossil0143",
+        "name": "fossil_Kaoshsiung_Taiwan"
+    },
+    "fossil0144": {
+        "bbox": {
+            "max_lat": 25.21323000000007,
+            "max_lon": 91.89957000000004,
+            "min_lat": 22.21323000000007,
+            "min_lon": 88.89957000000004
+        },
+        "centroid_wkt": "POINT(90.39957000000004 23.71323000000007)",
+        "id": "fossil0144",
+        "name": "fossil_Dhaka_Bangladesh"
+    },
+    "fossil0145": {
+        "bbox": {
+            "max_lat": 52.54532000000006,
+            "max_lon": -112.56301,
+            "min_lat": 49.54532000000006,
+            "min_lon": -115.56301
+        },
+        "centroid_wkt": "POINT(-114.06301 51.04532000000006)",
+        "id": "fossil0145",
+        "name": "fossil_Calgary_Canada"
+    },
+    "fossil0146": {
+        "bbox": {
+            "max_lat": 41.93851000000006,
+            "max_lon": -78.49733999999995,
+            "min_lat": 38.93851000000006,
+            "min_lon": -81.49733999999995
+        },
+        "centroid_wkt": "POINT(-79.99733999999995 40.43851000000006)",
+        "id": "fossil0146",
+        "name": "fossil_Pittsburgh_USA"
+    },
+    "fossil0147": {
+        "bbox": {
+            "max_lat": 31.76759000000004,
+            "max_lon": -96.24298999999996,
+            "min_lat": 28.76759000000004,
+            "min_lon": -99.24298999999996
+        },
+        "centroid_wkt": "POINT(-97.74298999999996 30.26759000000004)",
+        "id": "fossil0147",
+        "name": "fossil_Austin_USA"
+    },
+    "fossil0148": {
+        "bbox": {
+            "max_lat": 33.45180000000005,
+            "max_lon": 37.44042000000007,
+            "min_lat": 30.45180000000005,
+            "min_lon": 34.44042000000007
+        },
+        "centroid_wkt": "POINT(35.94042000000007 31.95180000000005)",
+        "id": "fossil0148",
+        "name": "fossil_Amman_Jordan"
+    },
+    "fossil0149": {
+        "bbox": {
+            "max_lat": 42.26031000000006,
+            "max_lon": -110.38822,
+            "min_lat": 39.26031000000006,
+            "min_lon": -113.38822
+        },
+        "centroid_wkt": "POINT(-111.88822 40.76031000000006)",
+        "id": "fossil0149",
+        "name": "fossil_Salt_Lake_City_USA"
+    },
+    "fossil0150": {
+        "bbox": {
+            "max_lat": 25.96728000000007,
+            "max_lon": 41.10641000000004,
+            "min_lat": 22.96728000000007,
+            "min_lon": 38.10641000000004
+        },
+        "centroid_wkt": "POINT(39.60641000000004 24.46728000000007)",
+        "id": "fossil0150",
+        "name": "fossil_Medina_Saudi_Arabia"
+    },
+    "fossil0151": {
+        "bbox": {
+            "max_lat": -33.42584999999997,
+            "max_lon": 140.0998000000001,
+            "min_lat": -36.42584999999997,
+            "min_lon": 137.0998000000001
+        },
+        "centroid_wkt": "POINT(138.5998000000001 -34.92584999999997)",
+        "id": "fossil0151",
+        "name": "fossil_Adelaide_Australia"
+    },
+    "fossil0152": {
+        "bbox": {
+            "max_lat": 53.73560000000003,
+            "max_lon": 22.51037000000002,
+            "min_lat": 50.73560000000003,
+            "min_lon": 19.51037000000002
+        },
+        "centroid_wkt": "POINT(21.01037000000002 52.23560000000003)",
+        "id": "fossil0152",
+        "name": "fossil_Warsaw_Poland"
+    },
+    "fossil0153": {
+        "bbox": {
+            "max_lat": 56.49471000000005,
+            "max_lon": 74.86476000000005,
+            "min_lat": 53.49471000000005,
+            "min_lon": 71.86476000000005
+        },
+        "centroid_wkt": "POINT(73.36476000000005 54.99471000000005)",
+        "id": "fossil0153",
+        "name": "fossil_Omsk_Russia"
+    },
+    "fossil0154": {
+        "bbox": {
+            "max_lat": 52.62771000000004,
+            "max_lon": 72.92830000000004,
+            "min_lat": 49.62771000000004,
+            "min_lon": 69.92830000000004
+        },
+        "centroid_wkt": "POINT(71.42830000000004 51.12771000000004)",
+        "id": "fossil0154",
+        "name": "fossil_Astana_Kazakhstan"
+    },
+    "fossil0155": {
+        "bbox": {
+            "max_lat": 37.88949739100008,
+            "max_lon": 140.5634184300001,
+            "min_lat": 34.88949739100008,
+            "min_lon": 137.5634184300001
+        },
+        "centroid_wkt": "POINT(139.0634184300001 36.38949739100008)",
+        "id": "fossil0155",
+        "name": "fossil_Maebashi_Japan"
+    },
+    "fossil0156": {
+        "bbox": {
+            "max_lat": 39.58000000000004,
+            "max_lon": 47.79190000000006,
+            "min_lat": 36.58000000000004,
+            "min_lon": 44.79190000000006
+        },
+        "centroid_wkt": "POINT(46.29190000000006 38.08000000000004)",
+        "id": "fossil0156",
+        "name": "fossil_Tabriz_Iran"
+    },
+    "fossil0157": {
+        "bbox": {
+            "max_lat": 24.52777000000003,
+            "max_lon": 74.10025000000007,
+            "min_lat": 21.52777000000003,
+            "min_lon": 71.10025000000007
+        },
+        "centroid_wkt": "POINT(72.60025000000007 23.02777000000003)",
+        "id": "fossil0157",
+        "name": "fossil_Ahmadabad_India"
+    },
+    "fossil0158": {
+        "bbox": {
+            "max_lat": 28.05513000000008,
+            "max_lon": 33.19545000000005,
+            "min_lat": 25.05513000000008,
+            "min_lon": 30.19545000000005
+        },
+        "centroid_wkt": "POINT(31.69545000000005 26.55513000000008)",
+        "id": "fossil0158",
+        "name": "fossil_Sohag_Egypt"
+    },
+    "fossil0159": {
+        "bbox": {
+            "max_lat": 49.63641000000007,
+            "max_lon": 13.07754000000006,
+            "min_lat": 46.63641000000007,
+            "min_lon": 10.07754000000006
+        },
+        "centroid_wkt": "POINT(11.57754000000006 48.13641000000007)",
+        "id": "fossil0159",
+        "name": "fossil_Munich_Germany"
+    },
+    "fossil0160": {
+        "bbox": {
+            "max_lat": 32.82030000000003,
+            "max_lon": 50.16930000000008,
+            "min_lat": 29.82030000000003,
+            "min_lon": 47.16930000000008
+        },
+        "centroid_wkt": "POINT(48.66930000000008 31.32030000000003)",
+        "id": "fossil0160",
+        "name": "fossil_Ahvaz_Iran"
+    },
+    "fossil0161": {
+        "bbox": {
+            "max_lat": 36.01451000000003,
+            "max_lon": 37.46785000000006,
+            "min_lat": 33.01451000000003,
+            "min_lon": 34.46785000000006
+        },
+        "centroid_wkt": "POINT(35.96785000000006 34.51451000000003)",
+        "id": "fossil0161",
+        "name": "fossil_Baabda_Lebanon"
+    },
+    "fossil0162": {
+        "bbox": {
+            "max_lat": 48.72691000000003,
+            "max_lon": 41.21676000000008,
+            "min_lat": 45.72691000000003,
+            "min_lon": 38.21676000000008
+        },
+        "centroid_wkt": "POINT(39.71676000000008 47.22691000000003)",
+        "id": "fossil0162",
+        "name": "fossil_Rostov-on-Don_Russia"
+    },
+    "fossil0163": {
+        "bbox": {
+            "max_lat": 51.57913000000008,
+            "max_lon": 15.93302000000006,
+            "min_lat": 48.57913000000008,
+            "min_lon": 12.93302000000006
+        },
+        "centroid_wkt": "POINT(14.43302000000006 50.07913000000008)",
+        "id": "fossil0163",
+        "name": "fossil_Prague_Czech_Republic"
+    },
+    "fossil0164": {
+        "bbox": {
+            "max_lat": 19.91667000000007,
+            "max_lon": -68.59999999999997,
+            "min_lat": 16.91667000000007,
+            "min_lon": -71.59999999999997
+        },
+        "centroid_wkt": "POINT(-70.09999999999997 18.41667000000007)",
+        "id": "fossil0164",
+        "name": "fossil_San_Cristobal_Dominican_Republic"
+    },
+    "fossil0165": {
+        "bbox": {
+            "max_lat": 53.86993000000007,
+            "max_lon": 6.407880000000034,
+            "min_lat": 50.86993000000007,
+            "min_lon": 3.407880000000034
+        },
+        "centroid_wkt": "POINT(4.907880000000034 52.36993000000007)",
+        "id": "fossil0165",
+        "name": "fossil_Amsterdam_Netherlands"
+    },
+    "fossil0166": {
+        "bbox": {
+            "max_lat": 45.93429000000003,
+            "max_lon": 27.60298000000006,
+            "min_lat": 42.93429000000003,
+            "min_lon": 24.60298000000006
+        },
+        "centroid_wkt": "POINT(26.10298000000006 44.43429000000003)",
+        "id": "fossil0166",
+        "name": "fossil_Bucharest_Romania"
+    },
+    "fossil0167": {
+        "bbox": {
+            "max_lat": 12.18769000000003,
+            "max_lon": -70.09756999999996,
+            "min_lat": 9.18769000000003,
+            "min_lon": -73.09756999999996
+        },
+        "centroid_wkt": "POINT(-71.59756999999996 10.68769000000003)",
+        "id": "fossil0167",
+        "name": "fossil_Maracaibo_Venezuela"
+    },
+    "fossil0168": {
+        "bbox": {
+            "max_lat": 33.049720000000036,
+            "max_lon": 75.84361000000007,
+            "min_lat": 30.04972000000004,
+            "min_lon": 72.84361000000007
+        },
+        "centroid_wkt": "POINT(74.34361000000007 31.54972000000004)",
+        "id": "fossil0168",
+        "name": "fossil_Lahore_Pakistan"
+    },
+    "fossil0169": {
+        "bbox": {
+            "max_lat": 48.99972000000008,
+            "max_lon": 20.55508000000003,
+            "min_lat": 45.99972000000008,
+            "min_lon": 17.55508000000003
+        },
+        "centroid_wkt": "POINT(19.05508000000003 47.49972000000008)",
+        "id": "fossil0169",
+        "name": "fossil_Budapest_Hungary"
+    },
+    "fossil0170": {
+        "bbox": {
+            "max_lat": 39.45000000000005,
+            "max_lon": 59.88333000000006,
+            "min_lat": 36.45000000000005,
+            "min_lon": 56.88333000000006
+        },
+        "centroid_wkt": "POINT(58.38333000000006 37.95000000000005)",
+        "id": "fossil0170",
+        "name": "fossil_Ashgabat_Turkmenistan"
+    },
+    "fossil0171": {
+        "bbox": {
+            "max_lat": 52.34439000000003,
+            "max_lon": 5.856090000000052,
+            "min_lat": 49.34439000000003,
+            "min_lon": 2.8560900000000524
+        },
+        "centroid_wkt": "POINT(4.356090000000052 50.84439000000003)",
+        "id": "fossil0171",
+        "name": "fossil_Brussels_Belgium"
+    },
+    "fossil0172": {
+        "bbox": {
+            "max_lat": 51.75641000000007,
+            "max_lon": 20.53105000000005,
+            "min_lat": 48.75641000000007,
+            "min_lon": 17.53105000000005
+        },
+        "centroid_wkt": "POINT(19.03105000000005 50.25641000000007)",
+        "id": "fossil0172",
+        "name": "fossil_Katowice_Poland"
+    },
+    "fossil0173": {
+        "bbox": {
+            "max_lat": 54.70006000000006,
+            "max_lon": 51.65000000000003,
+            "min_lat": 51.70006000000006,
+            "min_lon": 48.65000000000003
+        },
+        "centroid_wkt": "POINT(50.15000000000003 53.20006000000006)",
+        "id": "fossil0173",
+        "name": "fossil_Kuybyskev_Russia"
+    },
+    "fossil0174": {
+        "bbox": {
+            "max_lat": 26.40560000000005,
+            "max_lon": 68.58220000000006,
+            "min_lat": 23.40560000000005,
+            "min_lon": 65.58220000000006
+        },
+        "centroid_wkt": "POINT(67.08220000000006 24.90560000000005)",
+        "id": "fossil0174",
+        "name": "fossil_Karachi_Pakistan"
+    },
+    "fossil0175": {
+        "bbox": {
+            "max_lat": 7.954710000000034,
+            "max_lon": 4.8887600000000475,
+            "min_lat": 4.954710000000034,
+            "min_lon": 1.888760000000048
+        },
+        "centroid_wkt": "POINT(3.388760000000048 6.454710000000034)",
+        "id": "fossil0175",
+        "name": "fossil_Lagos_Nigeria"
+    },
+    "fossil0176": {
+        "bbox": {
+            "max_lat": -7.31565999999998,
+            "max_lon": 14.73288000000002,
+            "min_lat": -10.31565999999998,
+            "min_lon": 11.73288000000002
+        },
+        "centroid_wkt": "POINT(13.23288000000002 -8.81565999999998)",
+        "id": "fossil0176",
+        "name": "fossil_Luanda_Angola"
+    },
+    "fossil0177": {
+        "bbox": {
+            "max_lat": 35.50800000000004,
+            "max_lon": 73.07849000000004,
+            "min_lat": 32.50800000000004,
+            "min_lon": 70.07849000000004
+        },
+        "centroid_wkt": "POINT(71.57849000000004 34.00800000000004)",
+        "id": "fossil0177",
+        "name": "fossil_Peshawar_Pakistan"
+    },
+    "fossil0178": {
+        "bbox": {
+            "max_lat": 17.000700000000002,
+            "max_lon": 34.0599,
+            "min_lat": 14.0007,
+            "min_lon": 31.0599
+        },
+        "centroid_wkt": "POINT(32.5599 15.5007)",
+        "id": "fossil0178",
+        "name": "fossil_Khartoum_Sudan"
+    },
+    "fossil0179": {
+        "bbox": {
+            "max_lat": 0.20789999999999997,
+            "max_lon": 38.3219,
+            "min_lat": -2.7921,
+            "min_lon": 35.3219
+        },
+        "centroid_wkt": "POINT(36.8219 -1.2921)",
+        "id": "fossil0179",
+        "name": "fossil_Nairobi_Kenya"
+    },
+    "fossil0180": {
+        "bbox": {
+            "max_lat": 35.14,
+            "max_lon": -85.62,
+            "min_lat": 32.14,
+            "min_lon": -88.62
+        },
+        "centroid_wkt": "POINT(-87.12 33.64)",
+        "id": "fossil0180",
+        "name": "fossil_Miller_Power_Plant_USA"
+    },
+    "fossil0181": {
+        "bbox": {
+            "max_lat": -25.45,
+            "max_lon": 31.06,
+            "min_lat": -28.45,
+            "min_lon": 28.06
+        },
+        "centroid_wkt": "POINT(29.56 -26.95)",
+        "id": "fossil0181",
+        "name": "fossil_Tutuka_and_Majuba_Powerplant"
+    },
+    "fossil0182": {
+        "bbox": {
+            "max_lat": 53.12,
+            "max_lon": 16.0,
+            "min_lat": 50.12,
+            "min_lon": 13.0
+        },
+        "centroid_wkt": "POINT(14.5 51.62)",
+        "id": "fossil0182",
+        "name": "fossil_Janschwalde_Germany"
+    },
+    "fossil0183": {
+        "bbox": {
+            "max_lat": 47.3816,
+            "max_lon": -105.111,
+            "min_lat": 44.3816,
+            "min_lon": -108.111
+        },
+        "centroid_wkt": "POINT(-106.611 45.8816)",
+        "id": "fossil0183",
+        "name": "fossil_Colstrip_powerplant"
+    },
+    "fossil0184": {
+        "bbox": {
+            "max_lat": 43.395,
+            "max_lon": -81.842,
+            "min_lat": 40.395,
+            "min_lon": -84.842
+        },
+        "centroid_wkt": "POINT(-83.342 41.895)",
+        "id": "fossil0184",
+        "name": "fossil_Monroe_powerplant"
+    },
+    "fossil0185": {
+        "bbox": {
+            "max_lat": 39.7,
+            "max_lon": -103.079787,
+            "min_lat": 36.7,
+            "min_lon": -106.079787
+        },
+        "centroid_wkt": "POINT(-104.579787 38.2)",
+        "id": "fossil0185",
+        "name": "fossil_Comanche_powerplant"
+    },
+    "fossil0186": {
+        "bbox": {
+            "max_lat": 41.915,
+            "max_lon": -79.06,
+            "min_lat": 38.915,
+            "min_lon": -82.06
+        },
+        "centroid_wkt": "POINT(-80.56 40.415)",
+        "id": "fossil0186",
+        "name": "fossil_Sammis_Cardinal_Mansfield_powerplants"
+    },
+    "fossil0187": {
+        "bbox": {
+            "max_lat": 42.013,
+            "max_lon": -77.694,
+            "min_lat": 39.013,
+            "min_lon": -80.694
+        },
+        "centroid_wkt": "POINT(-79.194 40.513)",
+        "id": "fossil0187",
+        "name": "fossil_Keystone_HomerCity_Conemaugh_Powerplants"
+    },
+    "fossil0188": {
+        "bbox": {
+            "max_lat": 35.624,
+            "max_lon": -83.422,
+            "min_lat": 32.624,
+            "min_lon": -86.422
+        },
+        "centroid_wkt": "POINT(-84.922 34.124)",
+        "id": "fossil0188",
+        "name": "fossil_Bowen_powerplant"
+    },
+    "fossil0189": {
+        "bbox": {
+            "max_lat": 34.561,
+            "max_lon": -82.31,
+            "min_lat": 31.561,
+            "min_lon": -85.31
+        },
+        "centroid_wkt": "POINT(-83.81 33.061)",
+        "id": "fossil0189",
+        "name": "fossil_Scherer_powerplant"
+    },
+    "fossil0190": {
+        "bbox": {
+            "max_lat": 50.59606,
+            "max_lon": -101.5305,
+            "min_lat": 47.59606,
+            "min_lon": -104.5305
+        },
+        "centroid_wkt": "POINT(-103.0305 49.09606)",
+        "id": "fossil0190",
+        "name": "fossil_Boundary_Dam_powerplant"
+    },
+    "fossil0191": {
+        "bbox": {
+            "max_lat": 53.0317,
+            "max_lon": -110.2861,
+            "min_lat": 50.0317,
+            "min_lon": -113.2861
+        },
+        "centroid_wkt": "POINT(-111.7861 51.5317)",
+        "id": "fossil0191",
+        "name": "fossil_Sheerness_powerplant"
+    },
+    "fossil0192": {
+        "bbox": {
+            "max_lat": 44.7597,
+            "max_lon": -78.3111,
+            "min_lat": 41.7597,
+            "min_lon": -81.3111
+        },
+        "centroid_wkt": "POINT(-79.8111 43.2597)",
+        "id": "fossil0192",
+        "name": "fossil_Dofasco_powerplant"
+    },
+    "fossil0193": {
+        "bbox": {
+            "max_lat": 52.768,
+            "max_lon": 20.831,
+            "min_lat": 49.768,
+            "min_lon": 17.831
+        },
+        "centroid_wkt": "POINT(19.331 51.268)",
+        "id": "fossil0193",
+        "name": "fossil_Belchatow_powerplant"
+    },
+    "fossil0194": {
+        "bbox": {
+            "max_lat": 38.557,
+            "max_lon": 128.011,
+            "min_lat": 35.557,
+            "min_lon": 125.011
+        },
+        "centroid_wkt": "POINT(126.511 37.057)",
+        "id": "fossil0194",
+        "name": "fossil_Dangjin_Yonghungdo_Taean_powerplants"
+    },
+    "fossil0195": {
+        "bbox": {
+            "max_lat": 22.16267,
+            "max_lon": 41.0551,
+            "min_lat": 19.16267,
+            "min_lon": 38.0551
+        },
+        "centroid_wkt": "POINT(39.5551 20.66267)",
+        "id": "fossil0195",
+        "name": "fossil_Shaiba_powerplant"
+    },
+    "fossil0196": {
+        "bbox": {
+            "max_lat": 27.344,
+            "max_lon": 51.626,
+            "min_lat": 24.344,
+            "min_lon": 48.626
+        },
+        "centroid_wkt": "POINT(50.126 25.844)",
+        "id": "fossil0196",
+        "name": "fossil_AlQurayyah_powerplant"
+    },
+    "fossil0197": {
+        "bbox": {
+            "max_lat": -24.5331,
+            "max_lon": 31.111,
+            "min_lat": -27.5331,
+            "min_lon": 28.111
+        },
+        "centroid_wkt": "POINT(29.611 -26.0331)",
+        "id": "fossil0197",
+        "name": "fossil_Arnot_Duvha_Hendrina_powerplants"
+    },
+    "fossil0198": {
+        "bbox": {
+            "max_lat": -24.378083,
+            "max_lon": 30.675447,
+            "min_lat": -27.378083,
+            "min_lon": 27.675447
+        },
+        "centroid_wkt": "POINT(29.175447 -25.878083)",
+        "id": "fossil0198",
+        "name": "fossil_Duvha_Kendal_Kriel_Matla_powerplants"
+    },
+    "fossil0199": {
+        "bbox": {
+            "max_lat": 25.59722,
+            "max_lon": 84.17361,
+            "min_lat": 22.59722,
+            "min_lon": 81.17361
+        },
+        "centroid_wkt": "POINT(82.67361 24.09722)",
+        "id": "fossil0199",
+        "name": "fossil_Vindhyachal_Sasan_Singrauli_Rihand_powerplants"
+    },
+    "fossil0200": {
+        "bbox": {
+            "max_lat": 34.18613,
+            "max_lon": 118.4005,
+            "min_lat": 31.18613,
+            "min_lon": 115.4005
+        },
+        "centroid_wkt": "POINT(116.9005 32.68613)",
+        "id": "fossil0200",
+        "name": "fossil_Pingwei_Tianji_Bengbu_Fengtai_Luohe_powerplants"
+    },
+    "fossil0201": {
+        "bbox": {
+            "max_lat": -36.7636,
+            "max_lon": 147.895,
+            "min_lat": -39.7636,
+            "min_lon": 144.895
+        },
+        "centroid_wkt": "POINT(146.395 -38.2636)",
+        "id": "fossil0201",
+        "name": "fossil_Hazelwood_Yallourn_Loy_Yang_powerplants"
+    },
+    "fossil0202": {
+        "bbox": {
+            "max_lat": -22.0106,
+            "max_lon": 151.8185,
+            "min_lat": -25.0106,
+            "min_lon": 148.8185
+        },
+        "centroid_wkt": "POINT(150.3185 -23.5106)",
+        "id": "fossil0202",
+        "name": "fossil_Stanwell_powerplant"
+    },
+    "fossil0203": {
+        "bbox": {
+            "max_lat": 39.23865000000003,
+            "max_lon": -120.68542,
+            "min_lat": 36.23865000000003,
+            "min_lon": -123.68542
+        },
+        "centroid_wkt": "POINT(-122.18542 37.73865000000003)",
+        "id": "fossil0203",
+        "name": "fossil_San_Francisco_USA"
+    },
+    "fossil0204": {
+        "bbox": {
+            "max_lat": 40.6781,
+            "max_lon": -75.0268,
+            "min_lat": 37.6781,
+            "min_lon": -78.0268
+        },
+        "centroid_wkt": "POINT(-76.5268 39.1781)",
+        "id": "fossil0204",
+        "name": "fossil_Wagner_powerplant"
+    },
+    "fossil0205": {
+        "bbox": {
+            "max_lat": 40.7097,
+            "max_lon": -75.9644,
+            "min_lat": 37.7097,
+            "min_lon": -78.9644
+        },
+        "centroid_wkt": "POINT(-77.4644 39.2097)",
+        "id": "fossil0205",
+        "name": "fossil_Dickerson_powerplant"
+    },
+    "fossil0206": {
+        "bbox": {
+            "max_lat": 42.9946,
+            "max_lon": -86.6238,
+            "min_lat": 39.9946,
+            "min_lon": -89.6238
+        },
+        "centroid_wkt": "POINT(-88.1238 41.4946)",
+        "id": "fossil0206",
+        "name": "fossil_Joliet_powerplant"
+    },
+    "fossil0207": {
+        "bbox": {
+            "max_lat": 44.8589,
+            "max_lon": -77.1047,
+            "min_lat": 41.8589,
+            "min_lon": -80.1047
+        },
+        "centroid_wkt": "POINT(-78.6047 43.3589)",
+        "id": "fossil0207",
+        "name": "fossil_Somerset_Operating_powerplant"
+    },
+    "fossil0208": {
+        "bbox": {
+            "max_lat": 43.1334,
+            "max_lon": -86.5629,
+            "min_lat": 40.1334,
+            "min_lon": -89.5629
+        },
+        "centroid_wkt": "POINT(-88.0629 41.6334)",
+        "id": "fossil0208",
+        "name": "fossil_Will_County_powerplant"
+    },
+    "fossil0209": {
+        "bbox": {
+            "max_lat": 35.7528,
+            "max_lon": -83.8456,
+            "min_lat": 32.7528,
+            "min_lon": -86.8456
+        },
+        "centroid_wkt": "POINT(-85.3456 34.2528)",
+        "id": "fossil0209",
+        "name": "fossil_Hammond_powerplant"
+    },
+    "fossil0210": {
+        "bbox": {
+            "max_lat": 43.0045,
+            "max_lon": -80.5546,
+            "min_lat": 40.0045,
+            "min_lon": -83.5546
+        },
+        "centroid_wkt": "POINT(-82.0546 41.5045)",
+        "id": "fossil0210",
+        "name": "fossil_Avon Lake_powerplant"
+    },
+    "fossil0211": {
+        "bbox": {
+            "max_lat": 42.3813,
+            "max_lon": -115.6516,
+            "min_lat": 39.3813,
+            "min_lon": -118.6516
+        },
+        "centroid_wkt": "POINT(-117.1516 40.8813)",
+        "id": "fossil0211",
+        "name": "fossil_North_Valmy_powerplant"
+    },
+    "fossil0212": {
+        "bbox": {
+            "max_lat": 39.9017,
+            "max_lon": -88.8358,
+            "min_lat": 36.9017,
+            "min_lon": -91.8358
+        },
+        "centroid_wkt": "POINT(-90.3358 38.4017)",
+        "id": "fossil0212",
+        "name": "fossil_Meramec_powerplant"
+    },
+    "fossil0213": {
+        "bbox": {
+            "max_lat": 36.6897,
+            "max_lon": -79.5122,
+            "min_lat": 33.6897,
+            "min_lon": -82.5122
+        },
+        "centroid_wkt": "POINT(-81.0122 35.1897)",
+        "id": "fossil0213",
+        "name": "fossil_GG_Allen_powerplant"
+    },
+    "fossil0214": {
+        "bbox": {
+            "max_lat": 41.6947,
+            "max_lon": 112.8589,
+            "min_lat": 38.6947,
+            "min_lon": 109.8589
+        },
+        "centroid_wkt": "POINT(111.3589 40.1947)",
+        "id": "fossil0214",
+        "name": "fossil_Datang_Tuoketuo_powerplant"
+    },
+    "fossil0215": {
+        "bbox": {
+            "max_lat": 32.8536,
+            "max_lon": 123.1003,
+            "min_lat": 29.8536,
+            "min_lon": 120.1003
+        },
+        "centroid_wkt": "POINT(121.6003 31.3536)",
+        "id": "fossil0215",
+        "name": "fossil_Waigaoqiao_powerplant"
+    },
+    "fossil0217": {
+        "bbox": {
+            "max_lat": 52.493,
+            "max_lon": 8.1685,
+            "min_lat": 49.493,
+            "min_lon": 5.1685
+        },
+        "centroid_wkt": "POINT(6.6685 50.993)",
+        "id": "fossil0217",
+        "name": "fossil_Niederaussem_powerplant"
+    },
+    "fossil0218": {
+        "bbox": {
+            "max_lat": 24.3158,
+            "max_lon": 71.0281,
+            "min_lat": 21.3158,
+            "min_lon": 68.0281
+        },
+        "centroid_wkt": "POINT(69.5281 22.8158)",
+        "id": "fossil0218",
+        "name": "fossil_Mundra_Umpp_powerplant"
+    },
+    "fossil0219": {
+        "bbox": {
+            "max_lat": 25.526999999999997,
+            "max_lon": 84.2915,
+            "min_lat": 22.526999999999997,
+            "min_lon": 81.2915
+        },
+        "centroid_wkt": "POINT(82.7915 24.026999999999997)",
+        "id": "fossil0219",
+        "name": "fossil_Rihand_powerplant"
+    },
+    "fossil0220": {
+        "bbox": {
+            "max_lat": 25.4784,
+            "max_lon": 84.1275,
+            "min_lat": 22.4784,
+            "min_lon": 81.1275
+        },
+        "centroid_wkt": "POINT(82.6275 23.9784)",
+        "id": "fossil0220",
+        "name": "fossil_Sasan_powerplant"
+    },
+    "fossil0221": {
+        "bbox": {
+            "max_lat": -6.2184,
+            "max_lon": 115.0827,
+            "min_lat": -9.218399999999999,
+            "min_lon": 112.0827
+        },
+        "centroid_wkt": "POINT(113.5827 -7.7184)",
+        "id": "fossil0221",
+        "name": "fossil_PLTU_Paiton_powerplant"
+    },
+    "fossil0222": {
+        "bbox": {
+            "max_lat": 36.3352,
+            "max_lon": 138.4609,
+            "min_lat": 33.3352,
+            "min_lon": 135.4609
+        },
+        "centroid_wkt": "POINT(136.9609 34.8352)",
+        "id": "fossil0222",
+        "name": "fossil_Hekinan_powerplant"
+    },
+    "fossil0223": {
+        "bbox": {
+            "max_lat": -24.588,
+            "max_lon": 30.4689,
+            "min_lat": -27.588,
+            "min_lon": 27.4689
+        },
+        "centroid_wkt": "POINT(28.9689 -26.088)",
+        "id": "fossil0223",
+        "name": "fossil_Kendal_powerplant"
+    },
+    "fossil0224": {
+        "bbox": {
+            "max_lat": 23.897,
+            "max_lon": 84.192,
+            "min_lat": 20.897,
+            "min_lon": 81.192
+        },
+        "centroid_wkt": "POINT(82.692 22.397)",
+        "id": "fossil0224",
+        "name": "fossil_Korba_powerplant"
+    },
+    "fossil0225": {
+        "bbox": {
+            "max_lat": 37.002,
+            "max_lon": 130.803,
+            "min_lat": 34.002,
+            "min_lon": 127.803
+        },
+        "centroid_wkt": "POINT(129.303 35.502)",
+        "id": "fossil0225",
+        "name": "fossil_Tropomi_2_powerplant"
+    },
+    "fossil0226": {
+        "bbox": {
+            "max_lat": 30.196,
+            "max_lon": 49.834,
+            "min_lat": 27.196,
+            "min_lon": 46.834
+        },
+        "centroid_wkt": "POINT(48.334 28.696)",
+        "id": "fossil0226",
+        "name": "fossil_Az_Zour_powerplant"
+    },
+    "fossil0227": {
+        "bbox": {
+            "max_lat": 36.43,
+            "max_lon": 129.223,
+            "min_lat": 33.43,
+            "min_lon": 126.223
+        },
+        "centroid_wkt": "POINT(127.723 34.93)",
+        "id": "fossil0227",
+        "name": "fossil_Gwangyang_powerplant"
+    },
+    "fossil0228": {
+        "bbox": {
+            "max_lat": 40.061779,
+            "max_lon": -89.33605,
+            "min_lat": 37.061779,
+            "min_lon": -92.33605
+        },
+        "centroid_wkt": "POINT(-90.83605 38.561779)",
+        "id": "fossil0228",
+        "name": "fossil_Labadie_powerplant"
+    },
+    "fossil0229": {
+        "bbox": {
+            "max_lat": 37.891131,
+            "max_lon": -86.154117,
+            "min_lat": 34.891131,
+            "min_lon": -89.154117
+        },
+        "centroid_wkt": "POINT(-87.654117 36.391131)",
+        "id": "fossil0229",
+        "name": "fossil_Cumberland_powerplant"
+    },
+    "fossil0230": {
+        "bbox": {
+            "max_lat": 40.199024,
+            "max_lon": -82.316281,
+            "min_lat": 37.199024,
+            "min_lon": -85.316281
+        },
+        "centroid_wkt": "POINT(-83.816281 38.699024)",
+        "id": "fossil0230",
+        "name": "fossil_Spurlock_powerplant"
+    },
+    "fossil0231": {
+        "bbox": {
+            "max_lat": 45.888606,
+            "max_lon": -103.962214,
+            "min_lat": 42.888606,
+            "min_lon": -106.962214
+        },
+        "centroid_wkt": "POINT(-105.462214 44.388606)",
+        "id": "fossil0231",
+        "name": "fossil_Dry_Fork_Station_powerplant"
+    },
+    "fossil0232": {
+        "bbox": {
+            "max_lat": 50.5569,
+            "max_lon": -103.9825,
+            "min_lat": 47.5569,
+            "min_lon": -106.9825
+        },
+        "centroid_wkt": "POINT(-105.4825 49.0569)",
+        "id": "fossil0232",
+        "name": "fossil_Poplar_River_powerplant"
+    },
+    "fossil0233": {
+        "bbox": {
+            "max_lat": 48.023,
+            "max_lon": -82.874,
+            "min_lat": 45.023,
+            "min_lon": -85.874
+        },
+        "centroid_wkt": "POINT(-84.374 46.523)",
+        "id": "fossil0233",
+        "name": "fossil_Algoma_Steel"
+    },
+    "fossil0234": {
+        "bbox": {
+            "max_lat": 54.05,
+            "max_lon": 41.15,
+            "min_lat": 51.05,
+            "min_lon": 38.15
+        },
+        "centroid_wkt": "POINT(39.65 52.55)",
+        "id": "fossil0234",
+        "name": "fossil_Lepetsk_Russia"
+    },
+    "fossil0235": {
+        "bbox": {
+            "max_lat": 41.011,
+            "max_lon": -111.08,
+            "min_lat": 38.011,
+            "min_lon": -114.08
+        },
+        "centroid_wkt": "POINT(-112.58 39.511)",
+        "id": "fossil0235",
+        "name": "fossil_Intermountain_powerplant"
+    },
+    "fossil0236": {
+        "bbox": {
+            "max_lat": 31.5788,
+            "max_lon": 32.7804,
+            "min_lat": 28.5788,
+            "min_lon": 29.7804
+        },
+        "centroid_wkt": "POINT(31.2804 30.0788)",
+        "id": "fossil0236",
+        "name": "fossil_Cairo_Egypt"
+    },
+    "fossil0237": {
+        "bbox": {
+            "max_lat": 31.20956,
+            "max_lon": -93.767275,
+            "min_lat": 28.20956,
+            "min_lon": -96.767275
+        },
+        "centroid_wkt": "POINT(-95.267275 29.70956)",
+        "id": "fossil0237",
+        "name": "fossil_Houston_GeoCarb_USA"
+    },
+    "fossil0238": {
+        "bbox": {
+            "max_lat": 50.07,
+            "max_lon": -79.875,
+            "min_lat": 47.07,
+            "min_lon": -82.875
+        },
+        "centroid_wkt": "POINT(-81.375 48.57)",
+        "id": "fossil0238",
+        "name": "fossil_Timmins_Canada"
+    },
+    "fossil0239": {
+        "bbox": {
+            "max_lat": 46.378326,
+            "max_lon": 90.535019,
+            "min_lat": 43.378326,
+            "min_lon": 87.535019
+        },
+        "centroid_wkt": "POINT(89.035019 44.878326)",
+        "id": "fossil0239",
+        "name": "fossil_Xinjiang_Shenhuo_powerplants"
+    },
+    "sif_atto": {
+        "bbox": {
+            "max_lat": 3.6459,
+            "max_lon": -57.5056,
+            "min_lat": 0.6459000000000001,
+            "min_lon": -60.5056
+        },
+        "centroid_wkt": "POINT(-59.0056 2.1459)",
+        "id": "sif_atto",
+        "name": "sif_ATTO_Tower_Manaus_Brazil"
+    },
+    "sif_atto_2": {
+        "bbox": {
+            "max_lat": -0.6457000000000002,
+            "max_lon": -57.5048,
+            "min_lat": -3.6457,
+            "min_lon": -60.5048
+        },
+        "centroid_wkt": "POINT(-59.0048 -2.1457)",
+        "id": "sif_atto_2",
+        "name": "sif_ATTO_Tower_Manaus_Brazil_correct"
+    },
+    "sif_barro_colorado": {
+        "bbox": {
+            "max_lat": 10.6543,
+            "max_lon": -78.3461,
+            "min_lat": 7.654299999999999,
+            "min_lon": -81.3461
+        },
+        "centroid_wkt": "POINT(-79.8461 9.1543)",
+        "id": "sif_barro_colorado",
+        "name": "sif_Barro_Colorado_Panama"
+    },
+    "sif_guanika": {
+        "bbox": {
+            "max_lat": 19.47,
+            "max_lon": -65.370003,
+            "min_lat": 16.47,
+            "min_lon": -68.370003
+        },
+        "centroid_wkt": "POINT(-66.870003 17.97)",
+        "id": "sif_guanika",
+        "name": "sif_Guanika_Peurto_Rico"
+    },
+    "sif_hrv": {
+        "bbox": {
+            "max_lat": 44.0378,
+            "max_lon": -70.6715,
+            "min_lat": 41.0378,
+            "min_lon": -73.6715
+        },
+        "centroid_wkt": "POINT(-72.1715 42.5378)",
+        "id": "sif_hrv",
+        "name": "sif_Harvard_Forest_USA"
+    },
+    "sif_jro": {
+        "bbox": {
+            "max_lat": 33.306799999999996,
+            "max_lon": 120.7173,
+            "min_lat": 30.3068,
+            "min_lon": 117.7173
+        },
+        "centroid_wkt": "POINT(119.2173 31.8068)",
+        "id": "sif_jro",
+        "name": "sif_Jurong_Korea"
+    },
+    "sif_k34": {
+        "bbox": {
+            "max_lat": -1.109,
+            "max_lon": -58.709099,
+            "min_lat": -4.109,
+            "min_lon": -61.709099
+        },
+        "centroid_wkt": "POINT(-60.209099 -2.609)",
+        "id": "sif_k34",
+        "name": "sif_k34_Brazil"
+    },
+    "sif_k67": {
+        "bbox": {
+            "max_lat": -1.3570000000000002,
+            "max_lon": -53.459,
+            "min_lat": -4.357,
+            "min_lon": -56.459
+        },
+        "centroid_wkt": "POINT(-54.959 -2.857)",
+        "id": "sif_k67",
+        "name": "sif_k67_Brazil"
+    },
+    "sif_lambir": {
+        "bbox": {
+            "max_lat": 5.6865,
+            "max_lon": 115.516998,
+            "min_lat": 2.6864999999999997,
+            "min_lon": 112.516998
+        },
+        "centroid_wkt": "POINT(114.016998 4.1865)",
+        "id": "sif_lambir",
+        "name": "sif_Lambir_Malaysia"
+    },
+    "sif_laselva": {
+        "bbox": {
+            "max_lat": 11.9333,
+            "max_lon": -82.5211,
+            "min_lat": 8.9333,
+            "min_lon": -85.5211
+        },
+        "centroid_wkt": "POINT(-84.0211 10.4333)",
+        "id": "sif_laselva",
+        "name": "sif_La_Selva_Costa_Rica"
+    },
+    "sif_mead": {
+        "bbox": {
+            "max_lat": 42.6649,
+            "max_lon": -94.955,
+            "min_lat": 39.6649,
+            "min_lon": -97.955
+        },
+        "centroid_wkt": "POINT(-96.455 41.1649)",
+        "id": "sif_mead",
+        "name": "sif_Mead_Cluster_USA"
+    },
+    "sif_mpj": {
+        "bbox": {
+            "max_lat": 36.9385,
+            "max_lon": -104.7377,
+            "min_lat": 33.9385,
+            "min_lon": -107.7377
+        },
+        "centroid_wkt": "POINT(-106.2377 35.4385)",
+        "id": "sif_mpj",
+        "name": "sif_Pinyon_Juniper_USA"
+    },
+    "sif_mzo": {
+        "bbox": {
+            "max_lat": 40.2441,
+            "max_lon": -90.7,
+            "min_lat": 37.2441,
+            "min_lon": -93.7
+        },
+        "centroid_wkt": "POINT(-92.2 38.7441)",
+        "id": "sif_mzo",
+        "name": "sif_Ozark_USA"
+    },
+    "sif_niwot": {
+        "bbox": {
+            "max_lat": 41.5329,
+            "max_lon": -104.0464,
+            "min_lat": 38.5329,
+            "min_lon": -107.0464
+        },
+        "centroid_wkt": "POINT(-105.5464 40.0329)",
+        "id": "sif_niwot",
+        "name": "sif_Niwot_Ridge_Colorado_USA"
+    },
+    "sif_obs": {
+        "bbox": {
+            "max_lat": 55.4872,
+            "max_lon": 106.6178,
+            "min_lat": 52.4872,
+            "min_lon": 103.6178
+        },
+        "centroid_wkt": "POINT(105.1178 53.9872)",
+        "id": "sif_obs",
+        "name": "sif_obs"
+    },
+    "sif_oko": {
+        "bbox": {
+            "max_lat": 36.4846,
+            "max_lon": -96.0223,
+            "min_lat": 33.4846,
+            "min_lon": -99.0223
+        },
+        "centroid_wkt": "POINT(-97.5223 34.9846)",
+        "id": "sif_oko",
+        "name": "sif_KAEFS_USA"
+    },
+    "sif_pasoh": {
+        "bbox": {
+            "max_lat": 4.482,
+            "max_lon": 103.813004,
+            "min_lat": 1.4820000000000002,
+            "min_lon": 100.813004
+        },
+        "centroid_wkt": "POINT(102.313004 2.982)",
+        "id": "sif_pasoh",
+        "name": "sif_Pasoh_Malaysia"
+    },
+    "sif_santarita": {
+        "bbox": {
+            "max_lat": 33.3214,
+            "max_lon": -109.34,
+            "min_lat": 30.3214,
+            "min_lon": -112.34
+        },
+        "centroid_wkt": "POINT(-110.84 31.8214)",
+        "id": "sif_santarita",
+        "name": "sif_Santa_Rita_Cluster_USA"
+    },
+    "sif_shq": {
+        "bbox": {
+            "max_lat": 36.0203,
+            "max_lon": 117.0894,
+            "min_lat": 33.0203,
+            "min_lon": 114.0894
+        },
+        "centroid_wkt": "POINT(115.5894 34.5203)",
+        "id": "sif_shq",
+        "name": "sif_shq"
+    },
+    "sif_umb": {
+        "bbox": {
+            "max_lat": 47.0598,
+            "max_lon": -83.2138,
+            "min_lat": 44.0598,
+            "min_lon": -86.2138
+        },
+        "centroid_wkt": "POINT(-84.7138 45.5598)",
+        "id": "sif_umb",
+        "name": "sif_University_of_Michigan_USA"
+    },
+    "sif_uva": {
+        "bbox": {
+            "max_lat": 39.4229,
+            "max_lon": -76.7739,
+            "min_lat": 36.4229,
+            "min_lon": -79.7739
+        },
+        "centroid_wkt": "POINT(-78.2739 37.9229)",
+        "id": "sif_uva",
+        "name": "sif_University_of_Virginia_USA"
+    },
+    "tccon100": {
+        "bbox": {
+            "max_lat": 38.12410999999999,
+            "max_lon": 127.87289,
+            "min_lat": 35.12410999999999,
+            "min_lon": 124.87289
+        },
+        "centroid_wkt": "POINT(126.37289 36.62410999999999)",
+        "id": "tccon100",
+        "name": "val_anmyeondoKo"
+    },
+    "tccon101": {
+        "bbox": {
+            "max_lat": -6.4473,
+            "max_lon": -12.8873,
+            "min_lat": -9.4473,
+            "min_lon": -15.8873
+        },
+        "centroid_wkt": "POINT(-14.3873 -7.9473)",
+        "id": "tccon101",
+        "name": "val_ascensionIsland"
+    },
+    "tccon102": {
+        "bbox": {
+            "max_lat": 36.458,
+            "max_lon": -116.382,
+            "min_lat": 33.458,
+            "min_lon": -119.382
+        },
+        "centroid_wkt": "POINT(-117.882 34.958)",
+        "id": "tccon102",
+        "name": "val_drydenCA"
+    },
+    "tccon104": {
+        "bbox": {
+            "max_lat": 54.6037,
+            "max_lon": 10.34951,
+            "min_lat": 51.6037,
+            "min_lon": 7.34951
+        },
+        "centroid_wkt": "POINT(8.84951 53.1037)",
+        "id": "tccon104",
+        "name": "val_bremenDe"
+    },
+    "tccon105": {
+        "bbox": {
+            "max_lat": 20.03249979,
+            "max_lon": 122.1494991,
+            "min_lat": 17.03249979,
+            "min_lon": 119.1494991
+        },
+        "centroid_wkt": "POINT(120.6494991 18.53249979)",
+        "id": "tccon105",
+        "name": "val_burgosPh"
+    },
+    "tccon106": {
+        "bbox": {
+            "max_lat": 35.6231,
+            "max_lon": -116.5729,
+            "min_lat": 32.6231,
+            "min_lon": -119.5729
+        },
+        "centroid_wkt": "POINT(-118.0729 34.1231)",
+        "id": "tccon106",
+        "name": "val_caltechCA"
+    },
+    "tccon107": {
+        "bbox": {
+            "max_lat": -10.875,
+            "max_lon": 132.4167,
+            "min_lat": -13.875,
+            "min_lon": 129.4167
+        },
+        "centroid_wkt": "POINT(130.9167 -12.375)",
+        "id": "tccon107",
+        "name": "val_darwinAu"
+    },
+    "tccon112": {
+        "bbox": {
+            "max_lat": 29.79701,
+            "max_lon": -15.018,
+            "min_lat": 26.79701,
+            "min_lon": -18.018
+        },
+        "centroid_wkt": "POINT(-16.518 28.29701)",
+        "id": "tccon112",
+        "name": "val_izanaTenerifeEs"
+    },
+    "tccon113": {
+        "bbox": {
+            "max_lat": 50.6,
+            "max_lon": 9.93801,
+            "min_lat": 47.6,
+            "min_lon": 6.93801
+        },
+        "centroid_wkt": "POINT(8.43801 49.1)",
+        "id": "tccon113",
+        "name": "val_karlsruheDe"
+    },
+    "tccon114": {
+        "bbox": {
+            "max_lat": 38.1039,
+            "max_lon": -95.9855,
+            "min_lat": 35.1039,
+            "min_lon": -98.9855
+        },
+        "centroid_wkt": "POINT(-97.4855 36.6039)",
+        "id": "tccon114",
+        "name": "val_lamontOK"
+    },
+    "tccon115": {
+        "bbox": {
+            "max_lat": -43.5022,
+            "max_lon": 171.1853,
+            "min_lat": -46.5022,
+            "min_lon": 168.1853
+        },
+        "centroid_wkt": "POINT(169.6853 -45.0022)",
+        "id": "tccon115",
+        "name": "val_lauderNz"
+    },
+    "tccon122": {
+        "bbox": {
+            "max_lat": 49.465,
+            "max_lon": 3.6125,
+            "min_lat": 46.465,
+            "min_lon": 0.6124999999999998
+        },
+        "centroid_wkt": "POINT(2.1125 47.965)",
+        "id": "tccon122",
+        "name": "val_orleansFr"
+    },
+    "tccon123": {
+        "bbox": {
+            "max_lat": 50.346,
+            "max_lon": 3.856,
+            "min_lat": 47.346,
+            "min_lon": 0.8559999999999999
+        },
+        "centroid_wkt": "POINT(2.356 48.846)",
+        "id": "tccon123",
+        "name": "val_parisFr"
+    },
+    "tccon124": {
+        "bbox": {
+            "max_lat": 47.4448,
+            "max_lon": -88.7725,
+            "min_lat": 44.4448,
+            "min_lon": -91.7725
+        },
+        "centroid_wkt": "POINT(-90.2725 45.9448)",
+        "id": "tccon124",
+        "name": "val_parkFallsWI"
+    },
+    "tccon127": {
+        "bbox": {
+            "max_lat": -19.401,
+            "max_lon": 56.985,
+            "min_lat": -22.401,
+            "min_lon": 53.985
+        },
+        "centroid_wkt": "POINT(55.485 -20.901)",
+        "id": "tccon127",
+        "name": "val_reunionIsland"
+    },
+    "tccon128": {
+        "bbox": {
+            "max_lat": 44.95180999999999,
+            "max_lon": 145.1997,
+            "min_lat": 41.95180999999999,
+            "min_lon": 142.1997
+        },
+        "centroid_wkt": "POINT(143.6997 43.45180999999999)",
+        "id": "tccon128",
+        "name": "val_rikubetsuJp"
+    },
+    "tccon130": {
+        "bbox": {
+            "max_lat": 34.7411,
+            "max_lon": 131.7882,
+            "min_lat": 31.741100000000003,
+            "min_lon": 128.7882
+        },
+        "centroid_wkt": "POINT(130.2882 33.2411)",
+        "id": "tccon130",
+        "name": "val_sagaJp"
+    },
+    "tccon134": {
+        "bbox": {
+            "max_lat": 37.5513,
+            "max_lon": 141.6215,
+            "min_lat": 34.5513,
+            "min_lon": 138.6215
+        },
+        "centroid_wkt": "POINT(140.1215 36.0513)",
+        "id": "tccon134",
+        "name": "val_tsukubaJp"
+    },
+    "tccon135": {
+        "bbox": {
+            "max_lat": -32.9506,
+            "max_lon": 152.3545,
+            "min_lat": -35.9506,
+            "min_lon": 149.3545
+        },
+        "centroid_wkt": "POINT(150.8545 -34.4506)",
+        "id": "tccon135",
+        "name": "val_wollongongAu"
+    },
+    "tccon136": {
+        "bbox": {
+            "max_lat": 36.54,
+            "max_lon": 34.56,
+            "min_lat": 33.54,
+            "min_lon": 31.560000000000002
+        },
+        "centroid_wkt": "POINT(33.06 35.04)",
+        "id": "tccon136",
+        "name": "val_cyprus"
+    },
+    "tccon137": {
+        "bbox": {
+            "max_lat": 41.3,
+            "max_lon": 118.46,
+            "min_lat": 38.3,
+            "min_lon": 115.46
+        },
+        "centroid_wkt": "POINT(116.96 39.8)",
+        "id": "tccon137",
+        "name": "val_Xianghe_China"
+    },
+    "texmex001": {
+        "bbox": {
+            "max_lat": 29.309016,
+            "max_lon": -95.905904,
+            "min_lat": 26.309016,
+            "min_lon": -98.905904
+        },
+        "centroid_wkt": "POINT(-97.405904 27.809016)",
+        "id": "texmex001",
+        "name": "campaign_texmex_corpus_christi"
+    },
+    "texmex002": {
+        "bbox": {
+            "max_lat": 30.504259,
+            "max_lon": -93.909948,
+            "min_lat": 27.504259,
+            "min_lon": -96.909948
+        },
+        "centroid_wkt": "POINT(-95.409948 29.004259)",
+        "id": "texmex002",
+        "name": "campaign_texmex_freeport"
+    },
+    "texmex003": {
+        "bbox": {
+            "max_lat": 31.453892,
+            "max_lon": -92.488229,
+            "min_lat": 28.453892,
+            "min_lon": -95.488229
+        },
+        "centroid_wkt": "POINT(-93.988229 29.953892)",
+        "id": "texmex003",
+        "name": "campaign_texmex_port_arthur"
+    },
+    "texmex004": {
+        "bbox": {
+            "max_lat": 31.625402,
+            "max_lon": -91.816006,
+            "min_lat": 28.625402,
+            "min_lon": -94.816006
+        },
+        "centroid_wkt": "POINT(-93.316006 30.125402)",
+        "id": "texmex004",
+        "name": "campaign_texmex_lake_charles"
+    },
+    "texmex005": {
+        "bbox": {
+            "max_lat": 36.798973,
+            "max_lon": -100.239486,
+            "min_lat": 33.798973,
+            "min_lon": -103.239486
+        },
+        "centroid_wkt": "POINT(-101.739486 35.298973)",
+        "id": "texmex005",
+        "name": "campaign_texmex_harrington_station"
+    },
+    "texmex006": {
+        "bbox": {
+            "max_lat": 31.408693,
+            "max_lon": -95.252407,
+            "min_lat": 28.408693,
+            "min_lon": -98.252407
+        },
+        "centroid_wkt": "POINT(-96.752407 29.908693)",
+        "id": "texmex006",
+        "name": "campaign_texmex_fayette_station"
+    },
+    "texmex007": {
+        "bbox": {
+            "max_lat": 30.992793,
+            "max_lon": -94.183079,
+            "min_lat": 27.992793,
+            "min_lon": -97.183079
+        },
+        "centroid_wkt": "POINT(-95.683079 29.492793)",
+        "id": "texmex007",
+        "name": "campaign_texmex_WA_parish_station"
+    },
+    "texmex008": {
+        "bbox": {
+            "max_lat": 33.094193000000004,
+            "max_lon": -94.644985,
+            "min_lat": 30.094193,
+            "min_lon": -97.644985
+        },
+        "centroid_wkt": "POINT(-96.144985 31.594193)",
+        "id": "texmex008",
+        "name": "campaign_texmex_limestone_big_brown_stations"
+    },
+    "texmex009": {
+        "bbox": {
+            "max_lat": 33.84324,
+            "max_lon": -93.032219,
+            "min_lat": 30.84324,
+            "min_lon": -96.032219
+        },
+        "centroid_wkt": "POINT(-94.532219 32.34324)",
+        "id": "texmex009",
+        "name": "campaign_texmex_martin_lake_pirkey_stations"
+    },
+    "texmex010": {
+        "bbox": {
+            "max_lat": 31.80348,
+            "max_lon": -89.672076,
+            "min_lat": 28.80348,
+            "min_lon": -92.672076
+        },
+        "centroid_wkt": "POINT(-91.172076 30.30348)",
+        "id": "texmex010",
+        "name": "campaign_texmex_baton_rouge"
+    },
+    "texmex012": {
+        "bbox": {
+            "max_lat": 34.240462,
+            "max_lon": -95.910847,
+            "min_lat": 31.240462,
+            "min_lon": -98.910847
+        },
+        "centroid_wkt": "POINT(-97.410847 32.740462)",
+        "id": "texmex012",
+        "name": "campaign_texmex_fort_worth"
+    },
+    "texmex013": {
+        "bbox": {
+            "max_lat": 36.002617,
+            "max_lon": -101.409702,
+            "min_lat": 33.002617,
+            "min_lon": -104.409702
+        },
+        "centroid_wkt": "POINT(-102.909702 34.502617)",
+        "id": "texmex013",
+        "name": "campaign_texmex_amarillo_south01"
+    },
+    "texmex014": {
+        "bbox": {
+            "max_lat": 36.173764,
+            "max_lon": -100.935868,
+            "min_lat": 33.173764,
+            "min_lon": -103.935868
+        },
+        "centroid_wkt": "POINT(-102.435868 34.673764)",
+        "id": "texmex014",
+        "name": "campaign_texmex_amarillo_south02"
+    },
+    "texmex015": {
+        "bbox": {
+            "max_lat": 37.612778,
+            "max_lon": -101.095969,
+            "min_lat": 34.612778,
+            "min_lon": -104.095969
+        },
+        "centroid_wkt": "POINT(-102.595969 36.112778)",
+        "id": "texmex015",
+        "name": "campaign_texmex_amarillo_north01"
+    },
+    "texmex016": {
+        "bbox": {
+            "max_lat": 37.60232,
+            "max_lon": -100.631864,
+            "min_lat": 34.60232,
+            "min_lon": -103.631864
+        },
+        "centroid_wkt": "POINT(-102.131864 36.10232)",
+        "id": "texmex016",
+        "name": "campaign_texmex_amarillo_north02"
+    },
+    "texmex017": {
+        "bbox": {
+            "max_lat": 34.22488,
+            "max_lon": -102.777874,
+            "min_lat": 31.22488,
+            "min_lon": -105.777874
+        },
+        "centroid_wkt": "POINT(-104.277874 32.72488)",
+        "id": "texmex017",
+        "name": "campaign_texmex_permian01b"
+    },
+    "texmex018": {
+        "bbox": {
+            "max_lat": 33.660132,
+            "max_lon": -102.351187,
+            "min_lat": 30.660131999999997,
+            "min_lon": -105.351187
+        },
+        "centroid_wkt": "POINT(-103.851187 32.160132)",
+        "id": "texmex018",
+        "name": "campaign_texmex_permian01c"
+    },
+    "texmex019": {
+        "bbox": {
+            "max_lat": 33.064529,
+            "max_lon": -101.86037,
+            "min_lat": 30.064529,
+            "min_lon": -104.86037
+        },
+        "centroid_wkt": "POINT(-103.36037 31.564529)",
+        "id": "texmex019",
+        "name": "campaign_texmex_permian01d"
+    },
+    "texmex020": {
+        "bbox": {
+            "max_lat": 32.718347,
+            "max_lon": -101.649268,
+            "min_lat": 29.718347,
+            "min_lon": -104.649268
+        },
+        "centroid_wkt": "POINT(-103.149268 31.218347)",
+        "id": "texmex020",
+        "name": "campaign_texmex_permian01e"
+    },
+    "texmex021": {
+        "bbox": {
+            "max_lat": 34.501347,
+            "max_lon": -100.697474,
+            "min_lat": 31.501347000000003,
+            "min_lon": -103.697474
+        },
+        "centroid_wkt": "POINT(-102.197474 33.001347)",
+        "id": "texmex021",
+        "name": "campaign_texmex_permian02b"
+    },
+    "texmex022": {
+        "bbox": {
+            "max_lat": 33.814015,
+            "max_lon": -100.510295,
+            "min_lat": 30.814014999999998,
+            "min_lon": -103.510295
+        },
+        "centroid_wkt": "POINT(-102.010295 32.314015)",
+        "id": "texmex022",
+        "name": "campaign_texmex_permian02c"
+    },
+    "texmex023": {
+        "bbox": {
+            "max_lat": 33.105376,
+            "max_lon": -100.299985,
+            "min_lat": 30.105376,
+            "min_lon": -103.299985
+        },
+        "centroid_wkt": "POINT(-101.799985 31.605376)",
+        "id": "texmex023",
+        "name": "campaign_texmex_permian02d"
+    },
+    "texmex024": {
+        "bbox": {
+            "max_lat": 32.685,
+            "max_lon": -94.9853,
+            "min_lat": 29.685,
+            "min_lon": -97.9853
+        },
+        "centroid_wkt": "POINT(-96.4853 31.185)",
+        "id": "texmex024",
+        "name": "campaign_texmex_oakgrove_powerplant"
+    },
+    "texmex025": {
+        "bbox": {
+            "max_lat": 40.6747,
+            "max_lon": -109.5289,
+            "min_lat": 37.6747,
+            "min_lon": -112.5289
+        },
+        "centroid_wkt": "POINT(-111.0289 39.1747)",
+        "id": "texmex025",
+        "name": "campaign_texmex_hunters_powerplant"
+    },
+    "texmex026": {
+        "bbox": {
+            "max_lat": 32.894999999999996,
+            "max_lon": -91.216,
+            "min_lat": 29.895,
+            "min_lon": -94.216
+        },
+        "centroid_wkt": "POINT(-92.716 31.395)",
+        "id": "texmex026",
+        "name": "campaign_texmex_brame_powerplant"
+    },
+    "texmex027": {
+        "bbox": {
+            "max_lat": 38.30089,
+            "max_lon": -106.941736,
+            "min_lat": 35.30089,
+            "min_lon": -109.941736
+        },
+        "centroid_wkt": "POINT(-108.441736 36.80089)",
+        "id": "texmex027",
+        "name": "campaign_texmex_sanjuan_powerplant"
+    },
+    "texmex028": {
+        "bbox": {
+            "max_lat": 41.9627,
+            "max_lon": -106.0912,
+            "min_lat": 38.9627,
+            "min_lon": -109.0912
+        },
+        "centroid_wkt": "POINT(-107.5912 40.4627)",
+        "id": "texmex028",
+        "name": "campaign_texmex_craig_powerplant"
+    },
+    "val001": {
+        "bbox": {
+            "max_lat": 41.4122,
+            "max_lon": -102.7423,
+            "min_lat": 38.4122,
+            "min_lon": -105.7423
+        },
+        "centroid_wkt": "POINT(-104.2423 39.9122)",
+        "id": "val001",
+        "name": "validation_eastern_colorado"
+    },
+    "val002": {
+        "bbox": {
+            "max_lat": 45.062153,
+            "max_lon": 2.9972659999999998,
+            "min_lat": 42.062153,
+            "min_lon": -0.002734000000000014
+        },
+        "centroid_wkt": "POINT(1.497266 43.562153)",
+        "id": "val002",
+        "name": "val_Toulouse_France"
+    },
+    "val003_TAO": {
+        "bbox": {
+            "max_lat": -21.48678,
+            "max_lon": -66.24194,
+            "min_lat": -24.48678,
+            "min_lon": -69.24194
+        },
+        "centroid_wkt": "POINT(-67.74194 -22.98678)",
+        "id": "val003_TAO",
+        "name": "val_Tokyo_Atacama_Observatory"
+    },
+    "val004": {
+        "bbox": {
+            "max_lat": 24.463,
+            "max_lon": 90.0242,
+            "min_lat": 21.463,
+            "min_lon": 87.0242
+        },
+        "centroid_wkt": "POINT(88.5242 22.963)",
+        "id": "val004",
+        "name": "val_Kolkata_Vertex70_site"
+    },
+    "val005_Uyuni": {
+        "bbox": {
+            "max_lat": -18.7,
+            "max_lon": -65.9,
+            "min_lat": -21.7,
+            "min_lon": -68.9
+        },
+        "centroid_wkt": "POINT(-67.4 -20.2)",
+        "id": "val005_Uyuni",
+        "name": "val_salar_de_Uyuni_Bolivia"
+    },
+    "val006_Garmish_Zugspitze": {
+        "bbox": {
+            "max_lat": 48.967,
+            "max_lon": 12.563,
+            "min_lat": 45.967,
+            "min_lon": 9.563
+        },
+        "centroid_wkt": "POINT(11.063 47.467)",
+        "id": "val006_Garmish_Zugspitze",
+        "name": "val006_Garmish_Zugspitze_Germany"
+    },
+    "val007_Reims": {
+        "bbox": {
+            "max_lat": 50.794685,
+            "max_lon": 5.56058,
+            "min_lat": 47.794685,
+            "min_lon": 2.56058
+        },
+        "centroid_wkt": "POINT(4.06058 49.294685)",
+        "id": "val007_Reims",
+        "name": "val007_Reims_France"
+    },
+    "volcano0001": {
+        "bbox": {
+            "max_lat": -14.75,
+            "max_lon": 169.62,
+            "min_lat": -17.75,
+            "min_lon": 166.62
+        },
+        "centroid_wkt": "POINT(168.12 -16.25)",
+        "id": "volcano0001",
+        "name": "v257040_Ambrym"
+    },
+    "volcano0002": {
+        "bbox": {
+            "max_lat": 20.523,
+            "max_lon": -97.12200000000001,
+            "min_lat": 17.523,
+            "min_lon": -100.12200000000001
+        },
+        "centroid_wkt": "POINT(-98.62200000000001 19.023)",
+        "id": "volcano0002",
+        "name": "v341090_Popocatepetl"
+    },
+    "volcano0003": {
+        "bbox": {
+            "max_lat": 39.23,
+            "max_lon": 16.5,
+            "min_lat": 36.23,
+            "min_lon": 13.5
+        },
+        "centroid_wkt": "POINT(15 37.73)",
+        "id": "volcano0003",
+        "name": "v211060_Etna"
+    },
+    "volcano0004": {
+        "bbox": {
+            "max_lat": -6.06,
+            "max_lon": 111.94,
+            "min_lat": -9.059999999999999,
+            "min_lon": 108.94
+        },
+        "centroid_wkt": "POINT(110.44 -7.56)",
+        "id": "volcano0004",
+        "name": "v263250_Merapi"
+    },
+    "volcano0005": {
+        "bbox": {
+            "max_lat": 20.92,
+            "max_lon": -153.79,
+            "min_lat": 17.92,
+            "min_lon": -156.79
+        },
+        "centroid_wkt": "POINT(-155.29 19.42)",
+        "id": "volcano0005",
+        "name": "v332010_Kilauea_Hawaii"
+    },
+    "volcano0006": {
+        "bbox": {
+            "max_lat": 40.28782,
+            "max_lon": 16.714823000000003,
+            "min_lat": 37.28782,
+            "min_lon": 13.714823
+        },
+        "centroid_wkt": "POINT(15.214823 38.78782)",
+        "id": "volcano0006",
+        "name": "v211040_Stromboli"
+    },
+    "volcano0007": {
+        "bbox": {
+            "max_lat": -13.9,
+            "max_lon": 169.33,
+            "min_lat": -16.9,
+            "min_lon": 166.33
+        },
+        "centroid_wkt": "POINT(167.83 -15.4)",
+        "id": "volcano0007",
+        "name": "v257030_Aoba_Ambae"
+    },
+    "volcano0008": {
+        "bbox": {
+            "max_lat": -37.92,
+            "max_lon": -70.43,
+            "min_lat": -40.92,
+            "min_lon": -73.43
+        },
+        "centroid_wkt": "POINT(-71.93 -39.42)",
+        "id": "volcano0008",
+        "name": "v357120_Villarrica"
+    },
+    "volcano0009": {
+        "bbox": {
+            "max_lat": 20.98,
+            "max_lon": -154.11,
+            "min_lat": 17.98,
+            "min_lon": -157.11
+        },
+        "centroid_wkt": "POINT(-155.61 19.48)",
+        "id": "volcano0009",
+        "name": "v332020_Mauna_Loa_Hawaii"
+    },
+    "volcano0010": {
+        "bbox": {
+            "max_lat": -3.55,
+            "max_lon": 152.83,
+            "min_lat": -6.55,
+            "min_lon": 149.83
+        },
+        "centroid_wkt": "POINT(151.33 -5.05)",
+        "id": "volcano0010",
+        "name": "v252120_Ulawun"
+    },
+    "volcano0011": {
+        "bbox": {
+            "max_lat": 14.76,
+            "max_lon": 14.76,
+            "min_lat": 11.76,
+            "min_lon": 11.76
+        },
+        "centroid_wkt": "POINT(13.26 13.26)",
+        "id": "volcano0011",
+        "name": "v273030_Mayon"
+    },
+    "volcano0012": {
+        "bbox": {
+            "max_lat": 11.525,
+            "max_lon": -82.26700000000001,
+            "min_lat": 8.525,
+            "min_lon": -85.26700000000001
+        },
+        "centroid_wkt": "POINT(-83.76700000000001 10.025)",
+        "id": "volcano0012",
+        "name": "v345070_Turrialba"
+    },
+    "volcano0013": {
+        "bbox": {
+            "max_lat": -19.731,
+            "max_lon": 57.213,
+            "min_lat": -22.731,
+            "min_lon": 54.213
+        },
+        "centroid_wkt": "POINT(55.713 -21.231)",
+        "id": "volcano0013",
+        "name": "v233020_Piton_de_la_Fournaise_Reunion"
+    },
+    "volcano0014": {
+        "bbox": {
+            "max_lat": 34.38,
+            "max_lon": 132.61,
+            "min_lat": 31.380000000000003,
+            "min_lon": 129.61
+        },
+        "centroid_wkt": "POINT(131.11 32.88)",
+        "id": "volcano0014",
+        "name": "v282110_Aso"
+    },
+    "volcano0015": {
+        "bbox": {
+            "max_lat": 15.97,
+            "max_lon": -89.38,
+            "min_lat": 12.97,
+            "min_lon": -92.38
+        },
+        "centroid_wkt": "POINT(-90.88 14.47)",
+        "id": "volcano0015",
+        "name": "v342090_Fuego"
+    },
+    "volcano0016": {
+        "bbox": {
+            "max_lat": -2.771,
+            "max_lon": 153.703,
+            "min_lat": -5.771,
+            "min_lon": 150.703
+        },
+        "centroid_wkt": "POINT(152.203 -4.271)",
+        "id": "volcano0016",
+        "name": "v252140_Rabaul_Tarvurvur"
+    },
+    "volcano0017": {
+        "bbox": {
+            "max_lat": -14.29516732,
+            "max_lon": -70.35967790000001,
+            "min_lat": -17.295167319999997,
+            "min_lon": -73.35967790000001
+        },
+        "centroid_wkt": "POINT(-71.85967790000001 -15.79516732)",
+        "id": "volcano0017",
+        "name": "v354006_Sabancaya"
+    },
+    "volcano0018": {
+        "bbox": {
+            "max_lat": 33.085,
+            "max_lon": 132.157,
+            "min_lat": 30.085,
+            "min_lon": 129.157
+        },
+        "centroid_wkt": "POINT(130.657 31.585)",
+        "id": "volcano0018",
+        "name": "v282080_Sakurajima"
+    },
+    "volcano0019": {
+        "bbox": {
+            "max_lat": 15.508,
+            "max_lon": 122.494,
+            "min_lat": 12.508,
+            "min_lon": 119.494
+        },
+        "centroid_wkt": "POINT(120.994 14.008)",
+        "id": "volcano0019",
+        "name": "v273070_Taal"
+    },
+    "volcano0020": {
+        "bbox": {
+            "max_lat": -0.020000000000000018,
+            "max_lon": 30.75,
+            "min_lat": -3.02,
+            "min_lon": 27.75
+        },
+        "centroid_wkt": "POINT(29.25 -1.52)",
+        "id": "volcano0020",
+        "name": "v223030_Nyiragongo"
+    },
+    "volcano0021": {
+        "bbox": {
+            "max_lat": -4.6,
+            "max_lon": 106.92,
+            "min_lat": -7.6,
+            "min_lon": 103.92
+        },
+        "centroid_wkt": "POINT(105.42 -6.1)",
+        "id": "volcano0021",
+        "name": "v262000_Krakatau_Anak_Krakatau"
+    },
+    "volcano0022": {
+        "bbox": {
+            "max_lat": 39.131,
+            "max_lon": -117.532,
+            "min_lat": 36.131,
+            "min_lon": -120.532
+        },
+        "centroid_wkt": "POINT(-119.032 37.631)",
+        "id": "volcano0022",
+        "name": "v323150_Mammoth_Mountain_LVC"
+    },
+    "volcano0023": {
+        "bbox": {
+            "max_lat": -36.02019052,
+            "max_lon": 178.6806283,
+            "min_lat": -39.02019052,
+            "min_lon": 175.6806283
+        },
+        "centroid_wkt": "POINT(177.1806283 -37.52019052)",
+        "id": "volcano0023",
+        "name": "v241040_White_Island"
+    },
+    "volcano0024": {
+        "bbox": {
+            "max_lat": -18.032,
+            "max_lon": 170.947,
+            "min_lat": -21.032,
+            "min_lon": 167.947
+        },
+        "centroid_wkt": "POINT(169.447 -19.532)",
+        "id": "volcano0024",
+        "name": "v257100_Yasur"
+    },
+    "volcano0025": {
+        "bbox": {
+            "max_lat": 42.327,
+            "max_lon": 15.639,
+            "min_lat": 39.327,
+            "min_lon": 12.639
+        },
+        "centroid_wkt": "POINT(14.139 40.827)",
+        "id": "volcano0025",
+        "name": "v2110010_Campi_Flegrei_and_Pisciarelli"
+    },
+    "volcano0026": {
+        "bbox": {
+            "max_lat": -14.84,
+            "max_lon": -69.4,
+            "min_lat": -17.84,
+            "min_lon": -72.4
+        },
+        "centroid_wkt": "POINT(-70.9 -16.34)",
+        "id": "volcano0026",
+        "name": "v354020_Ubinas"
+    },
+    "volcano0027": {
+        "bbox": {
+            "max_lat": -2.58,
+            "max_lon": 146.54,
+            "min_lat": -5.58,
+            "min_lon": 143.54
+        },
+        "centroid_wkt": "POINT(145.04 -4.08)",
+        "id": "volcano0027",
+        "name": "v251020_Manam"
+    },
+    "volcano0028": {
+        "bbox": {
+            "max_lat": 6.395,
+            "max_lon": -73.822,
+            "min_lat": 3.3949999999999996,
+            "min_lon": -76.822
+        },
+        "centroid_wkt": "POINT(-75.322 4.895)",
+        "id": "volcano0028",
+        "name": "v351020_Nevado_del_Ruiz"
+    },
+    "volcano0029": {
+        "bbox": {
+            "max_lat": 13.48,
+            "max_lon": -84.66,
+            "min_lat": 10.48,
+            "min_lon": -87.66
+        },
+        "centroid_wkt": "POINT(-86.16 11.98)",
+        "id": "volcano0029",
+        "name": "v344100_Masaya"
+    },
+    "volcano0030": {
+        "bbox": {
+            "max_lat": -6.44,
+            "max_lon": 114.45,
+            "min_lat": -9.440000000000001,
+            "min_lon": 111.45
+        },
+        "centroid_wkt": "POINT(112.95 -7.94)",
+        "id": "volcano0030",
+        "name": "v263310_Bromo"
+    },
+    "volcano0031": {
+        "bbox": {
+            "max_lat": -6.84,
+            "max_lon": 117.01,
+            "min_lat": -9.84,
+            "min_lon": 114.01
+        },
+        "centroid_wkt": "POINT(115.51 -8.34)",
+        "id": "volcano0031",
+        "name": "v264020_Agung"
+    },
+    "volcano0032": {
+        "bbox": {
+            "max_lat": 39.904,
+            "max_lon": 16.462,
+            "min_lat": 36.904,
+            "min_lon": 13.462
+        },
+        "centroid_wkt": "POINT(14.962 38.404)",
+        "id": "volcano0032",
+        "name": "v211050_Vulcano"
+    },
+    "volcano0033": {
+        "bbox": {
+            "max_lat": -1.2639999999999998,
+            "max_lon": 37.414,
+            "min_lat": -4.263999999999999,
+            "min_lon": 34.414
+        },
+        "centroid_wkt": "POINT(35.914 -2.764)",
+        "id": "volcano0033",
+        "name": "v222120_Oldoinyo_Lengai"
+    },
+    "volcano0034": {
+        "bbox": {
+            "max_lat": 11.7,
+            "max_lon": -82.73299999999999,
+            "min_lat": 8.7,
+            "min_lon": -85.73299999999999
+        },
+        "centroid_wkt": "POINT(-84.23299999999999 10.2)",
+        "id": "volcano0034",
+        "name": "v345040_Poas"
+    },
+    "volcano0035": {
+        "bbox": {
+            "max_lat": -37.78,
+            "max_lon": 177.07,
+            "min_lat": -40.78,
+            "min_lon": 174.07
+        },
+        "centroid_wkt": "POINT(175.57 -39.28)",
+        "id": "volcano0035",
+        "name": "v241100_Ruapehu"
+    },
+    "volcano0036": {
+        "bbox": {
+            "max_lat": 45.9,
+            "max_lon": -109.2,
+            "min_lat": 42.9,
+            "min_lon": -112.2
+        },
+        "centroid_wkt": "POINT(-110.7 44.4)",
+        "id": "volcano0036",
+        "name": "v325010_Yellowstone"
+    },
+    "volcano0037": {
+        "bbox": {
+            "max_lat": 1.13,
+            "max_lon": -90.05,
+            "min_lat": -1.87,
+            "min_lon": -93.05
+        },
+        "centroid_wkt": "POINT(-91.55 -0.37)",
+        "id": "volcano0037",
+        "name": "v353010_Fernandina_Galapagos"
+    },
+    "volcano0038": {
+        "bbox": {
+            "max_lat": 15.1,
+            "max_lon": 42.17,
+            "min_lat": 12.1,
+            "min_lon": 39.17
+        },
+        "centroid_wkt": "POINT(40.67 13.6)",
+        "id": "volcano0038",
+        "name": "v221080_Erta_Ale"
+    },
+    "volcano0039": {
+        "bbox": {
+            "max_lat": 3.1799999999999997,
+            "max_lon": 129.38,
+            "min_lat": 0.17999999999999994,
+            "min_lon": 126.38
+        },
+        "centroid_wkt": "POINT(127.88 1.68)",
+        "id": "volcano0039",
+        "name": "v268010_Dukono"
+    },
+    "volcano0040": {
+        "bbox": {
+            "max_lat": -36.36,
+            "max_lon": -69.66,
+            "min_lat": -39.36,
+            "min_lon": -72.66
+        },
+        "centroid_wkt": "POINT(-71.16 -37.86)",
+        "id": "volcano0040",
+        "name": "v357090_Copahue"
+    },
+    "volcano0041": {
+        "bbox": {
+            "max_lat": 15.882,
+            "max_lon": -89.101,
+            "min_lat": 12.882,
+            "min_lon": -92.101
+        },
+        "centroid_wkt": "POINT(-90.601 14.382)",
+        "id": "volcano0041",
+        "name": "v342110_Pacaya"
+    },
+    "volcano0042": {
+        "bbox": {
+            "max_lat": 20.775,
+            "max_lon": -153.41,
+            "min_lat": 17.775,
+            "min_lon": -156.41
+        },
+        "centroid_wkt": "POINT(-154.91 19.275)",
+        "id": "volcano0042",
+        "name": "v332010_East_Rift_Zone_Hawaii"
+    },
+    "volcano0043": {
+        "bbox": {
+            "max_lat": 37.9,
+            "max_lon": 140.03,
+            "min_lat": 34.9,
+            "min_lon": 137.03
+        },
+        "centroid_wkt": "POINT(138.53 36.4)",
+        "id": "volcano0043",
+        "name": "v283110_Asama"
+    },
+    "volcano0044": {
+        "bbox": {
+            "max_lat": 16.256999999999998,
+            "max_lon": -90.052,
+            "min_lat": 13.257,
+            "min_lon": -93.052
+        },
+        "centroid_wkt": "POINT(-91.552 14.757)",
+        "id": "volcano0044",
+        "name": "v342030_Santiaguito_Santa_Maria"
+    },
+    "volcano0045": {
+        "bbox": {
+            "max_lat": 43.48,
+            "max_lon": 129.58,
+            "min_lat": 40.48,
+            "min_lon": 126.58000000000001
+        },
+        "centroid_wkt": "POINT(128.08 41.98)",
+        "id": "volcano0045",
+        "name": "v305060_Changbaishan_CN_Baekdusan_Paekdusan_NK"
+    },
+    "volcano0046": {
+        "bbox": {
+            "max_lat": 5.711,
+            "max_lon": 10.675,
+            "min_lat": 2.7110000000000003,
+            "min_lon": 7.675000000000001
+        },
+        "centroid_wkt": "POINT(9.175 4.211)",
+        "id": "volcano0046",
+        "name": "v224010_Mt._Cameroon"
+    },
+    "volcano0047": {
+        "bbox": {
+            "max_lat": 0.67,
+            "max_lon": -89.67,
+            "min_lat": -2.33,
+            "min_lon": -92.67
+        },
+        "centroid_wkt": "POINT(-91.17 -0.83)",
+        "id": "volcano0047",
+        "name": "v353050_Sierra_Negra"
+    },
+    "volcano0048": {
+        "bbox": {
+            "max_lat": 0.09200000000000008,
+            "max_lon": 30.7,
+            "min_lat": -2.908,
+            "min_lon": 27.7
+        },
+        "centroid_wkt": "POINT(29.2 -1.408)",
+        "id": "volcano0048",
+        "name": "v223020_Nyamuragira"
+    },
+    "volcano0049": {
+        "bbox": {
+            "max_lat": 7.937,
+            "max_lon": 11.798,
+            "min_lat": 4.937,
+            "min_lon": 8.798
+        },
+        "centroid_wkt": "POINT(10.298 6.437)",
+        "id": "volcano0049",
+        "name": "v224030_Oku_Volcanic_Field_Lake_Nyos"
+    },
+    "volcano0050": {
+        "bbox": {
+            "max_lat": -6.43,
+            "max_lon": 113.81,
+            "min_lat": -9.43,
+            "min_lon": 110.81
+        },
+        "centroid_wkt": "POINT(112.31 -7.93)",
+        "id": "volcano0050",
+        "name": "v263280_Kelut"
+    },
+    "volcano0051": {
+        "bbox": {
+            "max_lat": -4.59,
+            "max_lon": 156.73,
+            "min_lat": -7.59,
+            "min_lon": 153.73
+        },
+        "centroid_wkt": "POINT(155.23 -6.09)",
+        "id": "volcano0051",
+        "name": "v255020_Bagana"
+    },
+    "volcano0052": {
+        "bbox": {
+            "max_lat": 13.923,
+            "max_lon": -85.039,
+            "min_lat": 10.923,
+            "min_lon": -88.039
+        },
+        "centroid_wkt": "POINT(-86.539 12.423)",
+        "id": "volcano0052",
+        "name": "v344090_Momotombo"
+    },
+    "volcano0053": {
+        "bbox": {
+            "max_lat": 31.135,
+            "max_lon": 131.216,
+            "min_lat": 28.135,
+            "min_lon": 128.216
+        },
+        "centroid_wkt": "POINT(129.716 29.635)",
+        "id": "volcano0053",
+        "name": "v282030_Suwanosejima_Marianas"
+    },
+    "volcano0054": {
+        "bbox": {
+            "max_lat": 32.289,
+            "max_lon": 131.808,
+            "min_lat": 29.289,
+            "min_lon": 128.808
+        },
+        "centroid_wkt": "POINT(130.308 30.789)",
+        "id": "volcano0054",
+        "name": "v282060_Satsuma-Iwojima_Kikai"
+    },
+    "volcano0055": {
+        "bbox": {
+            "max_lat": 14.87,
+            "max_lon": 43.2,
+            "min_lat": 11.87,
+            "min_lon": 40.2
+        },
+        "centroid_wkt": "POINT(41.7 13.37)",
+        "id": "volcano0055",
+        "name": "v221101_Nabro"
+    },
+    "volcano0056": {
+        "bbox": {
+            "max_lat": 4.67,
+            "max_lon": 99.891,
+            "min_lat": 1.67,
+            "min_lon": 96.891
+        },
+        "centroid_wkt": "POINT(98.391 3.17)",
+        "id": "volcano0056",
+        "name": "v261080_Sinabung"
+    },
+    "volcano0057": {
+        "bbox": {
+            "max_lat": -6.607999999999999,
+            "max_lon": 114.422,
+            "min_lat": -9.607999999999999,
+            "min_lon": 111.422
+        },
+        "centroid_wkt": "POINT(112.922 -8.107999999999999)",
+        "id": "volcano0057",
+        "name": "v263300_Semeru"
+    },
+    "volcano0058": {
+        "bbox": {
+            "max_lat": -0.19999999999999996,
+            "max_lon": 102.76,
+            "min_lat": -3.2,
+            "min_lon": 99.76
+        },
+        "centroid_wkt": "POINT(101.26 -1.7)",
+        "id": "volcano0058",
+        "name": "v261170_Kerinci"
+    },
+    "volcano0059": {
+        "bbox": {
+            "max_lat": 2.8600000000000003,
+            "max_lon": 126.29,
+            "min_lat": -0.1399999999999999,
+            "min_lon": 123.29
+        },
+        "centroid_wkt": "POINT(124.79 1.36)",
+        "id": "volcano0059",
+        "name": "v266100_Lokon-Empung_Sulawesi"
+    },
+    "volcano0060": {
+        "bbox": {
+            "max_lat": -14.794,
+            "max_lon": -69.90899999999999,
+            "min_lat": -17.794,
+            "min_lon": -72.90899999999999
+        },
+        "centroid_wkt": "POINT(-71.40899999999999 -16.294)",
+        "id": "volcano0060",
+        "name": "v354010_Misti"
+    },
+    "volcano0061": {
+        "bbox": {
+            "max_lat": 2.326,
+            "max_lon": -76.464,
+            "min_lat": -0.674,
+            "min_lon": -79.464
+        },
+        "centroid_wkt": "POINT(-77.964 0.826)",
+        "id": "volcano0061",
+        "name": "v351110_Chiles-Cerro_Negro"
+    },
+    "volcano0062": {
+        "bbox": {
+            "max_lat": 2.613,
+            "max_lon": 126.234,
+            "min_lat": -0.387,
+            "min_lon": 123.234
+        },
+        "centroid_wkt": "POINT(124.734 1.113)",
+        "id": "volcano0062",
+        "name": "v266030_Soputan"
+    },
+    "volcano0063": {
+        "bbox": {
+            "max_lat": 35.594,
+            "max_lon": 141.026,
+            "min_lat": 32.594,
+            "min_lon": 138.026
+        },
+        "centroid_wkt": "POINT(139.526 34.094)",
+        "id": "volcano0063",
+        "name": "v284040_Miyake-jima_Marianas"
+    },
+    "volcano0064": {
+        "bbox": {
+            "max_lat": 18.22,
+            "max_lon": -60.68,
+            "min_lat": 15.219999999999999,
+            "min_lon": -63.68
+        },
+        "centroid_wkt": "POINT(-62.18 16.72)",
+        "id": "volcano0064",
+        "name": "v360050_Soufriere_Hills_Montserrat"
+    },
+    "volcano0065": {
+        "bbox": {
+            "max_lat": 4.279999999999999,
+            "max_lon": 126.91,
+            "min_lat": 1.2799999999999998,
+            "min_lon": 123.91
+        },
+        "centroid_wkt": "POINT(125.41 2.78)",
+        "id": "volcano0065",
+        "name": "v267020_Karangetan"
+    },
+    "volcano0066": {
+        "bbox": {
+            "max_lat": 4.417,
+            "max_lon": -74.53399999999999,
+            "min_lat": 1.4169999999999998,
+            "min_lon": -77.53399999999999
+        },
+        "centroid_wkt": "POINT(-76.03399999999999 2.917)",
+        "id": "volcano0066",
+        "name": "v351050_Nevado_del_Huila"
+    },
+    "volcano0067": {
+        "bbox": {
+            "max_lat": -6.5600000000000005,
+            "max_lon": 115.74,
+            "min_lat": -9.56,
+            "min_lon": 112.74
+        },
+        "centroid_wkt": "POINT(114.24 -8.06)",
+        "id": "volcano0067",
+        "name": "v263350_Kawah_Ijen_Ijen"
+    },
+    "volcano0068": {
+        "bbox": {
+            "max_lat": 54.93,
+            "max_lon": -166.63,
+            "min_lat": 51.93,
+            "min_lon": -169.63
+        },
+        "centroid_wkt": "POINT(-168.13 53.43)",
+        "id": "volcano0068",
+        "name": "v311290_Okmok"
+    },
+    "volcano0069": {
+        "bbox": {
+            "max_lat": -4.03,
+            "max_lon": 149.92,
+            "min_lat": -7.03,
+            "min_lon": 146.92
+        },
+        "centroid_wkt": "POINT(148.42 -5.53)",
+        "id": "volcano0069",
+        "name": "v252010_Langila"
+    },
+    "volcano0070": {
+        "bbox": {
+            "max_lat": 2.7,
+            "max_lon": -75.89,
+            "min_lat": -0.30000000000000004,
+            "min_lon": -78.89
+        },
+        "centroid_wkt": "POINT(-77.39 1.2)",
+        "id": "volcano0070",
+        "name": "v351080_Galeras"
+    },
+    "volcano0071": {
+        "bbox": {
+            "max_lat": 16.810000000000002,
+            "max_lon": -59.81,
+            "min_lat": 13.81,
+            "min_lon": -62.81
+        },
+        "centroid_wkt": "POINT(-61.31 15.31)",
+        "id": "volcano0071",
+        "name": "v360101_Morne_Watt_Dominica_Island"
+    },
+    "volcano0072": {
+        "bbox": {
+            "max_lat": 15.353,
+            "max_lon": -88.13,
+            "min_lat": 12.353,
+            "min_lon": -91.13
+        },
+        "centroid_wkt": "POINT(-89.63 13.853)",
+        "id": "volcano0072",
+        "name": "v343020_Santa_Ana"
+    },
+    "volcano0073": {
+        "bbox": {
+            "max_lat": -7.009004591,
+            "max_lon": 125.6274858,
+            "min_lat": -10.009004591,
+            "min_lon": 122.6274858
+        },
+        "centroid_wkt": "POINT(124.1274858 -8.509004591)",
+        "id": "volcano0073",
+        "name": "v264270_Sirung_Pantar"
+    },
+    "volcano0074": {
+        "bbox": {
+            "max_lat": 47.7,
+            "max_lon": -120.68,
+            "min_lat": 44.7,
+            "min_lon": -123.68
+        },
+        "centroid_wkt": "POINT(-122.18 46.2)",
+        "id": "volcano0074",
+        "name": "v321050_Mount_St._Helens"
+    },
+    "volcano0075": {
+        "bbox": {
+            "max_lat": 36.86,
+            "max_lon": 140.23,
+            "min_lat": 33.86,
+            "min_lon": 137.23
+        },
+        "centroid_wkt": "POINT(138.73 35.36)",
+        "id": "volcano0075",
+        "name": "v283030_Fuji-san"
+    },
+    "volcano0076": {
+        "bbox": {
+            "max_lat": -20.77,
+            "max_lon": -65.68,
+            "min_lat": -23.77,
+            "min_lon": -68.68
+        },
+        "centroid_wkt": "POINT(-67.18 -22.27)",
+        "id": "volcano0076",
+        "name": "v355838_Uturuncu"
+    },
+    "volcano0077": {
+        "bbox": {
+            "max_lat": 14.202,
+            "max_lon": -85.50399999999999,
+            "min_lat": 11.202,
+            "min_lon": -88.50399999999999
+        },
+        "centroid_wkt": "POINT(-87.00399999999999 12.702)",
+        "id": "volcano0077",
+        "name": "v344020_San_Cristobal"
+    },
+    "volcano0078": {
+        "bbox": {
+            "max_lat": -21.87,
+            "max_lon": -66.23,
+            "min_lat": -24.87,
+            "min_lon": -69.23
+        },
+        "centroid_wkt": "POINT(-67.73 -23.37)",
+        "id": "volcano0078",
+        "name": "v355100_Lascar"
+    },
+    "volcano0079": {
+        "bbox": {
+            "max_lat": -23.67,
+            "max_lon": -67.0,
+            "min_lat": -26.67,
+            "min_lon": -70.0
+        },
+        "centroid_wkt": "POINT(-68.5 -25.17)",
+        "id": "volcano0079",
+        "name": "v355120_Lastarria"
+    },
+    "volcano0080": {
+        "bbox": {
+            "max_lat": -34.56,
+            "max_lon": -68.99,
+            "min_lat": -37.56,
+            "min_lon": -71.99
+        },
+        "centroid_wkt": "POINT(-70.49 -36.06)",
+        "id": "volcano0080",
+        "name": "v357061_Laguna_del_Maule"
+    },
+    "volcano0081": {
+        "bbox": {
+            "max_lat": 54.06,
+            "max_lon": 159.53,
+            "min_lat": 51.06,
+            "min_lon": 156.53
+        },
+        "centroid_wkt": "POINT(158.03 52.56)",
+        "id": "volcano0081",
+        "name": "v300070_Gorely"
+    },
+    "volcano0082": {
+        "bbox": {
+            "max_lat": 53.949,
+            "max_lon": 159.696,
+            "min_lat": 50.949,
+            "min_lon": 156.696
+        },
+        "centroid_wkt": "POINT(158.196 52.449)",
+        "id": "volcano0082",
+        "name": "v300060_Mutnovsky"
+    },
+    "volcano0083": {
+        "bbox": {
+            "max_lat": 33.411,
+            "max_lon": 132.382,
+            "min_lat": 30.411,
+            "min_lon": 129.382
+        },
+        "centroid_wkt": "POINT(130.882 31.911)",
+        "id": "volcano0083",
+        "name": "v282090_Shinmoedake_Kirishimayama"
+    },
+    "volcano0084": {
+        "bbox": {
+            "max_lat": 37.393,
+            "max_lon": 138.98,
+            "min_lat": 34.393,
+            "min_lon": 135.98
+        },
+        "centroid_wkt": "POINT(137.48 35.893)",
+        "id": "volcano0084",
+        "name": "v283040_Ontake-san_Nagoya"
+    },
+    "volcano0085": {
+        "bbox": {
+            "max_lat": 36.22,
+            "max_lon": 140.89,
+            "min_lat": 33.22,
+            "min_lon": 137.89
+        },
+        "centroid_wkt": "POINT(139.39 34.72)",
+        "id": "volcano0085",
+        "name": "v284010_Izu-Oshima"
+    },
+    "volcano0086": {
+        "bbox": {
+            "max_lat": 7.613,
+            "max_lon": 126.392,
+            "min_lat": 4.613,
+            "min_lon": 123.392
+        },
+        "centroid_wkt": "POINT(124.892 6.113)",
+        "id": "volcano0086",
+        "name": "v271011_Parker"
+    },
+    "volcano0087": {
+        "bbox": {
+            "max_lat": 1.423,
+            "max_lon": -76.156,
+            "min_lat": -1.577,
+            "min_lon": -79.156
+        },
+        "centroid_wkt": "POINT(-77.656 -0.077)",
+        "id": "volcano0087",
+        "name": "v352010_Reventador"
+    },
+    "volcano0088": {
+        "bbox": {
+            "max_lat": 1.529,
+            "max_lon": -76.486,
+            "min_lat": -1.471,
+            "min_lon": -79.486
+        },
+        "centroid_wkt": "POINT(-77.986 0.029)",
+        "id": "volcano0088",
+        "name": "v352006_Cayambe"
+    },
+    "volcano0089": {
+        "bbox": {
+            "max_lat": 26.25,
+            "max_lon": 142.79,
+            "min_lat": 23.25,
+            "min_lon": 139.79
+        },
+        "centroid_wkt": "POINT(141.29 24.75)",
+        "id": "volcano0089",
+        "name": "v284120_Ioto_Iwo-Jima"
+    },
+    "volcano0090": {
+        "bbox": {
+            "max_lat": 2.317,
+            "max_lon": -76.436,
+            "min_lat": -0.6829999999999999,
+            "min_lon": -79.436
+        },
+        "centroid_wkt": "POINT(-77.936 0.8170000000000001)",
+        "id": "volcano0090",
+        "name": "v351110_Cerro_Negro_de_Mayasquer"
+    },
+    "volcano0091": {
+        "bbox": {
+            "max_lat": -39.83,
+            "max_lon": -71.11,
+            "min_lat": -42.83,
+            "min_lon": -74.11
+        },
+        "centroid_wkt": "POINT(-72.61 -41.33)",
+        "id": "volcano0091",
+        "name": "v358020_Calbuco"
+    },
+    "volcano0092": {
+        "bbox": {
+            "max_lat": 5.987,
+            "max_lon": -73.889,
+            "min_lat": 2.987,
+            "min_lon": -76.889
+        },
+        "centroid_wkt": "POINT(-75.389 4.487)",
+        "id": "volcano0092",
+        "name": "v351040_Cerro_Machin"
+    },
+    "volcano0093": {
+        "bbox": {
+            "max_lat": -41.333,
+            "max_lon": -71.146,
+            "min_lat": -44.333,
+            "min_lon": -74.146
+        },
+        "centroid_wkt": "POINT(-72.646 -42.833)",
+        "id": "volcano0093",
+        "name": "v358041_Chaiten"
+    },
+    "volcano0094": {
+        "bbox": {
+            "max_lat": 12.33,
+            "max_lon": -83.824,
+            "min_lat": 9.33,
+            "min_lon": -86.824
+        },
+        "centroid_wkt": "POINT(-85.324 10.83)",
+        "id": "volcano0094",
+        "name": "v345020_Rincon_de_la_Vieja"
+    }
+}

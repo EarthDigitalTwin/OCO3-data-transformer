@@ -18,13 +18,13 @@ import json
 import logging
 import os
 import threading
-from concurrent.futures import ThreadPoolExecutor, Future
+from concurrent.futures import ThreadPoolExecutor, Future, as_completed
 from datetime import datetime
 from functools import partial
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from time import sleep
-from typing import Tuple, Optional, List
+from typing import Tuple, Optional, List, Literal
 
 import pika
 import psutil
@@ -37,9 +37,10 @@ from sam_extract.exceptions import *
 from sam_extract.processors import Processor, PROCESSORS
 from sam_extract.utils import ProgressLogging
 from sam_extract.utils import ZARR_REPAIR_FILE, PW_STATE_DIR, backup_zarr, delete_zarr_backup, cleanup_xi
-from sam_extract.writers import ZarrWriter
+from sam_extract.writers import ZarrWriter, CoGWriter
 from schema import Optional as Opt
 from schema import Schema, Or, SchemaError
+from shapely.geometry import box
 from yaml import load
 from yaml.scanner import ScannerError
 
@@ -50,7 +51,7 @@ except ImportError:
 
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.TRACE,
     format='%(asctime)s [%(levelname)s] [%(threadName)s] [%(name)s::%(lineno)d] %(message)s'
 )
 
@@ -87,7 +88,9 @@ RMQ_SCHEMA = Schema({
     'inputs': [
         Or(
             str, None, AWS_CRED_SCHEMA,
-            {Opt(p): Or(str, None, AWS_CRED_SCHEMA) for p in PROCESSORS.keys()}
+            {Opt(p): Or(str, None, AWS_CRED_SCHEMA) for p in set(
+                [pr for k in PROCESSORS.keys() for pr in PROCESSORS[k].keys()]
+            )}
         )
     ]
 })
@@ -96,7 +99,9 @@ RMQ_SCHEMA = Schema({
 FILES_SCHEMA = Schema([
     Or(
         str, None, AWS_CRED_SCHEMA,
-        {Opt(p): Or(str, None, AWS_CRED_SCHEMA) for p in PROCESSORS.keys()}
+        {Opt(p): Or(str, None, AWS_CRED_SCHEMA) for p in set(
+                [pr for k in PROCESSORS.keys() for pr in PROCESSORS[k].keys()]
+            )}
     )
 ])
 
@@ -121,13 +126,13 @@ def __validate_files(files):
                                    f'creds')
 
 
-def merge_groups(groups):
-    logger.info(f'Merging {len(groups)} interpolated groups')
+def merge_groups(groups: list):
+    logger.debug(f'Merging {len(groups)} interpolated groups')
 
     groups = [group for group in groups if group is not None]
 
     if len(groups) == 0:
-        return None
+        return None, 0
 
     return {group: xr.concat([g[group] for g in groups], dim='time').sortby('time') for group in groups[0]}, len(groups)
 
@@ -157,35 +162,31 @@ def process_inputs(in_files, cfg):
 
         output_root, output_kwargs = output_cfg(cfg)
 
-        zarr_writer_pre = ZarrWriter(
-            os.path.join(output_root, cfg['output']['naming']['pre_qf']),
-            chunking,
-            overwrite=False,
-            **output_kwargs
-        )
-
-        zarr_writer_post = ZarrWriter(
-            os.path.join(output_root, cfg['output']['naming']['post_qf']),
-            chunking,
-            overwrite=False,
-            **output_kwargs
-        )
-
         backup_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix='backup_worker')
+
+        backup_store_params = {'region': output_kwargs.get('region', 'us-west-2'), 'auth': output_kwargs.get('auth')}
 
         backup_pre_future: Future = backup_executor.submit(
             backup_zarr,
-            zarr_writer_pre.path,
-            zarr_writer_pre.store,
-            zarr_writer_pre.store_params
+            os.path.join(output_root, cfg['output']['naming']['pre_qf']),
+            's3' if output_root.startswith('s3://') else 'local',
+            backup_store_params,
+            verify_zarr=cfg['output'].get('global', True)
         )
 
         backup_post_future: Future = backup_executor.submit(
             backup_zarr,
-            zarr_writer_post.path,
-            zarr_writer_post.store,
-            zarr_writer_post.store_params
+            os.path.join(output_root, cfg['output']['naming']['post_qf']),
+            's3' if output_root.startswith('s3://') else 'local',
+            backup_store_params,
+            verify_zarr=cfg['output'].get('global', True)
         )
+
+        # Weird way of assigning this to avoid annoying type hint warnings in my IDE
+        if cfg['output'].get('global', True):
+            product_type: Literal['local', 'global'] = 'global'
+        else:
+            product_type: Literal['local', 'global'] = 'local'
 
         def process_input(
                 input,
@@ -197,33 +198,35 @@ def process_inputs(in_files, cfg):
             processed_data_tuples = []
 
             if isinstance(input, str) or (isinstance(input, dict) and 'path' in input):
-                processed_data_tuples.append(PROCESSORS['oco3'].process_input(
+                processed_data_tuples.append(PROCESSORS[product_type]['oco3'].process_input(
                     input,
                     cfg=cfg,
                     temp_dir=temp_dir,
                     exclude_groups=exclude_groups
                 ))
 
-                # Bit hacky, but it's better than bundling the dt with the input spec
-                dt = Processor.granule_to_dt(input if isinstance(input, str) else input['path'])
+                # We only want to produce empty slices for missing granules for the global product
+                if cfg['output'].get('global', True):
+                    # Bit hacky, but it's better than bundling the dt with the input spec
+                    dt = Processor.granule_to_dt(input if isinstance(input, str) else input['path'])
 
-                for k in PROCESSORS.keys():
-                    if k == 'oco3':
-                        continue
+                    for k in list(set([p for k in PROCESSORS.keys() for p in PROCESSORS[k].keys()])):
+                        if k == 'oco3':
+                            continue
 
-                    empty_ds = PROCESSORS[k].empty_dataset(dt, cfg, temp_dir)
+                        empty_ds = PROCESSORS[product_type][k].empty_dataset(dt, cfg, temp_dir)
 
-                    processed_data_tuples.append((
-                        empty_ds,
-                        empty_ds,
-                        True,
-                        None
-                    ))
+                        processed_data_tuples.append((
+                            empty_ds,
+                            empty_ds,
+                            True,
+                            None
+                        ))
             elif isinstance(input, dict):
                 input = {k: input[k] for k in input if input[k] is not None}
 
                 input_keys = set(input.keys())
-                output_keys = set(PROCESSORS.keys())
+                output_keys = set([p for k in PROCESSORS.keys() for p in PROCESSORS[k].keys()])
 
                 if len(input) == 0:
                     logger.critical('Empty input dictionary provided (this should not be possible)')
@@ -235,27 +238,29 @@ def process_inputs(in_files, cfg):
                     input = {k: input[k] for k in input_keys.intersection(output_keys)}
 
                 for t in input:
-                    processed_data_tuples.append(PROCESSORS[t].process_input(
+                    processed_data_tuples.append(PROCESSORS[product_type][t].process_input(
                         input[t],
                         cfg=cfg,
                         temp_dir=temp_dir,
                         exclude_groups=exclude_groups
                     ))
 
-                # Bit hacky, but it's better than bundling the dt with the input spec
-                sample_input = input[list(input_keys)[0]]
-                sample_granule = sample_input['path'] if isinstance(sample_input, dict) else sample_input
-                dt = Processor.granule_to_dt(sample_granule)
+                # We only want to produce empty slices for missing granules for the global product
+                if cfg['output'].get('global', True):
+                    # Bit hacky, but it's better than bundling the dt with the input spec
+                    sample_input = input[list(input_keys)[0]]
+                    sample_granule = sample_input['path'] if isinstance(sample_input, dict) else sample_input
+                    dt = Processor.granule_to_dt(sample_granule)
 
-                for t in output_keys - input_keys:
-                    empty_ds = PROCESSORS[t].empty_dataset(dt, cfg, temp_dir)
+                    for t in output_keys - input_keys:
+                        empty_ds = PROCESSORS[product_type][t].empty_dataset(dt, cfg, temp_dir)
 
-                    processed_data_tuples.append((
-                        empty_ds,
-                        empty_ds,
-                        True,
-                        None
-                    ))
+                        processed_data_tuples.append((
+                            empty_ds,
+                            empty_ds,
+                            True,
+                            None
+                        ))
             else:
                 raise TypeError(f'Invalid input type {type(input)}')
 
@@ -282,12 +287,18 @@ def process_inputs(in_files, cfg):
             for result_pre, result_post, success, path in pool.map(process, in_files):
                 if success:
                     if result_pre is not None:
-                        processed_groups_pre.append(result_pre)
+                        if isinstance(result_pre, dict):
+                            processed_groups_pre.append(result_pre)
+                        else:
+                            processed_groups_pre.extend(result_pre)
                     else:
                         logger.info(f'No pre-QF data generated for {path}; likely no SAMs/targets were present')
 
                     if result_post is not None:
-                        processed_groups_post.append(result_post)
+                        if isinstance(result_post, dict):
+                            processed_groups_post.append(result_post)
+                        else:
+                            processed_groups_post.extend(result_post)
                     else:
                         logger.info(f'No post-QF data generated for {path}; likely no SAMs/targets were present or they'
                                     f' were all filtered out')
@@ -302,15 +313,10 @@ def process_inputs(in_files, cfg):
             for failed in failed_inputs:
                 logger.error(f' - {failed}')
 
-        merged_pre, len_pre = merge_groups(processed_groups_pre)
-        merged_post, len_post = merge_groups(processed_groups_post)
-
         logger.info('Data generation complete. Will proceed to final write when backups are completed...')
 
         backup_pre = backup_pre_future.result()
         backup_post = backup_post_future.result()
-
-        logger.info('Backups completed. Proceeding.')
 
         Path(PW_STATE_DIR).mkdir(parents=True, exist_ok=True)
         repair_file_data = dict(pre_qf_backup=backup_pre, post_qf_backup=backup_post)
@@ -320,34 +326,191 @@ def process_inputs(in_files, cfg):
 
         backup_executor.shutdown()
 
-        if merged_pre is not None:
-            logger.info(f'Writing {len_pre} days of pre_qf data')
+        logger.info('Backups completed. Proceeding.')
 
-            with ProgressLogging(log_level=logging.INFO):
-                zarr_writer_pre.write(
-                    merged_pre,
-                    attrs=dict(
-                        title=cfg['output']['title']['pre_qf'],
-                        quality_flag_filtered='no'
+        if cfg['output'].get('global', True):
+            merged_pre, len_pre = merge_groups(processed_groups_pre)
+            merged_post, len_post = merge_groups(processed_groups_post)
+
+            zarr_writer_pre = ZarrWriter(
+                os.path.join(output_root, cfg['output']['naming']['pre_qf']),
+                chunking,
+                overwrite=False,
+                **output_kwargs
+            )
+
+            zarr_writer_post = ZarrWriter(
+                os.path.join(output_root, cfg['output']['naming']['post_qf']),
+                chunking,
+                overwrite=False,
+                **output_kwargs
+            )
+
+            if merged_pre is not None:
+                logger.info(f'Writing {len_pre} days of pre_qf data')
+
+                with ProgressLogging(log_level=logging.INFO):
+                    zarr_writer_pre.write(
+                        merged_pre,
+                        attrs=dict(
+                            title=cfg['output']['title']['pre_qf'],
+                            quality_flag_filtered='no'
+                        )
                     )
-                )
-        else:
-            logger.info('No pre_qf data generated')
+            else:
+                logger.info('No pre_qf data generated')
 
-        if merged_post is not None:
-            logger.info(f'Writing {len_pre} days of post_qf data')
+            if merged_post is not None:
+                logger.info(f'Writing {len_pre} days of post_qf data')
 
-            with ProgressLogging(log_level=logging.INFO):
-                zarr_writer_post.write(
-                    merged_post,
-                    attrs=dict(
-                        title=cfg['output']['title']['post_qf'],
-                        quality_flag_filtered='yes'
+                with ProgressLogging(log_level=logging.INFO):
+                    zarr_writer_post.write(
+                        merged_post,
+                        attrs=dict(
+                            title=cfg['output']['title']['post_qf'],
+                            quality_flag_filtered='yes'
+                        )
                     )
-                )
+            else:
+                logger.info('No post_qf data generated, all SAMs and target soundings on these days may have been '
+                            'filtered out for bad qf')
         else:
-            logger.info('No post_qf data generated, all SAMs and target soundings on these days may have been filtered '
-                        'out for bad qf')
+            # Collect by key: target ID -> list of groups
+            # Merge all slices for each target ID to reduce net number of writes
+            # Restore list of tuples structure? and iterate
+
+            def merge_by_site(processed_groups):
+                target_dict: dict = {}
+
+                for g, t in processed_groups:
+                    target_dict.setdefault(t, []).append(g)
+
+                for t in target_dict:
+                    target_dict[t] = merge_groups(target_dict[t])[0]
+
+                return [(target_dict[t], t) for t in target_dict]
+
+            processed_groups_pre = merge_by_site(processed_groups_pre)
+            processed_groups_post = merge_by_site(processed_groups_post)
+
+            processed_groups_pre.sort(key=lambda x: x[1])
+            processed_groups_post.sort(key=lambda x: x[1])
+
+            with open(cfg['target-file']) as fp:
+                targets = json.load(fp)
+
+            if 'cog' in cfg['output']:
+                cog_root, cog_kwargs = output_cfg(cfg['output']['cog'])
+
+                cog_kwargs['efs'] = cfg['output']['cog'].get('efs', False)
+
+                driver_options = dict(
+                    compress='lzw',
+                    resampling='NEAREST',
+                    overview_resampling='NEAREST',
+                    overviews='AUTO',
+                    level=9
+                )
+
+                driver_options.update(cfg['output']['cog'].get('options', {}))
+                driver_options = CoGWriter.validate_options(driver_options)
+
+                cog_writer_pre = CoGWriter(cog_root, 'oco3', False, driver_kwargs=driver_options, **cog_kwargs)
+                cog_writer_post = CoGWriter(cog_root, 'oco3', True, driver_kwargs=driver_options, **cog_kwargs)
+            else:
+                cog_writer_pre = None
+                cog_writer_post = None
+
+            def do_write(result_tuple: tuple, qf):
+                result, target = result_tuple
+
+                if qf == 'pre':
+                    qf_key = 'pre_qf'
+                    cog_writer = cog_writer_pre
+                else:
+                    qf_key = 'post_qf'
+                    cog_writer = cog_writer_post
+
+                if result is None:
+                    logger.warning(f'Target {target} present in {qf_key} results but without any data')
+                    return
+
+                writer = ZarrWriter(
+                    os.path.join(output_root, cfg['output']['naming'][qf_key], f'{target}.zarr'),
+                    chunking,
+                    overwrite=False,
+                    **output_kwargs
+                )
+
+                writer.write(
+                    result,
+                    attrs=dict(
+                        title=cfg['output']['title'][qf_key],
+                        target_id=target,
+                        target_name=targets[target].get('name', 'UNK'),
+                        quality_flag_filtered='no' if qf == 'pre' else 'yes',
+                        target_bbox=box(
+                            targets[target]['bbox']['min_lon'],
+                            targets[target]['bbox']['min_lat'],
+                            targets[target]['bbox']['max_lon'],
+                            targets[target]['bbox']['max_lat'],
+                        ).wkt
+                    ),
+                    global_product=False,
+                    mission='oco3'
+                )
+
+                if cog_writer is not None:
+                    cog_writer.write(
+                        result,
+                        target,
+                        attrs=dict(
+                            title=cfg['output']['title'][qf_key],
+                            target_id=target,
+                            target_name=targets[target].get('name', 'UNK'),
+                            quality_flag_filtered='no' if qf == 'pre' else 'yes',
+                            target_bbox=box(
+                                targets[target]['bbox']['min_lon'],
+                                targets[target]['bbox']['min_lat'],
+                                targets[target]['bbox']['max_lon'],
+                                targets[target]['bbox']['max_lat'],
+                            ).wkt
+                        )
+                    )
+
+                return target, targets[target].get('name', 'name unknown'), qf_key
+
+            with ThreadPoolExecutor(
+                    max_workers=min(cfg.get('max-workers'), 4),
+                    thread_name_prefix='write_worker'
+            ) as pool:
+                futures = []
+
+                for r in processed_groups_pre:
+                    futures.append(pool.submit(do_write, r, 'pre'))
+
+                for r in processed_groups_post:
+                    futures.append(pool.submit(do_write, r, 'post'))
+
+                i = 1
+
+                for f in as_completed(futures):
+                    result_tuple = f.result()
+
+                    if result_tuple is not None:
+                        tid, name, qf = result_tuple
+
+                        logger.info(f'Finished {qf} write for {tid} ({name}) [{i:,}/{len(futures):,}] '
+                                    f'[{i/len(futures)*100:7.3f}%]')
+                    else:
+                        logger.info(f'Skipped undefined target on output. [{i:,}/{len(futures):,}] '
+                                    f'[{i/len(futures)*100:7.3f}%]')
+
+                    i += 1
+
+            if cog_writer_pre is not None:
+                cog_writer_pre.finish()
+                cog_writer_post.finish()
 
         logger.info(f'Cleaning up temporary directory at {td}')
 
@@ -358,16 +521,16 @@ def process_inputs(in_files, cfg):
 
         if backup_pre is not None and not delete_zarr_backup(
             backup_pre,
-            zarr_writer_pre.store,
-            zarr_writer_pre.store_params,
+            's3' if output_root.startswith('s3://') else 'local',
+            backup_store_params,
             verify=False
         ):
             logger.warning(f'Unable to remove backup for pre_qf zarr data at {backup_pre}')
 
         if backup_pre is not None and not delete_zarr_backup(
             backup_post,
-            zarr_writer_post.store,
-            zarr_writer_post.store_params,
+            's3' if output_root.startswith('s3://') else 'local',
+            backup_store_params,
             verify=False
         ):
             logger.warning(f'Unable to remove backup for post_qf zarr data at {backup_post}')
@@ -554,14 +717,23 @@ def parse_args():
 
     parser.add_argument(
         '-v',
-        help='Verbose logging output',
+        help='Verbose logging output level. 0 for INFO, 1 for DEBUG, 2+ for TRACE',
         dest='verbose',
-        action='store_true'
+        action='count',
+        default=0
     )
 
     args, unknown = parser.parse_known_args()
 
-    log_level = logging.DEBUG if args.verbose else logging.INFO
+    verbosity = min(max(0, args.verbose), 2)
+
+    if verbosity == 0:
+        log_level = logging.INFO
+    elif verbosity == 1:
+        log_level = logging.DEBUG
+    else:
+        log_level = logging.TRACE
+
     logger.setLevel(log_level)
 
     for handler in logging.getLogger().handlers:
@@ -589,6 +761,20 @@ def parse_args():
             config_dict['output']['type'] = 's3'
         else:
             raise ValueError('No output params configured')
+
+        if 'cog' in output:
+            if 's3' in output['cog']['output'] and 'local' in output['cog']['output']:
+                raise ValueError('Must specify either s3 or local, not both')
+
+            if 'local' in output['cog']['output']:
+                config_dict['output']['cog']['output']['type'] = 'local'
+            elif 's3' in output['cog']['output']:
+                if 'region' not in output['cog']['output']['s3']:
+                    output['cog']['output']['s3']['region'] = 'us-west-2'
+
+                config_dict['output']['cog']['output']['type'] = 's3'
+            else:
+                raise ValueError('No output type params configured for cog despite being specified in config')
 
         if 'naming' not in output:
             raise ValueError('Must specify naming for output')
@@ -672,7 +858,7 @@ if __name__ == '__main__':
             while True:
                 KB_rss = int((process.memory_info().rss - start_rss) / (1024 ** 2))
                 KB_vms = int((process.memory_info().vms - start_vms) / (1024 ** 2))
-                profile_logger.debug('rss_used={0:10,d} MiB vms_used={1:10,d} MiB'.format(KB_rss, KB_vms))
+                profile_logger.info('rss_used={0:10,d} MiB vms_used={1:10,d} MiB'.format(KB_rss, KB_vms))
 
                 sleep(interval)
 
@@ -696,5 +882,6 @@ if __name__ == '__main__':
         if DEBUG_MPROF is not None:
             KB_rss = int((process.memory_info().rss - start_rss) / (1024 ** 2))
             KB_vms = int((process.memory_info().vms - start_vms) / (1024 ** 2))
-            profile_logger.debug('rss_used={0:10,d} MiB vms_used={1:10,d} MiB (final)'.format(KB_rss, KB_vms))
+            profile_logger.info('rss_used={0:10,d} MiB vms_used={1:10,d} MiB (final)'.format(KB_rss, KB_vms))
+
         exit(v)

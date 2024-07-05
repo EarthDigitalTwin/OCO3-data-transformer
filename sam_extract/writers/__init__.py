@@ -12,5 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import rioxarray
 from sam_extract.writers.Writer import Writer
 from sam_extract.writers.ZarrWriter import ZarrWriter
+from sam_extract.writers.CoGWriter import CoGWriter

@@ -16,7 +16,10 @@
 import logging
 import os
 import tarfile
+import subprocess
+import sys
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 from functools import partial
 from os.path import basename, dirname, join
 from shutil import copytree, rmtree
@@ -61,7 +64,8 @@ class AWSConfig:
         return kwargs
 
 
-def create_backup(src_path: str, store_type: Literal['local', 's3'], store_params: dict = None) -> str | None:
+def create_backup(src_path: str, store_type, store_params: dict = None, verify_zarr=True) -> str | None:
+    start_t = datetime.now()
     backup_id = str(uuid4())
 
     logger.info(f'Creating backup {backup_id}')
@@ -72,13 +76,34 @@ def create_backup(src_path: str, store_type: Literal['local', 's3'], store_param
 
     dst_basename = f'{".".join(src_basename.split(".")[:-1])}-{backup_id}.zarr'
 
-    try:
-        # Check that the path we're deleting is actually Zarr data
-        ZarrWriter.open_zarr_group(src_path, store_type, store_params, root=True)
-    except Exception as e:
-        logger.warning(f'Zarr group at path {src_path} could not be opened for backup. Maybe it does not exist yet. A '
-                       f'backup will not be created. Error: {repr(e)}')
+    if verify_zarr:
+        try:
+            # Check that the path we're deleting is actually Zarr data
+            ZarrWriter.open_zarr_group(src_path, store_type, store_params, root=True)
+        except Exception as e:
+            logger.warning(f'Zarr group at path {src_path} could not be opened for backup. Maybe it does not exist yet.'
+                           f' A backup will not be created. Error: {repr(e)}')
+            logger.exception(e)
+            return None
+    elif store_type == 'local' and (not os.path.exists(src_path) or not os.path.isdir(src_path)):
+        logger.warning(f'No directory to back up at {src_path}')
         return None
+    elif store_type == 's3':
+        src_parsed = urlparse(src_path)
+
+        bucket = src_parsed.netloc
+        src_key_prefix = src_parsed.path.strip('/')
+
+        s3 = boto3.client('s3', **AWSConfig.from_store_params(store_params).to_client_kwargs())
+
+        try:
+            response = s3.list_objects_v2(Bucket=bucket, Prefix=f'{src_key_prefix}/', MaxKeys=1)
+            if response['KeyCount'] == 0:
+                logger.warning(f'No data could be found at {src_path}')
+                return None
+        except:
+            logger.warning('Could not access S3')
+            return None
 
     if store_type == 'local':
         src_path = urlparse(src_path).path
@@ -103,9 +128,28 @@ def create_backup(src_path: str, store_type: Literal['local', 's3'], store_param
                     if i % 10000 == 0:
                         logger.info(f'Added {i:,} objects to backup {backup_id}')
         else:
-            copytree(src_path, join(src_dirname, dst_basename))
+            if sys.platform.startswith('win'):
+                cmd = ['xcopy', src_path, join(src_dirname, dst_basename)]
+            else:
+                cmd = ['cp', '-rf', src_path, join(src_dirname, dst_basename)]
 
-        logger.info(f'Finished backup {backup_id}')
+            try:
+                p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                err = p.wait()
+
+                if err != 0:
+                    stdout, _ = p.communicate()
+
+                    stdout = stdout.decode('utf-8')[-32:]
+
+                    raise RuntimeError(f'Something went wrong. Exit code, stdout (last 32 bytes)'
+                                       f': {err} {stdout}')
+            except Exception as e:
+                logger.exception(e)
+                logger.warning('Subprocess copy failed, using shutil fallback (will take longer)')
+                copytree(src_path, join(src_dirname, dst_basename), dirs_exist_ok=True)
+
+        logger.info(f'Finished backup {backup_id} in {datetime.now() - start_t}')
 
         return join(src_dirname, dst_basename)
     elif store_type == 's3':
@@ -131,7 +175,7 @@ def create_backup(src_path: str, store_type: Literal['local', 's3'], store_param
             key = key['Key']
 
             dst_key = str(key).lstrip('/').replace(src_prefix, dst_prefix)
-            logger.debug(f'{key} -> {dst_key}')
+            logger.trace(f'{key} -> {dst_key}')
 
             s3.copy_object(
                 Bucket=s3_bucket,
@@ -152,14 +196,15 @@ def create_backup(src_path: str, store_type: Literal['local', 's3'], store_param
             for f in futures:
                 f.result()
 
-        logger.info(f'Finished backup {backup_id}')
+        logger.info(f'Finished backup {backup_id} in {datetime.now() - start_t}')
 
         return f's3://{bucket}/{dst_key_prefix}'
     else:
         raise ValueError(f'Invalid store type: {store_type}')
 
 
-def delete_backup(path: str, store_type: Literal['local', 's3'], store_params: dict = None, verify=True) -> bool:
+def delete_backup(path: str, store_type, store_params: dict = None, verify=True) -> bool:
+    start_t = datetime.now()
     path = path.rstrip('/')
 
     logger.info(f'Deleting backup at {path}')
@@ -191,13 +236,16 @@ def delete_backup(path: str, store_type: Literal['local', 's3'], store_params: d
             path = urlparse(path).path.rstrip('/')
 
             if not path.endswith('.tar'):
-                logger.info(f'Recursively deleting {path}')
+                logger.debug(f'Recursively deleting {path}')
                 rmtree(path)
             else:
-                logger.info(f'Deleting {path}')
+                logger.debug(f'Deleting {path}')
                 os.remove(path)
+
+            logger.info(f'Removed backup at {path} in {datetime.now() - start_t}')
         except Exception as e:
             logger.exception(e)
+            logger.info(f'Failed to remove backup at {path} in {datetime.now() - start_t}')
             return False
     elif store_type == 's3':
         try:
@@ -235,8 +283,11 @@ def delete_backup(path: str, store_type: Literal['local', 's3'], store_params: d
                             Bucket=bucket,
                             Delete=dict(Objects=[dict(Key=e['Key']) for e in resp['Errors']])
                         )
+
+            logger.info(f'Removed backup at {path} in {datetime.now() - start_t}')
         except Exception as e:
             logger.exception(e)
+            logger.info(f'Failed to remove backup at {path} in {datetime.now() - start_t}')
             return False
     else:
         raise ValueError(f'Invalid store type: {store_type}')

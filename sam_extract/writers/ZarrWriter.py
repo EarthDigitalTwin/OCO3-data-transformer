@@ -109,7 +109,14 @@ class ZarrWriter(Writer):
 
             return groups
 
-    def write(self, ds: Dict[str, Dataset], attrs: Dict[str, str] | None = None):
+    def write(
+            self,
+            ds: Dict[str, Dataset],
+            attrs: Dict[str, str] | None = None,
+            skip_verification=False,
+            global_product=True,
+            mission=None
+    ):
         logger.info(f'Writing dataset group to Zarr array at {self.path}')
 
         if attrs is None:
@@ -131,20 +138,18 @@ class ZarrWriter(Writer):
                 dynamic_attrs = dict(
                     date_created=now if self.__correct_ct is None else self.__correct_ct,
                     date_updated=now,
-                    coverage_start=datetime.fromtimestamp(
-                        ds['/'].time.min().astype(int).item() / 1e9).strftime(ISO_8601),
-                    coverage_end=datetime.fromtimestamp(
-                        ds['/'].time.max().astype(int).item() / 1e9).strftime(ISO_8601)
+                    coverage_start=np.min(ds['/'].time.values.astype('datetime64[s]')).item().strftime(ISO_8601),
+                    coverage_end=np.max(ds['/'].time.values.astype('datetime64[s]')).item().strftime(ISO_8601)
                 )
         elif exists and not self.overwrite:
-            logger.info('File exists and will be appended to')
+            logger.info('Group exists and will be appended to')
 
             if self.final:
                 logger.debug('Getting dynamic attributes from store')
                 zarr_group = ZarrWriter.open_zarr_group(self.path, self.store, self.store_params, root=True)
 
-                append_start = datetime.fromtimestamp(ds['/'].time.min().astype(int).item() / 1e9).strftime(ISO_8601)
-                append_end = datetime.fromtimestamp(ds['/'].time.max().astype(int).item() / 1e9).strftime(ISO_8601)
+                append_start = np.min(ds['/'].time.values.astype('datetime64[s]')).item().strftime(ISO_8601)
+                append_end = np.max(ds['/'].time.values.astype('datetime64[s]')).item().strftime(ISO_8601)
 
                 existing_start = zarr_group['/'].attrs.get('coverage_start', append_start)
                 existing_end = zarr_group['/'].attrs.get('coverage_end', append_end)
@@ -160,22 +165,25 @@ class ZarrWriter(Writer):
                 )
 
         else:
-            logger.info('Array does not exist so it will be created.')
+            logger.info('Group does not exist so it will be created.')
 
             if self.final:
                 dynamic_attrs = dict(
                     date_created=now,
                     date_updated=now,
-                    coverage_start=datetime.fromtimestamp(
-                        ds['/'].time.min().astype(int).item() / 1e9).strftime(ISO_8601),
-                    coverage_end=datetime.fromtimestamp(
-                        ds['/'].time.max().astype(int).item() / 1e9).strftime(ISO_8601)
+                    coverage_start=np.min(ds['/'].time.values.astype('datetime64[s]')).item().strftime(ISO_8601),
+                    coverage_end=np.max(ds['/'].time.values.astype('datetime64[s]')).item().strftime(ISO_8601)
                 )
 
         if self.final:
+            if global_product:
+                fixed = FIXED_ATTRIBUTES['global']
+            else:
+                fixed = FIXED_ATTRIBUTES['local'][mission]
+
             attributes = dict(chain(
                 attrs.items(),
-                FIXED_ATTRIBUTES.items(),
+                fixed.items(),
                 dynamic_attrs.items()
             ))
 
@@ -215,7 +223,7 @@ class ZarrWriter(Writer):
 
             encodings = {group: None for group in Writer.GROUP_KEYS}
 
-        logger.info(f'Setting Zarr chunk shapes: {self.__chunking}')
+        logger.debug(f'Setting Zarr chunk shapes: {self.__chunking}')
 
         for group in ds:
             for var in ds[group].data_vars:
@@ -223,7 +231,7 @@ class ZarrWriter(Writer):
 
             ds[group]['time'].chunk(TIME_CHUNKING)
 
-        logger.info('Outputting Zarr array')
+        logger.debug('Outputting Zarr array')
 
         if self.store == 'local':
             ds_store = self.path
@@ -283,7 +291,7 @@ class ZarrWriter(Writer):
 
         logger.info(f'Finished writing Zarr array to {self.path}')
 
-        if self.__verify and not self.overwrite:
+        if self.__verify and not self.overwrite and not skip_verification:
             good = True
 
             zarr_group = ZarrWriter.open_zarr_group(self.path, self.store, self.store_params, root=True)

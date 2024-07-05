@@ -17,7 +17,7 @@ import random
 from abc import ABC, abstractmethod
 from datetime import datetime
 from os.path import basename, join
-from typing import Tuple, List, Optional, Dict, Type
+from typing import Tuple, List, Optional, Dict, Type, Literal
 
 import xarray as xr
 from sam_extract.writers import ZarrWriter
@@ -80,4 +80,4 @@ class Processor(ABC):
         )
 
 
-PROCESSORS: Dict[str, Type[Processor]] = {}
+PROCESSORS: Dict[Literal['local', 'global'], Dict[str, Type[Processor]]] = {'local': {}, 'global': {}}
