@@ -74,7 +74,7 @@ def create_backup(src_path: str, store_type, store_params: dict = None, verify_z
 
     src_basename = basename(src_path)
 
-    dst_basename = f'{".".join(src_basename.split(".")[:-1])}-{backup_id}.zarr'
+    dst_basename = f'{src_basename.removesuffix(".zarr")}-{backup_id}.zarr'
 
     if verify_zarr:
         try:
@@ -85,7 +85,8 @@ def create_backup(src_path: str, store_type, store_params: dict = None, verify_z
                            f' A backup will not be created. Error: {repr(e)}')
             logger.exception(e)
             return None
-    elif store_type == 'local' and (not os.path.exists(src_path) or not os.path.isdir(src_path)):
+    elif store_type == 'local' and (not os.path.exists(urlparse(src_path).path) or
+                                    not os.path.isdir(urlparse(src_path).path)):
         logger.warning(f'No directory to back up at {src_path}')
         return None
     elif store_type == 's3':

@@ -80,8 +80,8 @@ def get_xi(cfg) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         if XI_DIR is None:
             XI_DIR = TemporaryDirectory(prefix='oco-sam-extract-', suffix='-grid-coords', ignore_cleanup_errors=True)
 
-        lon_grid, lat_grid = np.mgrid[-180:180:complex(0, cfg['grid']['longitude']),
-                                      -90:90:complex(0, cfg['grid']['latitude'])].astype(np.dtype('float32'))
+        lon_grid, lat_grid = np.mgrid[-180:180:complex(0, cfg.grid['longitude']),
+                                      -90:90:complex(0, cfg.grid['latitude'])].astype(np.dtype('float32'))
 
         # scipy seems to do this internally if we give xi as a tuple, negating any memory savings
         # lets do this in advance so the process isn't repeated

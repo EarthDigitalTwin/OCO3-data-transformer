@@ -76,7 +76,7 @@ class CoGWriter(Writer):
         invalid = []
 
         for opt in options:
-            if opt in CoGWriter.DRIVER_OPTIONS:
+            if opt.lower() in CoGWriter.DRIVER_OPTIONS:
                 validated[opt] = options[opt]
             else:
                 invalid.append(f'{opt}={options[opt]}')

@@ -20,6 +20,7 @@ from os.path import basename, join
 from typing import Tuple, List, Optional, Dict, Type, Literal
 
 import xarray as xr
+from sam_extract.runconfig import RunConfig
 from sam_extract.writers import ZarrWriter
 
 logger = logging.getLogger(__name__)
@@ -33,7 +34,7 @@ class Processor(ABC):
     def process_input(
             cls,
             input_file,
-            cfg,
+            cfg: RunConfig,
             temp_dir,
             output_pre_qf=True,
             exclude_groups: Optional[List[str]] = None
@@ -42,11 +43,11 @@ class Processor(ABC):
 
     @staticmethod
     @abstractmethod
-    def _empty_dataset(date: datetime, cfg) -> Dict[str, xr.Dataset]:
+    def _empty_dataset(date: datetime, cfg: RunConfig) -> Dict[str, xr.Dataset]:
         ...
 
     @classmethod
-    def empty_dataset(cls, date: datetime, cfg, temp_dir=None) -> Dict[str, xr.Dataset]:
+    def empty_dataset(cls, date: datetime, cfg: RunConfig, temp_dir=None) -> Dict[str, xr.Dataset]:
         logger.info(f'Creating empty day of data for {cls}')
 
         if temp_dir is None:
@@ -59,13 +60,13 @@ class Processor(ABC):
             )
 
     @staticmethod
-    def empty_ds_to_zarr(ds: Dict[str, xr.Dataset], cfg: dict, temp_dir: str) -> Dict[str, xr.Dataset]:
+    def empty_ds_to_zarr(ds: Dict[str, xr.Dataset], cfg: RunConfig, temp_dir: str) -> Dict[str, xr.Dataset]:
         random_string = ''.join(
             random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=12)
         )
         path = join(temp_dir, 'empty', f'{random_string}.zarr')
 
-        chunking: Tuple[int, int, int] = cfg['chunking']['config']
+        chunking: Tuple[int, int, int] = cfg.chunking
 
         writer = ZarrWriter(path, chunking, overwrite=True, verify=False)
         writer.write(ds)

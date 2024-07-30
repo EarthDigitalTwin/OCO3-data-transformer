@@ -1,0 +1,57 @@
+output: include('output', strict=False)
+input: any(include('input-files'), include('input-rmq'))
+drop-dims: list(include('dim'), required=False)
+exclude-groups: list(str(), required=False)
+grid:
+  latitude: int(min=1)
+  longitude: int(min=1)
+  method: enum('nearest', 'linear', 'cubic')
+  resolution_attr: str(required=False)
+chunking:
+  latitude: int(min=1)
+  longitude: int(min=1)
+  time: int(min=1)
+max-workers: int(min=1)
+mask-scaling: num(min=1, max=1.5, required=False, none=False)
+target-file: str(required=False)
+
+---
+
+input-files:
+  files: list(str(), include('s3_input'), map(str(), include('s3_input'), key=enum('oco3', 'oco2')))
+input-rmq:
+  queue:
+    host: str()
+    port: int(min=1, required=False)
+    username: str()
+    password: str()
+    queue: str()
+output:
+  s3: include('s3', required=False)
+  local: str(required=False)
+  global: bool(required=False)
+  naming: include('qf')
+  title: include('qf', required=False)
+  cog: include('cog', required=False)
+cog:
+  output:
+    s3: include('s3', required=False)
+    local: str(required=False)
+  options: map()
+s3:
+  url: str()
+  region: str(required=False, none=False)
+  auth:
+    accessKeyID: str()
+    secretAccessKey: str()
+qf:
+  pre_qf: str()
+  post_qf: str()
+s3_input:
+  path: str()
+  accessKeyID: str()
+  secretAccessKey: str()
+  region: str(required=False, none=False)
+dim:
+  group: str()
+  name: str()

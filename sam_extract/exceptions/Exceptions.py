@@ -38,3 +38,7 @@ class NonRecoverableError(BaseOCOException):
     pass
 
 
+class ConfigError(Exception):
+    ...
+
+

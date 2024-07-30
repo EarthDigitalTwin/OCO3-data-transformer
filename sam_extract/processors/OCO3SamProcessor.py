@@ -27,6 +27,7 @@ from sam_extract.exceptions import *
 from sam_extract.processors import Processor
 from sam_extract.processors.Processor import PROCESSORS
 from sam_extract.readers import GranuleReader
+from sam_extract.runconfig import RunConfig
 from scipy.interpolate import griddata
 from shapely.affinity import scale
 from shapely.geometry import Polygon, box
@@ -45,7 +46,7 @@ def tr(s: str, chars: str = None):
     return re.sub(rf'([{chars}])(\1+)', r'\1', s)
 
 
-def fit_data_to_grid(sam, target, bounds, cfg):
+def fit_data_to_grid(sam, target, bounds, cfg: RunConfig):
     logger.debug('Concatenating extracted datasets for interpolation')
 
     if len(sam) == 0:
@@ -87,8 +88,8 @@ def fit_data_to_grid(sam, target, bounds, cfg):
         if group in sam:
             sam[group] = sam[group].drop_vars(drop_dims[group], errors='ignore')
 
-    lon_grid, lat_grid = np.mgrid[bbox_dict['min_lon']:bbox_dict['max_lon']:complex(0, cfg['grid']['longitude']),
-                                  bbox_dict['min_lat']:bbox_dict['max_lat']:complex(0, cfg['grid']['latitude'])].astype(
+    lon_grid, lat_grid = np.mgrid[bbox_dict['min_lon']:bbox_dict['max_lon']:complex(0, cfg.grid['longitude']),
+                                  bbox_dict['min_lat']:bbox_dict['max_lat']:complex(0, cfg.grid['latitude'])].astype(
         np.dtype('float32')
     )
 
@@ -128,10 +129,10 @@ def fit_data_to_grid(sam, target, bounds, cfg):
 
     gridded_ds = {}
 
-    logger.debug(f"Interpolating retained data variables to {cfg['grid']['longitude']:,} by {cfg['grid']['latitude']:,}"
+    logger.debug(f"Interpolating retained data variables to {cfg.grid['longitude']:,} by {cfg.grid['latitude']:,}"
                  f" grid")
 
-    desired_method = cfg['grid'].get('method', Processor.DEFAULT_INTERPOLATE_METHOD)
+    desired_method = cfg.grid_method(Processor.DEFAULT_INTERPOLATE_METHOD)
 
     if desired_method != 'nearest' and len(points) < 4:
         # If there are not enough points to interpolate with the desired method (linear and cubic require >= 4), fall
@@ -184,9 +185,9 @@ def fit_data_to_grid(sam, target, bounds, cfg):
 
     logger.debug('Completed interpolations to grid')
 
-    gridded_ds['/'].attrs['interpolation_method'] = cfg['grid'].get('method', Processor.DEFAULT_INTERPOLATE_METHOD)
+    gridded_ds['/'].attrs['interpolation_method'] = cfg.grid_method(Processor.DEFAULT_INTERPOLATE_METHOD)
 
-    res_attr = cfg['grid'].get('resolution_attr')
+    res_attr = cfg.grid.get('resolution_attr')
 
     if res_attr:
         gridded_ds['/'].attrs['resolution'] = res_attr
@@ -194,7 +195,7 @@ def fit_data_to_grid(sam, target, bounds, cfg):
     return gridded_ds
 
 
-def mask_data(sam, grid_ds, cfg) -> Dict[str, xr.Dataset] | None:
+def mask_data(sam, grid_ds, cfg: RunConfig) -> Dict[str, xr.Dataset] | None:
     if sam is None:
         return None
 
@@ -211,7 +212,7 @@ def mask_data(sam, grid_ds, cfg) -> Dict[str, xr.Dataset] | None:
     lon_len = longitudes[1] - longitudes[0]
     lat_len = latitudes[1] - latitudes[0]
 
-    scaling = cfg.get('mask-scaling', 1)
+    scaling = cfg.mask_scaling
     scaling = min(max(scaling, 1), 1.5)
 
     logger.trace(f'Footprint scaling factor: {scaling}')
@@ -292,12 +293,12 @@ class OCO3SamProcessor(Processor):
     def process_input(
             cls,
             input_file,
-            cfg,
+            cfg: RunConfig,
             temp_dir,
             output_pre_qf=True,
             exclude_groups: Optional[List[str]] = None
     ):
-        additional_params = {'drop_dims': cfg['drop-dims']}
+        additional_params = {'drop_dims': cfg.exclude_vars}
 
         if exclude_groups is None:
             exclude_groups = []
@@ -399,14 +400,6 @@ class OCO3SamProcessor(Processor):
                 if in_region:
                     region_slices.append((slice(start, i+1), target_id))
                     n_targets += 1
-                #
-                # dbg_slice = region_slices[-1]
-                # print(dbg_slice)
-                # dbg_slice = dbg_slice[0]
-                #
-                # print(ds['/'].isel(sounding_id=dbg_slice))
-                #
-                # print(ds['/'].isel(sounding_id=slice(dbg_slice.start - 1, dbg_slice.stop + 1)))
 
                 extracted_sams_pre_qf = []
                 extracted_sams_post_qf = []
@@ -449,7 +442,7 @@ class OCO3SamProcessor(Processor):
                 processed_sams_pre_qf = []
                 processed_sams_post_qf = []
 
-                with open(cfg['target-file']) as fp:
+                with open(cfg.target_file) as fp:
                     target_bounds = json.load(fp)
 
                 if output_pre_qf:

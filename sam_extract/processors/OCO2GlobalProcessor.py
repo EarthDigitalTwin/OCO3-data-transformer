@@ -25,6 +25,7 @@ from sam_extract.exceptions import *
 from sam_extract.processors import Processor
 from sam_extract.processors.Processor import PROCESSORS
 from sam_extract.readers import GranuleReader
+from sam_extract.runconfig import RunConfig
 from sam_extract.utils import INTERP_SEMA, get_f_xi, get_xi
 from sam_extract.writers import ZarrWriter
 from sam_extract.writers.ZarrWriter import ENCODINGS
@@ -44,7 +45,7 @@ def tr(s: str, chars: str = None):
     return re.sub(rf'([{chars}])(\1+)', r'\1', s)
 
 
-def fit_data_to_grid(sams, cfg):
+def fit_data_to_grid(sams, cfg: RunConfig):
     logger.debug('Concatenating extracted datasets for interpolation')
 
     if len(sams) == 0:
@@ -114,10 +115,10 @@ def fit_data_to_grid(sams, cfg):
 
     gridded_ds = {}
 
-    logger.info(f"Interpolating retained data variables to {cfg['grid']['longitude']:,} by {cfg['grid']['latitude']:,}"
+    logger.info(f"Interpolating retained data variables to {cfg.grid['longitude']:,} by {cfg.grid['latitude']:,}"
                 f" grid")
 
-    desired_method = cfg['grid'].get('method', Processor.DEFAULT_INTERPOLATE_METHOD)
+    desired_method = cfg.grid_method(Processor.DEFAULT_INTERPOLATE_METHOD)
 
     if desired_method != 'nearest' and len(points) < 4:
         # If there are not enough points to interpolate with the desired method (linear and cubic require >= 4), fall
@@ -170,9 +171,9 @@ def fit_data_to_grid(sams, cfg):
 
     logger.info('Completed interpolations to grid')
 
-    gridded_ds['/'].attrs['interpolation_method'] = cfg['grid'].get('method', Processor.DEFAULT_INTERPOLATE_METHOD)
+    gridded_ds['/'].attrs['interpolation_method'] = cfg.grid_method(Processor.DEFAULT_INTERPOLATE_METHOD)
 
-    res_attr = cfg['grid'].get('resolution_attr')
+    res_attr = cfg.grid.get('resolution_attr')
 
     if res_attr:
         gridded_ds['/'].attrs['resolution'] = res_attr
@@ -180,7 +181,7 @@ def fit_data_to_grid(sams, cfg):
     return gridded_ds
 
 
-def mask_data(sams, grid_ds, cfg):
+def mask_data(sams, grid_ds, cfg: RunConfig):
     if sams is None:
         return None
 
@@ -194,7 +195,7 @@ def mask_data(sams, grid_ds, cfg):
 
     sam_polys = []
 
-    scaling = cfg.get('mask-scaling', 1)
+    scaling = cfg.mask_scaling
     scaling = min(max(scaling, 1), 1.5)
 
     logger.debug(f'Footprint scaling factor: {scaling}')
@@ -301,12 +302,12 @@ class OCO2GlobalProcessor(Processor):
     def process_input(
             cls,
             input_file,
-            cfg,
+            cfg: RunConfig,
             temp_dir,
             output_pre_qf=True,
             exclude_groups: Optional[List[str]] = None
     ) -> Tuple[Optional[Dict[str, xr.Dataset]], Optional[Dict[str, xr.Dataset]], bool, str]:
-        additional_params = {'drop_dims': cfg['drop-dims']}
+        additional_params = {'drop_dims': cfg.exclude_vars}
 
         if exclude_groups is None:
             exclude_groups = []
@@ -396,7 +397,7 @@ class OCO2GlobalProcessor(Processor):
                 else:
                     logger.info(f'Extracted {len(extracted_sams_post_qf)} regions with good data')
 
-                chunking: Tuple[int, int, int] = cfg['chunking']['config']
+                chunking: Tuple[int, int, int] = cfg.chunking
 
                 if output_pre_qf:
                     logger.info('Fitting unfiltered data to output grid')
@@ -425,7 +426,7 @@ class OCO2GlobalProcessor(Processor):
 
                         logger.info('Outputting unfiltered product slice to temporary Zarr array')
 
-                        writer = ZarrWriter(temp_path_pre, chunking, overwrite=True, verify=False)
+                        writer = ZarrWriter(str(temp_path_pre), chunking, overwrite=True, verify=False)
                         writer.write(gridded_groups_pre_qf)
 
                         del gridded_groups_pre_qf
@@ -460,7 +461,7 @@ class OCO2GlobalProcessor(Processor):
 
                     logger.info('Outputting filtered SAM product slice to temporary Zarr array')
 
-                    writer = ZarrWriter(temp_path_post, chunking, overwrite=True, verify=False)
+                    writer = ZarrWriter(str(temp_path_post), chunking, overwrite=True, verify=False)
                     writer.write(gridded_groups_post_qf)
 
                     ret_post_qf = ZarrWriter.open_zarr_group(temp_path_post, 'local', None)
@@ -478,7 +479,7 @@ class OCO2GlobalProcessor(Processor):
             raise
 
     @staticmethod
-    def _empty_dataset(date: datetime, cfg):
+    def _empty_dataset(date: datetime, cfg: RunConfig):
         variables = [
             f'{PROCESSOR_PREFIX}_xco2',
             f'{PROCESSOR_PREFIX}_xco2_uncertainty',
@@ -520,7 +521,7 @@ class OCO2GlobalProcessor(Processor):
             'time': ('time', time, time_attrs)
         }
 
-        shape = (1, cfg['grid']['latitude'], cfg['grid']['longitude'])
+        shape = (1, cfg.grid['latitude'], cfg.grid['longitude'])
 
         gridded_ds = {
             '/': xr.Dataset(

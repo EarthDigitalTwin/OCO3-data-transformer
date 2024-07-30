@@ -75,7 +75,10 @@ class ProgressLogging(Callback):
                 n_done = len(s["finished"])
                 n_tasks = sum(len(s[k]) for k in ["ready", "waiting", "running"]) + n_done
 
-                percent_done = n_done / n_tasks
+                if n_tasks != 0:
+                    percent_done = n_done / n_tasks
+                else:
+                    percent_done = float('nan')
 
                 if percent_done >= self.next_frac:
                     self.logger.log(self.log_level, f'Dask task is {percent_done * 100:.3f}% complete '

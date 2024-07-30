@@ -67,7 +67,7 @@ class ZarrWriter(Writer):
         self.__verify = False if 'verify' not in kwargs else kwargs['verify']
 
     @staticmethod
-    def open_zarr_group(path, store_type, params, root=False) -> Dict[str, Dataset]:
+    def open_zarr_group(path, store_type, params, root=False, **xr_open_kwargs) -> Dict[str, Dataset]:
         logger.info(f'Opening Zarr array group at {path}')
 
         if store_type == 'local':
@@ -93,17 +93,19 @@ class ZarrWriter(Writer):
 
         if root:
             return {
-                '/': xr.open_zarr(store, consolidated=True),
+                '/': xr.open_zarr(store, consolidated=True, **xr_open_kwargs),
             }
         else:
-            groups = {'/': xr.open_zarr(store, consolidated=True, mask_and_scale=True)}
+            groups = {'/': xr.open_zarr(store, consolidated=True, mask_and_scale=True, **xr_open_kwargs)}
 
             for group in Writer.GROUP_KEYS:
                 if group == '/':
                     continue
 
                 try:
-                    groups[group] = xr.open_zarr(store, group=group[1:], consolidated=True, mask_and_scale=True)
+                    groups[group] = xr.open_zarr(
+                        store, group=group[1:], consolidated=True, mask_and_scale=True, **xr_open_kwargs
+                    )
                 except:
                     pass
 
@@ -297,11 +299,14 @@ class ZarrWriter(Writer):
             zarr_group = ZarrWriter.open_zarr_group(self.path, self.store, self.store_params, root=True)
             dim = zarr_group['/'][self.__append_dim].to_numpy()
 
+            # Note: in this section, we need to specify decode_times=False when opening the group for modification
+            # otherwise xarray messes with the units which may render the Zarr stores unusable to this program later on
+
             if not all(np.diff(dim).astype(int) >= 0):
                 logger.warning('Appended Zarr array not monotonically increasing along append dimension. '
                                'It will need to be sorted')
 
-                zarr_group = ZarrWriter.open_zarr_group(self.path, self.store, self.store_params)
+                zarr_group = ZarrWriter.open_zarr_group(self.path, self.store, self.store_params, decode_times=False)
 
                 for key in Writer.GROUP_KEYS:
                     if key not in zarr_group:
@@ -321,7 +326,7 @@ class ZarrWriter(Writer):
 
                 # If we've already fully opened and modified the zarr group, don't reopen it
                 if good:
-                    zarr_group = ZarrWriter.open_zarr_group(self.path, self.store, self.store_params)
+                    zarr_group = ZarrWriter.open_zarr_group(self.path, self.store, self.store_params, decode_times=False)
 
                 prev = None
                 drop = []
@@ -357,7 +362,7 @@ class ZarrWriter(Writer):
                     with ProgressLogging(log_level=logging.INFO, interval=10):
                         writer.write(zarr_group)
 
-                    corrected_group = ZarrWriter.open_zarr_group(temp_path, 'local', None)
+                    corrected_group = ZarrWriter.open_zarr_group(temp_path, 'local', None, decode_times=False)
 
                     self.overwrite = True
                     self.__correct_ct = corrected_group['/'].attrs.get('date_created', None)

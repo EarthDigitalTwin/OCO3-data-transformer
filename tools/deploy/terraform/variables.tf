@@ -334,10 +334,10 @@ variable "image_tag" {
 }
 
 variable "cog_options" {
-  type = map(any)
+  type        = map(any)
   description = "Options to pass to CoG driver (https://gdal.org/drivers/raster/cog.html#raster-cog)"
-  default = {}
-  nullable = false
+  default     = {}
+  nullable    = false
 }
 
 variable "verbose" {

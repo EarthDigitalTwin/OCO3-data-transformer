@@ -541,4 +541,5 @@ class OCO2Processor(Processor):
         return gridded_ds
 
 
-PROCESSORS['local']['oco2'] = OCO2Processor
+# Disabling this processor for now since it still hasn't been properly implemented
+# PROCESSORS['local']['oco2'] = OCO2Processor

@@ -34,3 +34,4 @@ schema
 requests
 psutil
 rioxarray
+yamale

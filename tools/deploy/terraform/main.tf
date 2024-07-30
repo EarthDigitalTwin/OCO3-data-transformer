@@ -147,7 +147,7 @@ resource "aws_cloudwatch_log_group" "log_group" {
   lifecycle {
     ignore_changes = [
       tags,
-#      retention_in_days
+      #      retention_in_days
     ]
   }
 }

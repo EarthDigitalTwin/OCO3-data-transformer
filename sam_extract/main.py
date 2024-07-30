@@ -44,6 +44,8 @@ from shapely.geometry import box
 from yaml import load
 from yaml.scanner import ScannerError
 
+from runconfig import RunConfig
+
 try:
     from yaml import CLoader as Loader
 except ImportError:
@@ -137,28 +139,26 @@ def merge_groups(groups: list):
     return {group: xr.concat([g[group] for g in groups], dim='time').sortby('time') for group in groups[0]}, len(groups)
 
 
-def process_inputs(in_files, cfg):
+def process_inputs(in_files, cfg: RunConfig):
     logger.info(f'Interpolating {len(in_files)} L2 Lite file(s) with interpolation method '
-                f'{cfg["grid"].get("method", Processor.DEFAULT_INTERPOLATE_METHOD)}')
+                f'{cfg.grid_method(Processor.DEFAULT_INTERPOLATE_METHOD)}')
 
-    def output_cfg(config):
-        config = config['output']
-
+    def output_cfg(config: RunConfig):
         additional_params = {'verify': True, 'final': True}
 
-        if config['type'] == 'local':
-            path_root = config['local']
+        if config.output_type == 'local':
+            path_root = config.output
         else:
-            path_root = config['s3']['url']
-            additional_params['region'] = config['s3']['region']
-            additional_params['auth'] = config['s3']['auth']
+            path_root = config.output['url']
+            additional_params['region'] = config.output_aws_region
+            additional_params['auth'] = config.output['auth']
 
         return path_root, additional_params
 
     with TemporaryDirectory(prefix='oco-sam-extract-', suffix='-zarr-scratch', ignore_cleanup_errors=True) as td:
-        exclude = cfg['exclude-groups']
+        exclude = cfg.exclude_groups
 
-        chunking: Tuple[int, int, int] = cfg['chunking']['config']
+        chunking: Tuple[int, int, int] = cfg.chunking
 
         output_root, output_kwargs = output_cfg(cfg)
 
@@ -168,29 +168,29 @@ def process_inputs(in_files, cfg):
 
         backup_pre_future: Future = backup_executor.submit(
             backup_zarr,
-            os.path.join(output_root, cfg['output']['naming']['pre_qf']),
+            str(os.path.join(output_root, cfg.pre_qf_name)),
             's3' if output_root.startswith('s3://') else 'local',
             backup_store_params,
-            verify_zarr=cfg['output'].get('global', True)
+            verify_zarr=cfg.is_global
         )
 
         backup_post_future: Future = backup_executor.submit(
             backup_zarr,
-            os.path.join(output_root, cfg['output']['naming']['post_qf']),
+            str(os.path.join(output_root, cfg.post_qf_name)),
             's3' if output_root.startswith('s3://') else 'local',
             backup_store_params,
-            verify_zarr=cfg['output'].get('global', True)
+            verify_zarr=cfg.is_global
         )
 
         # Weird way of assigning this to avoid annoying type hint warnings in my IDE
-        if cfg['output'].get('global', True):
+        if cfg.is_global:
             product_type: Literal['local', 'global'] = 'global'
         else:
             product_type: Literal['local', 'global'] = 'local'
 
         def process_input(
                 input,
-                cfg,
+                cfg: RunConfig,
                 temp_dir,
                 output_pre_qf=True,
                 exclude_groups: Optional[List[str]] = None
@@ -206,7 +206,7 @@ def process_inputs(in_files, cfg):
                 ))
 
                 # We only want to produce empty slices for missing granules for the global product
-                if cfg['output'].get('global', True):
+                if cfg.is_global:
                     # Bit hacky, but it's better than bundling the dt with the input spec
                     dt = Processor.granule_to_dt(input if isinstance(input, str) else input['path'])
 
@@ -246,7 +246,7 @@ def process_inputs(in_files, cfg):
                     ))
 
                 # We only want to produce empty slices for missing granules for the global product
-                if cfg['output'].get('global', True):
+                if cfg.is_global:
                     # Bit hacky, but it's better than bundling the dt with the input spec
                     sample_input = input[list(input_keys)[0]]
                     sample_granule = sample_input['path'] if isinstance(sample_input, dict) else sample_input
@@ -279,7 +279,7 @@ def process_inputs(in_files, cfg):
 
         process = partial(process_input, cfg=cfg, temp_dir=td, exclude_groups=exclude)
 
-        with ThreadPoolExecutor(max_workers=cfg.get('max-workers'), thread_name_prefix='process_worker') as pool:
+        with ThreadPoolExecutor(max_workers=cfg.max_workers, thread_name_prefix='process_worker') as pool:
             processed_groups_pre = []
             processed_groups_post = []
             failed_inputs = []
@@ -328,19 +328,19 @@ def process_inputs(in_files, cfg):
 
         logger.info('Backups completed. Proceeding.')
 
-        if cfg['output'].get('global', True):
+        if cfg.is_global:
             merged_pre, len_pre = merge_groups(processed_groups_pre)
             merged_post, len_post = merge_groups(processed_groups_post)
 
             zarr_writer_pre = ZarrWriter(
-                os.path.join(output_root, cfg['output']['naming']['pre_qf']),
+                str(os.path.join(output_root, cfg.pre_qf_name)),
                 chunking,
                 overwrite=False,
                 **output_kwargs
             )
 
             zarr_writer_post = ZarrWriter(
-                os.path.join(output_root, cfg['output']['naming']['post_qf']),
+                str(os.path.join(output_root, cfg.post_qf_name)),
                 chunking,
                 overwrite=False,
                 **output_kwargs
@@ -353,7 +353,7 @@ def process_inputs(in_files, cfg):
                     zarr_writer_pre.write(
                         merged_pre,
                         attrs=dict(
-                            title=cfg['output']['title']['pre_qf'],
+                            title=cfg.pre_qf_title,
                             quality_flag_filtered='no'
                         )
                     )
@@ -367,7 +367,7 @@ def process_inputs(in_files, cfg):
                     zarr_writer_post.write(
                         merged_post,
                         attrs=dict(
-                            title=cfg['output']['title']['post_qf'],
+                            title=cfg.post_qf_title,
                             quality_flag_filtered='yes'
                         )
                     )
@@ -396,13 +396,25 @@ def process_inputs(in_files, cfg):
             processed_groups_pre.sort(key=lambda x: x[1])
             processed_groups_post.sort(key=lambda x: x[1])
 
-            with open(cfg['target-file']) as fp:
+            with open(cfg.target_file) as fp:
                 targets = json.load(fp)
 
-            if 'cog' in cfg['output']:
-                cog_root, cog_kwargs = output_cfg(cfg['output']['cog'])
+            if cfg.cog:
+                def cog_output_cfg(config: RunConfig):
+                    additional_params = {'verify': True, 'final': True}
 
-                cog_kwargs['efs'] = cfg['output']['cog'].get('efs', False)
+                    if config.cog_output_type == 'local':
+                        path_root = config.cog_output
+                    else:
+                        path_root = config.cog_output['url']
+                        additional_params['region'] = config.cog_output.get('region', 'us-west-2')
+                        additional_params['auth'] = config.cog_output['auth']
+
+                    return path_root, additional_params
+
+                cog_root, cog_kwargs = cog_output_cfg(cfg)
+
+                cog_kwargs['efs'] = cfg.cog_efs
 
                 driver_options = dict(
                     compress='lzw',
@@ -412,7 +424,7 @@ def process_inputs(in_files, cfg):
                     level=9
                 )
 
-                driver_options.update(cfg['output']['cog'].get('options', {}))
+                driver_options.update(cfg.cog_options)
                 driver_options = CoGWriter.validate_options(driver_options)
 
                 cog_writer_pre = CoGWriter(cog_root, 'oco3', False, driver_kwargs=driver_options, **cog_kwargs)
@@ -436,7 +448,7 @@ def process_inputs(in_files, cfg):
                     return
 
                 writer = ZarrWriter(
-                    os.path.join(output_root, cfg['output']['naming'][qf_key], f'{target}.zarr'),
+                    str(os.path.join(output_root, cfg.naming_dict[qf_key], f'{target}.zarr')),
                     chunking,
                     overwrite=False,
                     **output_kwargs
@@ -445,7 +457,7 @@ def process_inputs(in_files, cfg):
                 writer.write(
                     result,
                     attrs=dict(
-                        title=cfg['output']['title'][qf_key],
+                        title=cfg.title_dict[qf_key],
                         target_id=target,
                         target_name=targets[target].get('name', 'UNK'),
                         quality_flag_filtered='no' if qf == 'pre' else 'yes',
@@ -465,7 +477,7 @@ def process_inputs(in_files, cfg):
                         result,
                         target,
                         attrs=dict(
-                            title=cfg['output']['title'][qf_key],
+                            title=cfg.title_dict[qf_key],
                             target_id=target,
                             target_name=targets[target].get('name', 'UNK'),
                             quality_flag_filtered='no' if qf == 'pre' else 'yes',
@@ -481,7 +493,7 @@ def process_inputs(in_files, cfg):
                 return target, targets[target].get('name', 'name unknown'), qf_key
 
             with ThreadPoolExecutor(
-                    max_workers=min(cfg.get('max-workers'), 4),
+                    max_workers=min(cfg.max_workers, 4),
                     thread_name_prefix='write_worker'
             ) as pool:
                 futures = []
@@ -557,8 +569,8 @@ class ProcessThread(threading.Thread):
             raise self.exc
 
 
-def main(cfg):
-    if cfg['input']['type'] == 'queue':
+def main(cfg: RunConfig):
+    if cfg.input_type == 'queue':
         def on_message(
                 channel: Channel,
                 method_frame: Basic.Deliver,
@@ -625,7 +637,7 @@ def main(cfg):
                 channel.basic_nack(delivery_tag=method_frame.delivery_tag)
                 raise
 
-        queue_config = cfg['input']['queue']
+        queue_config = cfg.input
 
         creds = pika.PlainCredentials(queue_config['username'], queue_config['password'])
 
@@ -690,10 +702,8 @@ def main(cfg):
                 logger.error('An unexpected error occurred')
                 logger.exception(err)
                 raise
-
-    elif cfg['input']['type'] == 'files':
-        in_files = cfg['input']['files']
-        process_inputs(in_files, cfg)
+    elif cfg.input_type == 'files':
+        process_inputs(cfg.input, cfg)
 
 
 def parse_args():
@@ -742,92 +752,16 @@ def parse_args():
     if len(unknown) > 0:
         logger.warning(f'Unknown commands provided: {unknown}')
 
-    with open(args.cfg) as f:
-        config_dict = load(f, Loader=Loader)
-
     try:
-        output = config_dict['output']
-        inp = config_dict['input']
+        run_config = RunConfig.parse_config_file(args.cfg)
+    except ConfigError as err:
+        logger.critical(f'Provided run config is invalid: {err!r}')
+        raise
 
-        if 's3' in output and 'local' in output:
-            raise ValueError('Must specify either s3 or local, not both')
+    if run_config.input_type == 'files':
+        __validate_files(run_config.input)
 
-        if 'local' in output:
-            config_dict['output']['type'] = 'local'
-        elif 's3' in output:
-            if 'region' not in output['s3']:
-                output['s3']['region'] = 'us-west-2'
-
-            config_dict['output']['type'] = 's3'
-        else:
-            raise ValueError('No output params configured')
-
-        if 'cog' in output:
-            if 's3' in output['cog']['output'] and 'local' in output['cog']['output']:
-                raise ValueError('Must specify either s3 or local, not both')
-
-            if 'local' in output['cog']['output']:
-                config_dict['output']['cog']['output']['type'] = 'local'
-            elif 's3' in output['cog']['output']:
-                if 'region' not in output['cog']['output']['s3']:
-                    output['cog']['output']['s3']['region'] = 'us-west-2'
-
-                config_dict['output']['cog']['output']['type'] = 's3'
-            else:
-                raise ValueError('No output type params configured for cog despite being specified in config')
-
-        if 'naming' not in output:
-            raise ValueError('Must specify naming for output')
-        else:
-            assert 'pre_qf' in output['naming'], 'Must specify pre_qf name (output.naming.pre_qf)'
-            assert 'post_qf' in output['naming'], 'Must specify post_qf name (output.naming.post_qf)'
-
-        if 'title' not in output:
-            title = dict(
-                pre_qf=output['naming']['pre_qf'].split('.zarr')[0],
-                post_qf=output['naming']['post_qf'].split('.zarr')[0],
-            )
-
-            config_dict['output']['title'] = title
-        else:
-            assert 'pre_qf' in output['title'], 'Must specify pre_qf title (output.title.pre_qf)'
-            assert 'post_qf' in output['title'], 'Must specify post_qf title (output.title.post_qf)'
-
-        if 'queue' in inp and 'files' in inp:
-            raise ValueError('Must specify either files or queue, not both')
-
-        if 'queue' in inp:
-            config_dict['input']['type'] = 'queue'
-        elif 'files' in inp:
-            config_dict['input']['type'] = 'files'
-
-            __validate_files(inp['files'])
-        else:
-            raise ValueError('No input params configured')
-
-        if 'drop-dims' in config_dict:
-            config_dict['drop-dims'] = [
-                (dim['group'], dim['name']) for dim in config_dict['drop-dims']
-            ]
-        else:
-            config_dict['drop-dims'] = []
-
-        if 'chunking' in config_dict:
-            config_dict['chunking']['config'] = (
-                config_dict['chunking'].get('time', 5),
-                config_dict['chunking'].get('longitude', 250),
-                config_dict['chunking'].get('latitude', 250),
-            )
-        else:
-            config_dict['chunking'] = {'config': (5, 250, 250)}
-
-        if 'exclude-groups' not in config_dict:
-            config_dict['exclude-groups'] = DEFAULT_EXCLUDE_GROUPS
-    except KeyError as err:
-        logger.exception(err)
-        raise ValueError('Invalid configuration')
-
-    return config_dict
+    return run_config
 
 
 if __name__ == '__main__':
