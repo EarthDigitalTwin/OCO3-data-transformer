@@ -14,7 +14,7 @@
 
 output:  # required; one-of
 #  s3:
-#    url: s3://sam-zarr-bucket/ # required
+#    url: s3://<bucket-name>/<prefix>/ # required
 #    region: us-west-2 # optional; assume us-west-2
 #    auth:
 #      accessKeyID: foo
