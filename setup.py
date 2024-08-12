@@ -17,7 +17,7 @@ from setuptools import setup, find_packages
 setup(
     name='oco3_sam_zarr',
     version='2024.07.05',
-    url='https://github.jpl.nasa.gov/rileykk/oco-sam-extract',
+    url='https://github.com/EarthDigitalTwin/OCO3-data-transformer',
     author='Riley Kuttruff',
     author_email='riley.k.kuttruff@jpl.nasa.gov',
     description='Extract SAMs from OCO-3 data and store them as Zarr either locally or in S3',
