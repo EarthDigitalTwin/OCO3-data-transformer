@@ -67,8 +67,11 @@ def lambda_handler(event, context):
 
     logger.info('Trying to remove state file if it exists')
 
+    is_global = os.environ.get('GLOBAL', 'false').lower() == 'true'
+    state_file_name = "state_global.json" if is_global else 'state.json'
+
     try:
-        os.remove(os.path.join(mount_root_dir, 'state.json'))
+        os.remove(os.path.join(mount_root_dir, state_file_name))
     except:
         pass
 

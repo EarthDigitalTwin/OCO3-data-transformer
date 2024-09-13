@@ -117,14 +117,25 @@ variable "s3_rc_template_key" {
   default     = "deploy/run-config.yaml"
 }
 
-variable "s3_target_config_key" {
-  description = "Key for the target config (JSON file) object in S3"
+variable "s3_oco3_target_config_key" {
+  description = "Key for the OCO-3 target config (JSON file) object in S3"
   type        = string
   default     = "deploy/targets.json"
 }
 
-variable "s3_target_config_source" {
-  description = "Path to source target JSON file to copy to S3"
+variable "s3_oco2_target_config_key" {
+  description = "Key for the OCO-2 target config (JSON file) object in S3"
+  type        = string
+  default     = "deploy/targets_oco2.json"
+}
+
+variable "s3_oco3_target_config_source" {
+  description = "Path to source OCO-3 target JSON file to copy to S3"
+  type        = string
+}
+
+variable "s3_oco2_target_config_source" {
+  description = "Path to source OCO-2 target JSON file to copy to S3"
   type        = string
 }
 
@@ -320,7 +331,7 @@ variable "image" {
 
 variable "image_tag" {
   type        = string
-  description = "Docker image tag version to use for data processing, sync and restore. Format: <tag>. <tag> should be formatted as \"YYYY.MM.DD[-[a-z0-9-_]+]\". Minimum version: 2024.06.06"
+  description = "Docker image tag version to use for data processing, sync and restore. Format: <tag>. <tag> should be formatted as \"YYYY.MM.DD[-[a-z0-9-_]+]\". Minimum version: 2024.08.22"
 
   validation {
     condition     = can(regex("^\\d{4}\\.\\d{2}\\.\\d{2}(-[a-z0-9-_]+)?$", var.image_tag))
@@ -328,7 +339,7 @@ variable "image_tag" {
   }
 
   validation {
-    condition     = element(sort([substr(var.image_tag, 0, 10), "2024.06.06"]), 0) == "2024.06.06"
+    condition     = element(sort([substr(var.image_tag, 0, 10), "2024.08.22"]), 0) == "2024.08.22"
     error_message = "Docker image tag is too old"
   }
 }
@@ -338,6 +349,12 @@ variable "cog_options" {
   description = "Options to pass to CoG driver (https://gdal.org/drivers/raster/cog.html#raster-cog)"
   default     = {}
   nullable    = false
+}
+
+variable "skip_oco2_tfp" {
+  type        = bool
+  description = "For target-focused product, just generate OCO-3 data"
+  default     = false
 }
 
 variable "verbose" {

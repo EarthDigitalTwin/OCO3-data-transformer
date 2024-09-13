@@ -391,7 +391,7 @@ locals {
     }
     max-workers  = var.global_product ? 4 : 16
     mask-scaling = 1.00
-    target-file : var.global_product ? null : "/var/targets.json"
+    target-file : var.global_product ? null : { oco3 = "/var/targets.json", oco2 = "/var/targets_oco2.json" }
   })
 
   batch_definition_containerprops_search = jsonencode({

@@ -37,12 +37,14 @@ except ImportError:
 
 # Env vars for Lambda
 #
-# LAMBDA_STATE          : Path to state JSON file in mounted filesystem
-# LAMBDA_RC_TEMPLATE    : Path to RC template file in mounted filesystem
-# LAMBDA_STAC_PATH      : Path to CMR search result file in mounted filesystem
-# LAMBDA_STAGE_PATH     : Path to data stage output file in mounted filesystem
-# LAMBDA_GAP_FILE       : Path to gap file (see --gapfile arg)
-# LAMBDA_TARGET_FILE    : Path to target file
+# LAMBDA_STATE            : Path to state JSON file in mounted filesystem
+# LAMBDA_RC_TEMPLATE      : Path to RC template file in mounted filesystem
+# LAMBDA_STAC_PATH        : Path to CMR search result file in mounted filesystem
+# LAMBDA_STAGE_PATH       : Path to data stage output file in mounted filesystem
+# LAMBDA_GAP_FILE         : Path to gap file (see --gapfile arg)
+# LAMBDA_TARGET_FILE      : Path to target file for OCO-3 SAM definitions
+# LAMBDA_TARGET_FILE_OCO2 : Path to target file for OCO-2 target definitions
+# LAMBDA_SKIP_OCO2        : Do not process OCO-2 data if set (value must be "truthy" ie true, yes, y, t, 1
 
 
 STATE_SCHEMA = Schema({
@@ -80,7 +82,7 @@ DATE_RANGES = dict(
 
 GAPS = [
     {
-        'oco3': dict(start="2023-11-13", stop=None)
+        'oco3': dict(start="2023-11-13", stop="2024-07-16")
     }
 ]
 
@@ -258,7 +260,7 @@ def stac_filter(cmr_features, state, gap_file):
         for collection in ['oco2', 'oco3']:
             if collection in features:
                 date_map.setdefault(date, {})[collection] = 'PRESENT'
-            elif collection == 'oco2' and not global_product:
+            elif collection == 'oco2' and skip_oco2:
                 # Temporarily null out oco2 for non-global
                 date_map.setdefault(date, {})[collection] = 'EXPECTED ABSENT'
             else:
@@ -394,11 +396,26 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    '--target-file',
-    dest='target_file',
-    help='Path to JSON file containing SAM target data. '
+    '--target-file-oco3',
+    dest='target_file_3',
+    help='Path to JSON file containing OCO3 SAM target data. '
          'Fmt: {target_id: {name: str, bbox: {min_lon: f, min_lat: f, max_lon: f, max_lat: f}}',
     default=os.getenv('LAMBDA_TARGET_FILE')
+)
+
+parser.add_argument(
+    '--target-file-oco2',
+    dest='target_file_2',
+    help='Path to JSON file containing OCO2 SAM target data. '
+         'Fmt: {target_id: {name: str, bbox: {min_lon: f, min_lat: f, max_lon: f, max_lat: f}}',
+    default=os.getenv('LAMBDA_TARGET_FILE_OCO2')
+)
+
+parser.add_argument(
+    '--skip-oco2',
+    dest='skip_oco2',
+    action='store_true',
+    help='Skip OCO2 generation (only for non-global products)'
 )
 
 args = parser.parse_args()
@@ -450,6 +467,10 @@ if dc is None and not IN_LAMBDA:
 
 with open(args.rc) as fp:
     global_product = load(fp, Loader=Loader)['output'].get('global', True)
+    env_skip = str(os.getenv('LAMBDA_SKIP_OCO2', 'false')).lower() in ["yes", "true", "t", "1", "y"]
+
+    skip_oco2 = (args.skip_oco2 or env_skip) and not global_product
+
 
 def main(phase_override=None):
     the_time = datetime.now()
@@ -514,13 +535,6 @@ def main(phase_override=None):
 
         logger.info('Comparing CMR results to state')
 
-        # import warnings
-        # warnings.warn('2024-04-02:: We have to ensure we only select days to process if we\'re sure all data up'
-        #               ' to the end of the date range is either present or we know it will never exist. The idea of this'
-        #               ' is to avoid triggering repair functionality due to duplicate time slices from processing '
-        #               'the same day of data from different sources in different invocations. We have a preliminary '
-        #               'method here to implement that but it needs a bit more validation.', UserWarning)
-
         cmr_feature_count = 0
         cmr_features = {}
 
@@ -528,7 +542,7 @@ def main(phase_override=None):
             with open(stac_files[collection]) as fp:
                 cmr_results = json.load(fp)
 
-            if collection == 'oco2' and not global_product:
+            if collection == 'oco2' and skip_oco2:
                 # Temporarily null out oco2 for non-global
                 cmr_results['features'] = []
 
@@ -706,7 +720,9 @@ def main(phase_override=None):
                     if not global_product:
                         p_args.extend([
                             '-v',
-                            f'{args.target_file}:/etc/targets.json'
+                            f'{args.target_file_3}:/etc/targets.json',
+                            '-v',
+                            f'{args.target_file_2}:/etc/targets_oco2.json'
                         ])
 
                     p_args.extend([

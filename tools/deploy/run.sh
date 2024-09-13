@@ -48,8 +48,10 @@ python run.py \
   $([[ ! -z "$GRANULE_LIMIT" ]] && echo --limit=$GRANULE_LIMIT) \
   $([[ ! -z "$LOGGING_DIR" ]] && echo --logging=$LOGGING_DIR) \
   $([[ ! -z "$GAP_FILE" ]] && echo --gapfile=$GAP_FILE) \
-  $([[ ! -z "$TARGET_FILE" ]] && echo --target-file=$TARGET_FILE) \
-  $([[ ! -z "$VERBOSE" ]] && echo -v)
+  $([[ ! -z "$TARGET_FILE" ]] && echo --target-file-oco3=$TARGET_FILE) \
+  $([[ ! -z "$TARGET_FILE_OCO2" ]] && echo --target-file-oco2=$TARGET_FILE_OCO2) \
+  $([[ ! -z "$VERBOSE" ]] && echo -v) \
+  $([[ ! -z "$SKIP_OCO2" ]] && echo --skip-oco2) \
 
 exit_code=$?
 

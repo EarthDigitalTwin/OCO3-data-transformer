@@ -117,7 +117,7 @@ class GranuleReader:
             try:
                 ds_dict[group] = ds_dict[group].drop_vars(var)
             except ValueError:
-                logger.warning(f'Variable to drop {"/".join((group, var))} is not present in the dataset; ignoring')
+                logger.debug(f'Variable to drop {"/".join((group, var))} is not present in the dataset; ignoring')
 
         for group in ds_dict:
             for var in ds_dict[group].data_vars:

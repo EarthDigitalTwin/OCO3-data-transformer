@@ -47,8 +47,6 @@ def tr(s: str, chars: str = None):
 
 
 def fit_data_to_grid(sam, target, bounds, cfg: RunConfig):
-    logger.debug('Concatenating extracted datasets for interpolation')
-
     if len(sam) == 0:
         return None
 
@@ -442,7 +440,7 @@ class OCO3SamProcessor(Processor):
                 processed_sams_pre_qf = []
                 processed_sams_post_qf = []
 
-                with open(cfg.target_file) as fp:
+                with open(cfg.target_file_3) as fp:
                     target_bounds = json.load(fp)
 
                 if output_pre_qf:

@@ -115,8 +115,14 @@ data "aws_s3_bucket" "s3_bucket" {
   bucket = var.s3_bucket
 }
 
-data "local_file" "target_file" {
-  filename = var.s3_target_config_source
+data "local_file" "oco3_target_file" {
+  filename = var.s3_oco3_target_config_source
+}
+
+data "local_file" "oco2_target_file" {
+  filename = var.s3_oco2_target_config_source
+
+  count = fileexists(var.s3_oco2_target_config_source) ? 1 : 0
 }
 
 resource "aws_s3_object" "rct" {
@@ -125,12 +131,20 @@ resource "aws_s3_object" "rct" {
   content = local.rc_template
 }
 
-resource "aws_s3_object" "target_json" {
+resource "aws_s3_object" "oco3_target_json" {
   bucket  = data.aws_s3_bucket.s3_bucket.id
-  key     = var.s3_target_config_key
-  content = data.local_file.target_file.content
+  key     = var.s3_oco3_target_config_key
+  content = data.local_file.oco3_target_file.content
 
   count = var.global_product ? 0 : 1
+}
+
+resource "aws_s3_object" "oco2_target_json" {
+  bucket  = data.aws_s3_bucket.s3_bucket.id
+  key     = var.s3_oco2_target_config_key
+  content = data.local_file.oco2_target_file[0].content
+
+  count = (var.global_product || !fileexists(var.s3_oco2_target_config_source)) ? 0 : 1
 }
 
 /*
@@ -319,7 +333,8 @@ resource "aws_lambda_function" "init_lambda" {
     variables = {
       BUCKET           = var.s3_bucket
       RCT_KEY          = var.s3_rc_template_key
-      TARGET_KEY       = var.global_product ? null : var.s3_target_config_key
+      TARGET_KEY       = var.global_product ? null : var.s3_oco3_target_config_key
+      TARGET_KEY_OCO2  = var.global_product ? null : var.s3_oco2_target_config_key
       ZARR_BACKUP_FILE = "/mnt/transform/oco_pipeline_zarr_state/ZARR_WRITE.json"
     }
   }
@@ -388,15 +403,17 @@ resource "aws_lambda_function" "transform_lambda" {
 
   environment {
     variables = {
-      LAMBDA_GRANULE_LIMIT = var.input_granule_limit
-      LAMBDA_MOUNT_DIR     = "/mnt/transform/"
-      LAMBDA_PHASE         = 1
-      LAMBDA_RC_TEMPLATE   = "/mnt/transform/run-config.yaml"
-      LAMBDA_STAC_PATH     = "/mnt/transform/"
-      LAMBDA_STAGE_DIR     = "/mnt/transform/inputs/"
-      LAMBDA_STATE         = "/mnt/transform/state.json"
-      LAMBDA_GAP_FILE      = "/mnt/transform/gaps.json"
-      LAMBDA_TARGET_FILE   = "/mnt/transform/targets.json"
+      LAMBDA_GRANULE_LIMIT    = var.input_granule_limit
+      LAMBDA_MOUNT_DIR        = "/mnt/transform/"
+      LAMBDA_PHASE            = 1
+      LAMBDA_RC_TEMPLATE      = "/mnt/transform/run-config.yaml"
+      LAMBDA_STAC_PATH        = "/mnt/transform/"
+      LAMBDA_STAGE_DIR        = "/mnt/transform/inputs/"
+      LAMBDA_STATE            = var.global_product ? "/mnt/transform/state_global.json" : "/mnt/transform/state.json"
+      LAMBDA_GAP_FILE         = "/mnt/transform/gaps.json"
+      LAMBDA_TARGET_FILE      = "/mnt/transform/targets.json"
+      LAMBDA_TARGET_FILE_OCO2 = "/mnt/transform/targets_oco2.json"
+      LAMBDA_SKIP_OCO2        = var.skip_oco2_tfp ? "true" : "false"
     }
   }
 
@@ -428,6 +445,12 @@ resource "aws_lambda_function" "reset_lambda" {
   runtime          = "python3.11"
   timeout          = 120
   depends_on       = [local.mount_point_dep, aws_s3_object.rct]
+
+  environment {
+    variables = {
+      GLOBAL = var.global_product ? "true" : "false"
+    }
+  }
 
   file_system_config {
     arn              = local.ap_dep_arn

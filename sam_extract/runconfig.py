@@ -23,7 +23,7 @@ from pkg_resources import resource_filename
 from sam_extract.exceptions import ConfigError
 
 logger = logging.getLogger(__name__)
-warnings.simplefilter('always', DeprecationWarning)
+# warnings.simplefilter('always', DeprecationWarning)
 
 
 class RunConfig(object):
@@ -55,7 +55,7 @@ class RunConfig(object):
 
         output['type'] = s3_or_local(output, 'output')
 
-        if 'cog' in output:
+        if 'cog' in output and output['cog'] is not None:
             output['cog']['output']['type'] = s3_or_local(output['cog']['output'], 'output.cog.output')
 
         if 'files' not in input_section and 'queue' not in input_section:
@@ -226,7 +226,41 @@ class RunConfig(object):
 
     @property
     def target_file(self):
-        return self.__dict.get('target-file', None)
+        warnings.warn('Non-specific target file accessor used. Defaulting to OCO-3. This is deprecated and '
+                      'will be removed. Please use target_file_2 and/or target_file_3 instead.',
+                      DeprecationWarning, stacklevel=2)
+
+        return self.target_file_3
+
+    @property
+    def target_file_2(self):
+        target_dict = self.__dict.get('target-file', {})
+
+        if len(target_dict) == 0:
+            raise ValueError('No target files defined')
+
+        oco2_td = target_dict.get('oco2', None)
+
+        if oco2_td is None:
+            raise ValueError('No oco2 target file defined')
+
+        return oco2_td
+
+    @property
+    def target_file_3(self):
+        target_dict = self.__dict.get('target-file', {})
+
+        if len(target_dict) == 0:
+            raise ValueError('No target files defined')
+
+        oco3_td = target_dict.get('oco3', None)
+
+        if oco3_td is None:
+            raise ValueError('No oco3 target file defined')
+
+        return oco3_td
+
+
 
 
 

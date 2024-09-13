@@ -1,0 +1,343 @@
+{
+    "anmyeondoKo": {
+        "bbox": {
+            "max_lat": 37.12,
+            "max_lon": 126.87,
+            "min_lat": 36.12,
+            "min_lon": 125.87
+        },
+        "centroid_wkt": "POINT (126.37 36.62)",
+        "id": "anmyeondoKo",
+        "name": "Anmyeondo, South Korea"
+    },
+    "ascensionIsland": {
+        "bbox": {
+            "max_lat": -7.45,
+            "max_lon": -13.89,
+            "min_lat": -8.45,
+            "min_lon": -14.89
+        },
+        "centroid_wkt": "POINT (-14.39 -7.95)",
+        "id": "ascensionIsland",
+        "name": "Ascension Island"
+    },
+    "bialystokPl": {
+        "bbox": {
+            "max_lat": 53.7,
+            "max_lon": 23.58,
+            "min_lat": 52.7,
+            "min_lon": 22.58
+        },
+        "centroid_wkt": "POINT (23.08 53.2)",
+        "id": "bialystokPl",
+        "name": "Bialystok, Poland"
+    },
+    "boulderCO": {
+        "bbox": {
+            "max_lat": 40.41,
+            "max_lon": -103.74,
+            "min_lat": 39.41,
+            "min_lon": -104.74
+        },
+        "centroid_wkt": "POINT (-104.24 39.91)",
+        "id": "boulderCO",
+        "name": "Boulder, CO"
+    },
+    "bremenDe": {
+        "bbox": {
+            "max_lat": 53.6,
+            "max_lon": 9.35,
+            "min_lat": 52.6,
+            "min_lon": 8.35
+        },
+        "centroid_wkt": "POINT (8.85 53.1)",
+        "id": "bremenDe",
+        "name": "Bremen, Germany"
+    },
+    "caltechCA": {
+        "bbox": {
+            "max_lat": 34.62,
+            "max_lon": -117.57,
+            "min_lat": 33.62,
+            "min_lon": -118.57
+        },
+        "centroid_wkt": "POINT (-118.07 34.12)",
+        "id": "caltechCA",
+        "name": "Caltech, Pasadena, CA"
+    },
+    "darwinAu": {
+        "bbox": {
+            "max_lat": -11.88,
+            "max_lon": 131.42,
+            "min_lat": -12.88,
+            "min_lon": 130.42
+        },
+        "centroid_wkt": "POINT (130.92 -12.38)",
+        "id": "darwinAu",
+        "name": "ARM TWP - Darwin, Aus"
+    },
+    "drydenCA": {
+        "bbox": {
+            "max_lat": 35.46,
+            "max_lon": -117.38,
+            "min_lat": 34.46,
+            "min_lon": -118.38
+        },
+        "centroid_wkt": "POINT (-117.88 34.96)",
+        "id": "drydenCA",
+        "name": "Armstrong FRC, CA"
+    },
+    "eurekaCa": {
+        "bbox": {
+            "max_lat": 80.55,
+            "max_lon": -85.92,
+            "min_lat": 79.55,
+            "min_lon": -86.92
+        },
+        "centroid_wkt": "POINT (-86.42 80.05)",
+        "id": "eurekaCa",
+        "name": "Eureka, Canada"
+    },
+    "fairbanksAK": {
+        "bbox": {
+            "max_lat": 65.36,
+            "max_lon": -147.33,
+            "min_lat": 64.36,
+            "min_lon": -148.33
+        },
+        "centroid_wkt": "POINT (-147.83 64.86)",
+        "id": "fairbanksAK",
+        "name": "Fairbanks, AK"
+    },
+    "izanaTenerifeEs": {
+        "bbox": {
+            "max_lat": 28.8,
+            "max_lon": -16.02,
+            "min_lat": 27.8,
+            "min_lon": -17.02
+        },
+        "centroid_wkt": "POINT (-16.52 28.3)",
+        "id": "izanaTenerifeEs",
+        "name": "Izana, Tenerife, Spain"
+    },
+    "karlsruheDe": {
+        "bbox": {
+            "max_lat": 49.6,
+            "max_lon": 8.94,
+            "min_lat": 48.6,
+            "min_lon": 7.9399999999999995
+        },
+        "centroid_wkt": "POINT (8.44 49.1)",
+        "id": "karlsruheDe",
+        "name": "Karlsruhe, Germany"
+    },
+    "lamontOK": {
+        "bbox": {
+            "max_lat": 37.1,
+            "max_lon": -96.99,
+            "min_lat": 36.1,
+            "min_lon": -97.99
+        },
+        "centroid_wkt": "POINT (-97.49 36.6)",
+        "id": "lamontOK",
+        "name": "SGP ARM Site, Lamont OK"
+    },
+    "lauderNz": {
+        "bbox": {
+            "max_lat": -44.5,
+            "max_lon": 170.19,
+            "min_lat": -45.5,
+            "min_lon": 169.19
+        },
+        "centroid_wkt": "POINT (169.69 -45)",
+        "id": "lauderNz",
+        "name": "Lauder, NZ"
+    },
+    "libya4": {
+        "bbox": {
+            "max_lat": 29.05,
+            "max_lon": 23.89,
+            "min_lat": 28.05,
+            "min_lon": 22.89
+        },
+        "centroid_wkt": "POINT (23.39 28.55)",
+        "id": "libya4",
+        "name": "Libya4"
+    },
+    "litchfieldAu": {
+        "bbox": {
+            "max_lat": -12.68,
+            "max_lon": 131.29,
+            "min_lat": -13.68,
+            "min_lon": 130.29
+        },
+        "centroid_wkt": "POINT (130.79 -13.18)",
+        "id": "litchfieldAu",
+        "name": "Litchfield, Australia"
+    },
+    "manausBR": {
+        "bbox": {
+            "max_lat": -2.71,
+            "max_lon": -60.1,
+            "min_lat": -3.71,
+            "min_lon": -61.1
+        },
+        "centroid_wkt": "POINT (-60.6 -3.21)",
+        "id": "manausBR",
+        "name": "Manaus, Brazil"
+    },
+    "mexicoCityMx": {
+        "bbox": {
+            "max_lat": 19.93,
+            "max_lon": -98.64,
+            "min_lat": 18.93,
+            "min_lon": -99.64
+        },
+        "centroid_wkt": "POINT (-99.14 19.43)",
+        "id": "mexicoCityMx",
+        "name": "Mexico City, Mexico"
+    },
+    "orleansFr": {
+        "bbox": {
+            "max_lat": 48.46,
+            "max_lon": 2.61,
+            "min_lat": 47.46,
+            "min_lon": 1.6099999999999999
+        },
+        "centroid_wkt": "POINT (2.11 47.96)",
+        "id": "orleansFr",
+        "name": "Orleans, France"
+    },
+    "parisFr": {
+        "bbox": {
+            "max_lat": 49.35,
+            "max_lon": 2.86,
+            "min_lat": 48.35,
+            "min_lon": 1.8599999999999999
+        },
+        "centroid_wkt": "POINT (2.36 48.85)",
+        "id": "parisFr",
+        "name": "Paris, France"
+    },
+    "parkFallsWI": {
+        "bbox": {
+            "max_lat": 46.44,
+            "max_lon": -89.77,
+            "min_lat": 45.44,
+            "min_lon": -90.77
+        },
+        "centroid_wkt": "POINT (-90.27 45.94)",
+        "id": "parkFallsWI",
+        "name": "Park Falls, WI"
+    },
+    "railroadValley": {
+        "bbox": {
+            "max_lat": 39.0,
+            "max_lon": -115.19,
+            "min_lat": 38.0,
+            "min_lon": -116.19
+        },
+        "centroid_wkt": "POINT (-115.69 38.5)",
+        "id": "railroadValley",
+        "name": "Railroad Valley"
+    },
+    "reunionIsland": {
+        "bbox": {
+            "max_lat": -20.41,
+            "max_lon": 56.02,
+            "min_lat": -21.41,
+            "min_lon": 55.02
+        },
+        "centroid_wkt": "POINT (55.52 -20.91)",
+        "id": "reunionIsland",
+        "name": "Reunion Island"
+    },
+    "rikubetsuJp": {
+        "bbox": {
+            "max_lat": 43.95,
+            "max_lon": 144.2,
+            "min_lat": 42.95,
+            "min_lon": 143.2
+        },
+        "centroid_wkt": "POINT (143.7 43.45)",
+        "id": "rikubetsuJp",
+        "name": "Rikubetsu, Japan"
+    },
+    "rosemountMN": {
+        "bbox": {
+            "max_lat": 45.19,
+            "max_lon": -92.53,
+            "min_lat": 44.19,
+            "min_lon": -93.53
+        },
+        "centroid_wkt": "POINT (-93.03 44.69)",
+        "id": "rosemountMN",
+        "name": "Rosemount, Minnesota"
+    },
+    "sagaJp": {
+        "bbox": {
+            "max_lat": 33.74,
+            "max_lon": 130.79,
+            "min_lat": 32.74,
+            "min_lon": 129.79
+        },
+        "centroid_wkt": "POINT (130.29 33.24)",
+        "id": "sagaJp",
+        "name": "Saga, Japan"
+    },
+    "saoPauloBr": {
+        "bbox": {
+            "max_lat": -23.04,
+            "max_lon": -46.13,
+            "min_lat": -24.04,
+            "min_lon": -47.13
+        },
+        "centroid_wkt": "POINT (-46.63 -23.54)",
+        "id": "saoPauloBr",
+        "name": "Sau Paulo, Brazil"
+    },
+    "shanghaiCh": {
+        "bbox": {
+            "max_lat": 31.72,
+            "max_lon": 121.96,
+            "min_lat": 30.72,
+            "min_lon": 120.96
+        },
+        "centroid_wkt": "POINT (121.46 31.22)",
+        "id": "shanghaiCh",
+        "name": "Shanghai, China"
+    },
+    "sodankylaFi": {
+        "bbox": {
+            "max_lat": 67.87,
+            "max_lon": 27.13,
+            "min_lat": 66.87,
+            "min_lon": 26.13
+        },
+        "centroid_wkt": "POINT (26.63 67.37)",
+        "id": "sodankylaFi",
+        "name": "Sodankyla, Finland"
+    },
+    "tsukubaJp": {
+        "bbox": {
+            "max_lat": 36.55,
+            "max_lon": 140.62,
+            "min_lat": 35.55,
+            "min_lon": 139.62
+        },
+        "centroid_wkt": "POINT (140.12 36.05)",
+        "id": "tsukubaJp",
+        "name": "Tsukuba, Japan"
+    },
+    "wollongongAu": {
+        "bbox": {
+            "max_lat": -33.95,
+            "max_lon": 151.35,
+            "min_lat": -34.95,
+            "min_lon": 150.35
+        },
+        "centroid_wkt": "POINT (150.85 -34.45)",
+        "id": "wollongongAu",
+        "name": "Wollongong, Aus"
+    }
+}

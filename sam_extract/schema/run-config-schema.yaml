@@ -13,12 +13,12 @@ chunking:
   time: int(min=1)
 max-workers: int(min=1)
 mask-scaling: num(min=1, max=1.5, required=False, none=False)
-target-file: str(required=False)
+target-file: include('targets', required=False)
 
 ---
 
 input-files:
-  files: list(str(), include('s3_input'), map(str(), include('s3_input'), key=enum('oco3', 'oco2')))
+  files: list(str(), include('s3_input'), map(str(), include('s3_input'), null(), key=enum('oco3', 'oco2')))
 input-rmq:
   queue:
     host: str()
@@ -37,7 +37,7 @@ cog:
   output:
     s3: include('s3', required=False)
     local: str(required=False)
-  options: map()
+  options: map(required=False)
 s3:
   url: str()
   region: str(required=False, none=False)
@@ -55,3 +55,6 @@ s3_input:
 dim:
   group: str()
   name: str()
+targets:
+  oco3: str(required=False)
+  oco2: str(required=False)

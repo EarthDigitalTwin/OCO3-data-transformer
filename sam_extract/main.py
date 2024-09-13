@@ -14,6 +14,7 @@
 
 import argparse
 import gc
+import itertools
 import json
 import logging
 import os
@@ -198,15 +199,14 @@ def process_inputs(in_files, cfg: RunConfig):
             processed_data_tuples = []
 
             if isinstance(input, str) or (isinstance(input, dict) and 'path' in input):
-                processed_data_tuples.append(PROCESSORS[product_type]['oco3'].process_input(
-                    input,
-                    cfg=cfg,
-                    temp_dir=temp_dir,
-                    exclude_groups=exclude_groups
-                ))
-
-                # We only want to produce empty slices for missing granules for the global product
                 if cfg.is_global:
+                    processed_data_tuples.append(PROCESSORS[product_type]['oco3'].process_input(
+                        input,
+                        cfg=cfg,
+                        temp_dir=temp_dir,
+                        exclude_groups=exclude_groups
+                    ))
+
                     # Bit hacky, but it's better than bundling the dt with the input spec
                     dt = Processor.granule_to_dt(input if isinstance(input, str) else input['path'])
 
@@ -222,6 +222,15 @@ def process_inputs(in_files, cfg: RunConfig):
                             True,
                             None
                         ))
+                else:
+                    processed_data_tuples.append(
+                        {'oco3': PROCESSORS[product_type]['oco3'].process_input(
+                            input['oco3'],
+                            cfg=cfg,
+                            temp_dir=temp_dir,
+                            exclude_groups=exclude_groups
+                        )}
+                    )
             elif isinstance(input, dict):
                 input = {k: input[k] for k in input if input[k] is not None}
 
@@ -237,16 +246,15 @@ def process_inputs(in_files, cfg: RunConfig):
                     logger.warning(f'Ignoring some input file types that are not supported: {input_keys - output_keys}')
                     input = {k: input[k] for k in input_keys.intersection(output_keys)}
 
-                for t in input:
-                    processed_data_tuples.append(PROCESSORS[product_type][t].process_input(
-                        input[t],
-                        cfg=cfg,
-                        temp_dir=temp_dir,
-                        exclude_groups=exclude_groups
-                    ))
-
-                # We only want to produce empty slices for missing granules for the global product
                 if cfg.is_global:
+                    for t in input:
+                        processed_data_tuples.append(PROCESSORS[product_type][t].process_input(
+                            input[t],
+                            cfg=cfg,
+                            temp_dir=temp_dir,
+                            exclude_groups=exclude_groups
+                        ))
+
                     # Bit hacky, but it's better than bundling the dt with the input spec
                     sample_input = input[list(input_keys)[0]]
                     sample_granule = sample_input['path'] if isinstance(sample_input, dict) else sample_input
@@ -261,6 +269,15 @@ def process_inputs(in_files, cfg: RunConfig):
                             True,
                             None
                         ))
+                else:
+                    processed_data_tuples.append(
+                        {t: PROCESSORS[product_type][t].process_input(
+                            input[t],
+                            cfg=cfg,
+                            temp_dir=temp_dir,
+                            exclude_groups=exclude_groups
+                        ) for t in input}
+                    )
             else:
                 raise TypeError(f'Invalid input type {type(input)}')
 
@@ -270,12 +287,20 @@ def process_inputs(in_files, cfg: RunConfig):
 
                 return {group: xr.merge([g[group] for g in groups]) for group in groups[0]}
 
-            return (
-                merge([pdt[0] for pdt in processed_data_tuples]),
-                merge([pdt[1] for pdt in processed_data_tuples]),
-                all([pdt[2] for pdt in processed_data_tuples]),
-                input
-            )
+            if cfg.is_global:
+                return (
+                    merge([pdt[0] for pdt in processed_data_tuples]),
+                    merge([pdt[1] for pdt in processed_data_tuples]),
+                    all([pdt[2] for pdt in processed_data_tuples]),
+                    input
+                )
+            else:
+                return (
+                    {t: [pdt[t][0][r] for pdt in processed_data_tuples for r in range(len(pdt[t][0]))] for t in input},
+                    {t: [pdt[t][1][r] for pdt in processed_data_tuples for r in range(len(pdt[t][1]))] for t in input},
+                    {t: all([pdt[t][2] for pdt in processed_data_tuples]) for t in input},
+                    input
+                )
 
         process = partial(process_input, cfg=cfg, temp_dir=td, exclude_groups=exclude)
 
@@ -390,139 +415,167 @@ def process_inputs(in_files, cfg: RunConfig):
 
                 return [(target_dict[t], t) for t in target_dict]
 
-            processed_groups_pre = merge_by_site(processed_groups_pre)
-            processed_groups_post = merge_by_site(processed_groups_post)
+            processed_groups_pre = {
+                m: list(itertools.chain(*[p[m] for p in processed_groups_pre if m in p])) for m in PROCESSORS['local']
+            }
 
-            processed_groups_pre.sort(key=lambda x: x[1])
-            processed_groups_post.sort(key=lambda x: x[1])
+            processed_groups_post = {
+                m: list(itertools.chain(*[p[m] for p in processed_groups_post if m in p])) for m in PROCESSORS['local']
+            }
 
-            with open(cfg.target_file) as fp:
-                targets = json.load(fp)
+            processed_groups_pre = {m: merge_by_site(processed_groups_pre[m]) for m in processed_groups_pre}
+            processed_groups_post = {m: merge_by_site(processed_groups_post[m]) for m in processed_groups_post}
 
-            if cfg.cog:
-                def cog_output_cfg(config: RunConfig):
-                    additional_params = {'verify': True, 'final': True}
+            for m in processed_groups_pre:
+                processed_groups_pre[m].sort(key=lambda x: x[1])
+            for m in processed_groups_post:
+                processed_groups_post[m].sort(key=lambda x: x[1])
 
-                    if config.cog_output_type == 'local':
-                        path_root = config.cog_output
-                    else:
-                        path_root = config.cog_output['url']
-                        additional_params['region'] = config.cog_output.get('region', 'us-west-2')
-                        additional_params['auth'] = config.cog_output['auth']
+            targets = {}
 
-                    return path_root, additional_params
+            try:
+                with open(cfg.target_file_3) as fp:
+                    targets['oco3'] = json.load(fp)
+            except ValueError:
+                logger.error(f'Could not load target file for OCO-3')
+                if 'oco3' in processed_groups_pre or 'oco3' in processed_groups_post:
+                    raise
 
-                cog_root, cog_kwargs = cog_output_cfg(cfg)
+            try:
+                with open(cfg.target_file_2) as fp:
+                    targets['oco2'] = json.load(fp)
+            except ValueError:
+                logger.error(f'Could not load target file for OCO-2')
+                if 'oco2' in processed_groups_pre or 'oco2' in processed_groups_post:
+                    raise
 
-                cog_kwargs['efs'] = cfg.cog_efs
+            for m in set(list(processed_groups_pre.keys()) + list(processed_groups_post.keys())):
+                logger.info(f'Writing produced outputs for {m}')
 
-                driver_options = dict(
-                    compress='lzw',
-                    resampling='NEAREST',
-                    overview_resampling='NEAREST',
-                    overviews='AUTO',
-                    level=9
-                )
+                if cfg.cog:
+                    def cog_output_cfg(config: RunConfig):
+                        additional_params = {'verify': True, 'final': True}
 
-                driver_options.update(cfg.cog_options)
-                driver_options = CoGWriter.validate_options(driver_options)
+                        if config.cog_output_type == 'local':
+                            path_root = config.cog_output
+                        else:
+                            path_root = config.cog_output['url']
+                            additional_params['region'] = config.cog_output.get('region', 'us-west-2')
+                            additional_params['auth'] = config.cog_output['auth']
 
-                cog_writer_pre = CoGWriter(cog_root, 'oco3', False, driver_kwargs=driver_options, **cog_kwargs)
-                cog_writer_post = CoGWriter(cog_root, 'oco3', True, driver_kwargs=driver_options, **cog_kwargs)
-            else:
-                cog_writer_pre = None
-                cog_writer_post = None
+                        return path_root, additional_params
 
-            def do_write(result_tuple: tuple, qf):
-                result, target = result_tuple
+                    cog_root, cog_kwargs = cog_output_cfg(cfg)
 
-                if qf == 'pre':
-                    qf_key = 'pre_qf'
-                    cog_writer = cog_writer_pre
+                    cog_kwargs['efs'] = cfg.cog_efs
+
+                    driver_options = dict(
+                        compress='lzw',
+                        resampling='NEAREST',
+                        overview_resampling='NEAREST',
+                        overviews='AUTO',
+                        level=9
+                    )
+
+                    driver_options.update(cfg.cog_options)
+                    driver_options = CoGWriter.validate_options(driver_options)
+
+                    cog_writer_pre = CoGWriter(cog_root, m, False, driver_kwargs=driver_options, **cog_kwargs)
+                    cog_writer_post = CoGWriter(cog_root, m, True, driver_kwargs=driver_options, **cog_kwargs)
                 else:
-                    qf_key = 'post_qf'
-                    cog_writer = cog_writer_post
+                    cog_writer_pre = None
+                    cog_writer_post = None
 
-                if result is None:
-                    logger.warning(f'Target {target} present in {qf_key} results but without any data')
-                    return
+                def do_write(result_tuple: tuple, qf):
+                    result, target = result_tuple
 
-                writer = ZarrWriter(
-                    str(os.path.join(output_root, cfg.naming_dict[qf_key], f'{target}.zarr')),
-                    chunking,
-                    overwrite=False,
-                    **output_kwargs
-                )
+                    if qf == 'pre':
+                        qf_key = 'pre_qf'
+                        cog_writer = cog_writer_pre
+                    else:
+                        qf_key = 'post_qf'
+                        cog_writer = cog_writer_post
 
-                writer.write(
-                    result,
-                    attrs=dict(
-                        title=cfg.title_dict[qf_key],
-                        target_id=target,
-                        target_name=targets[target].get('name', 'UNK'),
-                        quality_flag_filtered='no' if qf == 'pre' else 'yes',
-                        target_bbox=box(
-                            targets[target]['bbox']['min_lon'],
-                            targets[target]['bbox']['min_lat'],
-                            targets[target]['bbox']['max_lon'],
-                            targets[target]['bbox']['max_lat'],
-                        ).wkt
-                    ),
-                    global_product=False,
-                    mission='oco3'
-                )
+                    if result is None:
+                        logger.warning(f'Target {target} present in {qf_key} results but without any data')
+                        return
 
-                if cog_writer is not None:
-                    cog_writer.write(
+                    writer = ZarrWriter(
+                        str(os.path.join(output_root, cfg.naming_dict[qf_key], m, f'{target}.zarr')),
+                        chunking,
+                        overwrite=False,
+                        **output_kwargs
+                    )
+
+                    writer.write(
                         result,
-                        target,
                         attrs=dict(
                             title=cfg.title_dict[qf_key],
                             target_id=target,
-                            target_name=targets[target].get('name', 'UNK'),
+                            target_name=targets[m][target].get('name', 'UNK'),
                             quality_flag_filtered='no' if qf == 'pre' else 'yes',
                             target_bbox=box(
-                                targets[target]['bbox']['min_lon'],
-                                targets[target]['bbox']['min_lat'],
-                                targets[target]['bbox']['max_lon'],
-                                targets[target]['bbox']['max_lat'],
+                                targets[m][target]['bbox']['min_lon'],
+                                targets[m][target]['bbox']['min_lat'],
+                                targets[m][target]['bbox']['max_lon'],
+                                targets[m][target]['bbox']['max_lat'],
                             ).wkt
-                        )
+                        ),
+                        global_product=False,
+                        mission=m
                     )
 
-                return target, targets[target].get('name', 'name unknown'), qf_key
+                    if cog_writer is not None:
+                        cog_writer.write(
+                            result,
+                            target,
+                            attrs=dict(
+                                title=cfg.title_dict[qf_key],
+                                target_id=target,
+                                target_name=targets[m][target].get('name', 'UNK'),
+                                quality_flag_filtered='no' if qf == 'pre' else 'yes',
+                                target_bbox=box(
+                                    targets[m][target]['bbox']['min_lon'],
+                                    targets[m][target]['bbox']['min_lat'],
+                                    targets[m][target]['bbox']['max_lon'],
+                                    targets[m][target]['bbox']['max_lat'],
+                                ).wkt
+                            )
+                        )
 
-            with ThreadPoolExecutor(
-                    max_workers=min(cfg.max_workers, 4),
-                    thread_name_prefix='write_worker'
-            ) as pool:
-                futures = []
+                    return target, targets[m][target].get('name', 'name unknown'), qf_key
 
-                for r in processed_groups_pre:
-                    futures.append(pool.submit(do_write, r, 'pre'))
+                with ThreadPoolExecutor(
+                        max_workers=min(cfg.max_workers, 4),
+                        thread_name_prefix='write_worker'
+                ) as pool:
+                    futures = []
 
-                for r in processed_groups_post:
-                    futures.append(pool.submit(do_write, r, 'post'))
+                    for r in processed_groups_pre[m]:
+                        futures.append(pool.submit(do_write, r, 'pre'))
 
-                i = 1
+                    for r in processed_groups_post[m]:
+                        futures.append(pool.submit(do_write, r, 'post'))
 
-                for f in as_completed(futures):
-                    result_tuple = f.result()
+                    i = 1
 
-                    if result_tuple is not None:
-                        tid, name, qf = result_tuple
+                    for f in as_completed(futures):
+                        result_tuple = f.result()
 
-                        logger.info(f'Finished {qf} write for {tid} ({name}) [{i:,}/{len(futures):,}] '
-                                    f'[{i/len(futures)*100:7.3f}%]')
-                    else:
-                        logger.info(f'Skipped undefined target on output. [{i:,}/{len(futures):,}] '
-                                    f'[{i/len(futures)*100:7.3f}%]')
+                        if result_tuple is not None:
+                            tid, name, qf = result_tuple
 
-                    i += 1
+                            logger.info(f'Finished {qf} write for {tid} ({name}) {m} progress: [{i:,}/{len(futures):,}] '
+                                        f'[{i/len(futures)*100:7.3f}%]')
+                        else:
+                            logger.info(f'Skipped undefined target on output. {m} progress: [{i:,}/{len(futures):,}] '
+                                        f'[{i/len(futures)*100:7.3f}%]')
 
-            if cog_writer_pre is not None:
-                cog_writer_pre.finish()
-                cog_writer_post.finish()
+                        i += 1
+
+                if cog_writer_pre is not None:
+                    cog_writer_pre.finish()
+                    cog_writer_post.finish()
 
         logger.info(f'Cleaning up temporary directory at {td}')
 

@@ -49,8 +49,14 @@ def lambda_handler(event, context):
     target_key = os.getenv('TARGET_KEY')
 
     if target_key is not None:
-        logger.info('Copying target JSON file')
+        logger.info('Copying OCO-3 target JSON file')
         s3.download_file(bucket, target_key, '/mnt/transform/targets.json')
+
+    target_key_oco2 = os.getenv('TARGET_KEY_OCO2')
+
+    if target_key_oco2 is not None:
+        logger.info('Copying OCO-2 target JSON file')
+        s3.download_file(bucket, target_key_oco2, '/mnt/transform/targets_oco2.json')
 
     try:
         logger.info('Trying to purge the staging dir if it exists...')

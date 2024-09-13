@@ -28,8 +28,11 @@ grids for a collection of level 3 output products.
 
 ### OCO-2
 
-**NOTE: Currently, OCO-2 data is NOT supported for target-focused mode product generation. 
-[See the global product README](README-Global.md) for the global-mode product which supports both OCO-2 and OCO-3 simultaneously**
+**NOTE: Currently, while OCO-2 data is supported for target-focused mode product generation, some of the required data (the list of target definitions), has
+not yet been verified as OK to publish, thus only limited data can be produced in target-focused mode at this time for those sites which have been confirmed to 
+be publicly available. (See [OCO-2 Validation](https://ocov2.jpl.nasa.gov/science/validation/) and [Wunch et al. (2017)](https://doi.org/10.5194/amt-10-2209-2017)).
+
+**[See the global product README](README-Global.md) for the global-mode product which supports all data from both OCO-2 and OCO-3 simultaneously**
 
 NASA-JPL's OCO-2 (Orbiting Carbon Observatory 2) is an Earth satellite mission to study the sources and sinks of carbon 
 dioxide globally. The satellite retrieves column-averaged CO2 dry air mole fraction (XCO2) by measuring the spectra of 
@@ -47,8 +50,8 @@ demonstrates OCO-2 in target mode.
 
 ### Source Data
 
-The software was designed to take as input NetCDF files from the [`OCO3_L2_Lite_FP v10.4r`](https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_FP_10.4r/summary?keywords=oco3) dataset from the 
-[GES DISC](https://disc.gsfc.nasa.gov/) DAAC.
+The software was designed to take as input NetCDF files from the [`OCO3_L2_Lite_FP v10.4r`](https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_FP_10.4r/summary?keywords=oco3) and 
+[`OCO2_L2_Lite_FP v11.1r`](https://disc.gsfc.nasa.gov/datasets/OCO2_L2_Lite_FP_11.1r/summary?keywords=OCO2_L2_Lite_FP_11.1r) datasets from the [GES DISC](https://disc.gsfc.nasa.gov/) DAAC.
 
 ### What is Zarr & Why Produce it?
 
@@ -136,7 +139,48 @@ The `input` key is required to define what and were the script sources its data 
 
 The first is defined by `inputs.files` which should be a list of either paths to files on the local filesystem or objects in S3.
 
-Example:
+By default, local paths or S3 objects in the `inputs.files` list will be processed as OCO-3 files, with the corresponding
+OCO-2 variables being empty in the output product for the corresponding day. To specify OCO-2 files, the paths/objects 
+should be specified as a dictionary with `oco2` and `oco3` as the keys. If no granule for one of the source datasets 
+exists for the day, a null value could be used or the key omitted. NOTE: It is up to the user to ensure the files 
+correspond to the same day.
+
+Example (OCO-2 & OCO-3)
+
+```yaml
+input:
+  files:
+      # Local inputs with both datasets
+    - oco2: /tmp/oco2/oco2_LtCO2_191012_B11100Ar_230603005524s.nc4
+      oco3: /tmp/oco3/oco3_LtCO2_191012_B10400Br_220317234818s.nc4
+      # Local inputs with just one dataset
+    - oco2: /tmp/oco2/oco2_LtCO2_150211_B11100Ar_230524225123s.nc4
+      oco3: ~
+      # Local inputs with just one dataset (Alternate)
+    - oco2: /tmp/oco2/oco2_LtCO2_150211_B11100Ar_230524225123s.nc4
+      # S3 inputs with both datasets
+    - oco2: 
+        path: s3://example-bucket/oco2_LtCO2_191012_B11100Ar_230603005524s.nc4
+        accessKeyID: <secret>
+        secretAccessKey: <secret>
+      oco3: 
+        path: s3://example-bucket/oco3_LtCO2_191012_B10400Br_220317234818s.nc4
+        accessKeyID: <secret>
+        secretAccessKey: <secret>
+      # S3 inputs with just one dataset
+    - oco2: 
+        path: s3://example-bucket/oco2_LtCO2_150211_B11100Ar_230524225123s.nc4
+        accessKeyID: <secret>
+        secretAccessKey: <secret>
+      oco3: ~
+      # S3 inputs with just one dataset (Alternate)
+    - oco2: 
+        path: s3://example-bucket/oco2_LtCO2_150211_B11100Ar_230524225123s.nc4
+        accessKeyID: <secret>
+        secretAccessKey: <secret>
+```
+
+Example (Default to OCO-3):
 
 ```yaml
 input:
@@ -215,8 +259,8 @@ output:
     post_qf: post_qf_root_name
 ```
 
-In the above example, the output Zarr groups would have the URL: `<root URL>/<output.naming.pre_qf>/<target ID>.zarr` or
-`<root URL>/<output.naming.post_qf>/<target ID>.zarr`
+In the above example, the output Zarr groups would have the URL: `<root URL>/<dataset>/<output.naming.pre_qf>/<target ID>.zarr` or
+`<root URL>/<dataset>/<output.naming.post_qf>/<target ID>.zarr` where `<dataset>` is `oco3` or `oco2`.
 
 The metadata `title` field can be set by the optional `output.title` field:
 
@@ -330,7 +374,9 @@ Example:
 
 The path to this file must be given in the `target-file` key.
 
-You can find a sample targets file [here](targets.json). To generate your own, please see the [bounding box tools](tools/bbox-tools).
+You can find a sample targets file for OCO-3 [here](targets.json). To generate your own, please see the [bounding box tools](tools/bbox-tools).
+
+For OCO-2, an example can be found [here](targets_oco2.json), and the tools can be found [here](tools/bbox-tools/oco2).
 
 #### Exclusions
 

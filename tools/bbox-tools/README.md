@@ -5,7 +5,7 @@
 When generating site-specific output products, the software needs to be provided bounding boxes for each SAM-/Target-mode
 target ID it will encounter. A list of target IDs and their centers can be downloaded from the [project website](https://oco3car.jpl.nasa.gov/api/report/clasp). 
 There is no fixed cap on the distance a SAM- or Target-mode sounding can be made from an associated target's center, thus
-these tools were created to help extract, visualize, aggregate and analyze the SAM- and Target- mode data to help the 
+these tools were created to help extract, visualize, aggregate and analyze the SAM- and Target-mode data to help the 
 user decide what bounding box sizes they wish to use, evaluate its performance, and, ultimately, produce a correctly
 formatted file to run the software.
 
