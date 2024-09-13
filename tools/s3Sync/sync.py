@@ -72,7 +72,7 @@ if RC_FILE_OVERRIDE is not None and os.path.exists(RC_FILE_OVERRIDE):
         PRE_QF_NAME = out_cfg['naming']['pre_qf']
         POST_QF_NAME = out_cfg['naming']['post_qf']
 
-        if 'cog' in out_cfg and 'local' in out_cfg['cog'].get('output', {}):
+        if out_cfg.get('cog', None) is not None and 'local' in out_cfg['cog'].get('output', {}):
             COG_DIR = urlparse(out_cfg['cog']['output']['local']).path
         else:
             logger.info('No CoG dir defined')

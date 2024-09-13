@@ -94,7 +94,7 @@ if [ $exit_code -ne 0 ]; then
     msg="${msg} The log files were unable to be uploaded to S3 and are still on the instance's FS for manual viewing."
   fi
 
-  echo aws --profile ${AWS_PROFILE:-default} sns publish --topic-arn=${SNS_ARN} --message "${msg}"
+  aws --profile ${AWS_PROFILE:-default} sns publish --topic-arn=${SNS_ARN} --message "${msg}" || echo 'Failed to publish failure notification'; true
 else
   echo 'Run succeeded'
 

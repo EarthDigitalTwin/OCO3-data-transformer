@@ -1145,7 +1145,7 @@ locals {
       "Type": "Pass",
       "Next": "notify_fail_general",
       "Result": {
-        "Message": "Failed to prepare run config file"
+        "Message": "Data staging failed or some other error occurred when preparing processing step run configuration YAML file"
       },
       "Comment": "SNS message formatting"
     },

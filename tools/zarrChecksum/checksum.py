@@ -89,7 +89,18 @@ def main():
         help='AWS credentials profile'
     )
 
+    parser.add_argument(
+        '-v',
+        dest='verbose',
+        action='store_true',
+        help='Verbose output'
+    )
+
     args = parser.parse_args()
+
+    logger.setLevel(logging.DEBUG if args.verbose else logging.INFO)
+
+    logger.info('Getting list of files to process')
 
     if args.store_type == 'local':
         zarr_files = [os.path.join(dp, f) for dp, dn, filenames in os.walk(args.path) for f in filenames]
@@ -118,12 +129,10 @@ def main():
     with ThreadPoolExecutor(thread_name_prefix='s3_worker') as pool:
         parts = []
 
+        logger.info(f'Computing initial hashes for {len(zarr_files):,} files')
+
         for p in pool.map(f_open, zarr_files):
             parts.append(p)
-
-    # # print(parts)
-    #
-    # print([p[0] for p in parts if not isinstance(p[0], str)])
 
     parts = [p[1] for p in sorted(parts, key=lambda x: x[0])]
 
@@ -156,6 +165,8 @@ def main():
                 logger.debug(f'md5(0x{format_long_bytes(a)} + 0x{format_long_bytes(b)}) -> 0x{digest.hex()}')
 
                 next_parts.append(digest)
+
+        logger.info(f'Combined {len(parts):,} hashes into {len(next_parts):,}')
 
         parts = next_parts
 
