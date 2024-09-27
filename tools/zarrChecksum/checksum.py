@@ -70,9 +70,7 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        '-i',
-        dest='path',
-        required=True,
+        'path',
         help='Path or URL to zarr root'
     )
 

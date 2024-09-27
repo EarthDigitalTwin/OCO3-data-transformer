@@ -23,3 +23,8 @@ from sam_extract.processors import (
     OCO3SifProcessor,
     OCO3SifGlobalProcessor
 )
+
+__all__ = [
+    'Processor',
+    'PROCESSORS',
+]
