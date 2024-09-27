@@ -70,7 +70,11 @@ def lambda_handler(event, context):
     mount_root_dir = '/mnt/transform'
 
     runtime_temp_files = [
-        'cmr-results.json', 'pipeline-rc.yaml', 'staging.json'
+        'cmr-results.json',
+        'cmr-results-oco2.json',
+        'cmr-results-oco3_sif.json',
+        'pipeline-rc.yaml',
+        'staging.json'
     ]
 
     for f in runtime_temp_files:

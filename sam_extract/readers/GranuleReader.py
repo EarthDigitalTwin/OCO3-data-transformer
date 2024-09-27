@@ -45,11 +45,13 @@ class GranuleReader:
     def __init__(
             self,
             path: str,
+            groups: Dict[str, str],
             drop_dims: Optional[List[Tuple[str, str]]] = None,
             s3_region=None,
             s3_auth: Dict[str, str] = None
     ):
         self.__url = path
+        self.__groups = groups
         self.__ds_dict: Dict[str, xr.Dataset] | None = None
         self.__s3_file = None
         self.__s3_region = s3_region
@@ -85,13 +87,18 @@ class GranuleReader:
 
         try:
             # Open the input datasets but do not mask out missing values yet
-            ds_dict = {
-                '/': xr.open_dataset(path, mask_and_scale=False, engine='h5netcdf').load(),
-                '/Meteorology': xr.open_dataset(path, group='Meteorology', mask_and_scale=False, engine='h5netcdf').load(),
-                '/Preprocessors': xr.open_dataset(path, group='Preprocessors', mask_and_scale=False, engine='h5netcdf').load(),
-                '/Retrieval': xr.open_dataset(path, group='Retrieval', mask_and_scale=False, engine='h5netcdf').load(),
-                '/Sounding': xr.open_dataset(path, group='Sounding', mask_and_scale=False, engine='h5netcdf').load(),
-            }
+            ds_dict = dict()
+
+            for group in self.__groups:
+                logger.debug(
+                    f'Opening NetCDF group {self.__groups[group] if self.__groups[group] is not None else "root"}'
+                )
+                ds_dict[group] = xr.open_dataset(
+                    path,
+                    group=self.__groups[group],
+                    mask_and_scale=False,
+                    engine='h5netcdf',
+                ).load()
         except FileNotFoundError:
             logger.error(f'Input file {path} does not exist')
             raise ReaderException(f'Input file {path} does not exist')
@@ -114,10 +121,11 @@ class GranuleReader:
             if group not in ds_dict and '/' + group in ds_dict:
                 group = '/' + group
 
-            try:
-                ds_dict[group] = ds_dict[group].drop_vars(var)
-            except ValueError:
-                logger.debug(f'Variable to drop {"/".join((group, var))} is not present in the dataset; ignoring')
+            if group in ds_dict:
+                try:
+                    ds_dict[group] = ds_dict[group].drop_vars(var)
+                except ValueError:
+                    logger.debug(f'Variable to drop {"/".join((group, var))} is not present in the dataset; ignoring')
 
         for group in ds_dict:
             for var in ds_dict[group].data_vars:

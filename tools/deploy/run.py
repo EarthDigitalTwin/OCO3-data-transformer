@@ -44,13 +44,20 @@ except ImportError:
 # LAMBDA_GAP_FILE         : Path to gap file (see --gapfile arg)
 # LAMBDA_TARGET_FILE      : Path to target file for OCO-3 SAM definitions
 # LAMBDA_TARGET_FILE_OCO2 : Path to target file for OCO-2 target definitions
-# LAMBDA_SKIP_OCO2        : Do not process OCO-2 data if set (value must be "truthy" ie true, yes, y, t, 1
+# LAMBDA_SKIP             : Comma-separated list of datasets to skip
+
+
+SOURCE_DATASETS = [
+    'oco3',  # OCO-3 XCO2
+    'oco2',  # OCO-2 XCO2
+    'oco3_sif',  # OCO-3 SIF
+]
 
 
 STATE_SCHEMA = Schema({
     'days': int,
     'granules': int,
-    'processed': Or({str: {str: str}}, {})  # {Date -> {Mission -> Filename}}
+    'processed': Or({str: {str: str}}, {})  # {Date -> {Dataset -> Filename}}
 })
 
 GAP_SCHEMA = Schema([{
@@ -72,17 +79,21 @@ PHASE_FINISH = 3
 PHASE_CLEANUP = 4
 
 
+UNDETERMINED_END_DATE = datetime(2999, 12, 31)
+
 # WON'T make any assumptions about EOMs until they are well known. That is, there is no chance of an extension
 # Use dummy dates for now...
 DATE_RANGES = dict(
-    oco2=dict(start=datetime(2014, 9, 6), end=datetime(2999, 12, 31)),
-    oco3=dict(start=datetime(2019, 8, 6), end=datetime(2999, 12, 31))
+    oco2=dict(start=datetime(2014, 9, 6), end=UNDETERMINED_END_DATE),
+    oco3=dict(start=datetime(2019, 8, 6), end=UNDETERMINED_END_DATE),
+    oco3_sif=dict(start=datetime(2019, 8, 6), end=UNDETERMINED_END_DATE),
 )
 
 
 GAPS = [
     {
-        'oco3': dict(start="2023-11-13", stop="2024-07-16")
+        'oco3': dict(start="2023-11-13", stop="2024-07-16"),
+        'oco3_sif': dict(start="2023-11-13", stop="2024-07-16")
     }
 ]
 
@@ -257,10 +268,10 @@ def stac_filter(cmr_features, state, gap_file):
     for date in cmr_features:
         features = cmr_features[date]
 
-        for collection in ['oco2', 'oco3']:
+        for collection in SOURCE_DATASETS:
             if collection in features:
                 date_map.setdefault(date, {})[collection] = 'PRESENT'
-            elif collection == 'oco2' and skip_oco2:
+            elif collection in skip:
                 # Temporarily null out oco2 for non-global
                 date_map.setdefault(date, {})[collection] = 'EXPECTED ABSENT'
             else:
@@ -281,7 +292,7 @@ def stac_filter(cmr_features, state, gap_file):
     for i in range(len(mapped_dates) - 1, -1, -1):
         d = mapped_dates[i]
 
-        if date_map[d]['oco2'] != 'ABSENT' and date_map[d]['oco3'] != 'ABSENT':
+        if all([date_map[d][c] != 'ABSENT' for c in SOURCE_DATASETS]):
             new_data = True
             last_valid_i = i
             break
@@ -297,7 +308,7 @@ def stac_filter(cmr_features, state, gap_file):
 
     for date in reduced_cmr_features:
         if date not in state['processed']:
-            for collection in ['oco2', 'oco3']:
+            for collection in SOURCE_DATASETS:
                 if collection in reduced_cmr_features[date]:
                     filename, feature = reduced_cmr_features[date][collection]
                     return_features.append((granule_to_dt(filename), feature))
@@ -412,10 +423,11 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    '--skip-oco2',
-    dest='skip_oco2',
-    action='store_true',
-    help='Skip OCO2 generation (only for non-global products)'
+    '--skip',
+    dest='skips',
+    help='Comma-separated list of datasets to skip',
+    type=str,
+    default=''
 )
 
 args = parser.parse_args()
@@ -467,9 +479,7 @@ if dc is None and not IN_LAMBDA:
 
 with open(args.rc) as fp:
     global_product = load(fp, Loader=Loader)['output'].get('global', True)
-    env_skip = str(os.getenv('LAMBDA_SKIP_OCO2', 'false')).lower() in ["yes", "true", "t", "1", "y"]
-
-    skip_oco2 = (args.skip_oco2 or env_skip) and not global_product
+    skip = list(set(os.getenv('LAMBDA_SKIP', '').lower().split(',') + args.skips.lower().split(',')))
 
 
 def main(phase_override=None):
@@ -524,13 +534,18 @@ def main(phase_override=None):
                 oco3=container_to_host_path(
                     search_config['services']['cumulus_granules_search_oco3']['environment']['OUTPUT_FILE'],
                     *search_config['services']['cumulus_granules_search_oco3']['volumes'][0].split(':')[:2]
-                )
+                ),
+                oco3_sif=container_to_host_path(
+                    search_config['services']['cumulus_granules_search_oco3_sif']['environment']['OUTPUT_FILE'],
+                    *search_config['services']['cumulus_granules_search_oco3_sif']['volumes'][0].split(':')[:2]
+                ),
             )
         else:
             stac_file_root = os.getenv('LAMBDA_STAC_PATH')
             stac_files = dict(
                 oco2=os.path.join(stac_file_root, 'cmr-results-oco2.json'),
                 oco3=os.path.join(stac_file_root, 'cmr-results.json'),
+                oco3_sif=os.path.join(stac_file_root, 'cmr-results-oco3_sif.json'),
             )
 
         logger.info('Comparing CMR results to state')
@@ -542,7 +557,7 @@ def main(phase_override=None):
             with open(stac_files[collection]) as fp:
                 cmr_results = json.load(fp)
 
-            if collection == 'oco2' and skip_oco2:
+            if collection in skip:
                 # Temporarily null out oco2 for non-global
                 cmr_results['features'] = []
 
@@ -663,7 +678,13 @@ def main(phase_override=None):
         granule_date_mapping = {}
 
         for granule in downloaded_granules:
-            collection = 'oco3' if granule.startswith('oco3') else 'oco2'
+            if granule.startswith('oco3_LtCO2'):
+                collection = 'oco3'
+            elif granule.startswith('oco3_LtSIF'):
+                collection = 'oco3_sif'
+            else:
+                collection = 'oco2'
+
             granule_date_mapping.setdefault(granule_to_dt(granule), {})[collection] = (
                 os.path.join('/var/inputs/', granule))
 
@@ -689,7 +710,7 @@ def main(phase_override=None):
             else:
                 output_mount_dir = None
 
-            logger.info('Starting pipeline')
+            logger.info('Starting product generation...')
 
             with NamedTemporaryFile(
                 mode='w', prefix='rc-', suffix='.yaml'
@@ -739,7 +760,7 @@ def main(phase_override=None):
                         stderr=subprocess.STDOUT
                     ).wait()
 
-                logger.info(f'Pipeline completed in {datetime.now() - the_time}')
+                logger.info(f'Product generation completed in {datetime.now() - the_time}')
 
             inspect_p = subprocess.Popen(
                 [
@@ -762,12 +783,12 @@ def main(phase_override=None):
                     exit_code = int(stats['State']['ExitCode'])
 
                     if exit_code != 0:
-                        logger.error('Pipeline failed: {exit_code}')
+                        logger.error('Product generation failed: {exit_code}')
                         logger.debug(json.dumps(stats, indent=4))
-                        raise OSError('Pipeline failed')
+                        raise OSError('Product generation failed')
                 else:
-                    logger.error(f'Inspect subprocess error {err}. Assuming pipeline failed')
-                    raise OSError('Pipeline failed')
+                    logger.error(f'Inspect subprocess error {err}. Assuming product generation failed')
+                    raise OSError('Product generation failed')
             finally:
                 subprocess.Popen(
                     [
@@ -788,7 +809,13 @@ def main(phase_override=None):
                 granule_dir = s['granule_dir']
 
         for g in downloaded_granules:
-            collection = 'oco3' if g.startswith('oco3') else 'oco2'
+            if g.startswith('oco3_LtCO2'):
+                collection = 'oco3'
+            elif g.startswith('oco3_LtSIF'):
+                collection = 'oco3_sif'
+            else:
+                collection = 'oco2'
+
             date = granule_to_dt(g)
 
             state['processed'].setdefault(date, {})[collection] = g

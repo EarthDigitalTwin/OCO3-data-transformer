@@ -55,5 +55,26 @@ services:
       OUTPUT_FILE: /tmp/cmr-results.json
     networks:
       - internal
+  cumulus_granules_search_oco3_sif:
+    image: ghcr.io/unity-sds/unity-data-services:5.3.2
+    volumes:
+      - /tmp:/tmp
+    command: ["SEARCH"]
+    environment:
+
+      COLLECTION_ID: 'C2082387249-GES_DISC'
+      LIMITS: '-1'
+      DATE_FROM: '1970-01-01T00:00:00Z'
+#      DATE_FROM: '2022-01-01T00:00:00Z'
+      DATE_TO: '2999-12-31T00:00:00Z'
+      VERIFY_SSL: 'FALSE'
+      FILTER_ONLY_ASSETS: 'TRUE'
+
+      GRANULES_SEARCH_DOMAIN: 'CMR'
+      CMR_BASE_URL: 'https://cmr.earthdata.nasa.gov'
+      LOG_LEVEL: '10'
+      OUTPUT_FILE: /tmp/cmr-results-oco3_sif.json
+    networks:
+      - internal
 networks:
   internal:

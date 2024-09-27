@@ -30,7 +30,7 @@ grids for a collection of level 3 output products.
 
 **NOTE: Currently, while OCO-2 data is supported for target-focused mode product generation, some of the required data (the list of target definitions), has
 not yet been verified as OK to publish, thus only limited data can be produced in target-focused mode at this time for those sites which have been confirmed to 
-be publicly available. (See [OCO-2 Validation](https://ocov2.jpl.nasa.gov/science/validation/) and [Wunch et al. (2017)](https://doi.org/10.5194/amt-10-2209-2017)).
+be publicly available. (See [OCO-2 Validation](https://ocov2.jpl.nasa.gov/science/validation/) and [Wunch et al. (2017)](https://doi.org/10.5194/amt-10-2209-2017)).**
 
 **[See the global product README](README-Global.md) for the global-mode product which supports all data from both OCO-2 and OCO-3 simultaneously**
 
@@ -48,10 +48,14 @@ demonstrates OCO-2 in target mode.
 
 [Learn more about OCO-2](https://ocov2.jpl.nasa.gov/)
 
+### SIF
+
+OCO-2 and OCO-3 data can also be processed to measure solar-induced florescence (SIF). This data can also be utilized in this software.
+
 ### Source Data
 
-The software was designed to take as input NetCDF files from the [`OCO3_L2_Lite_FP v10.4r`](https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_FP_10.4r/summary?keywords=oco3) and 
-[`OCO2_L2_Lite_FP v11.1r`](https://disc.gsfc.nasa.gov/datasets/OCO2_L2_Lite_FP_11.1r/summary?keywords=OCO2_L2_Lite_FP_11.1r) datasets from the [GES DISC](https://disc.gsfc.nasa.gov/) DAAC.
+The software was designed to take as input NetCDF files from the [`OCO3_L2_Lite_FP v10.4r`](https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_FP_10.4r/summary?keywords=oco3), 
+[`OCO2_L2_Lite_FP v11.1r`](https://disc.gsfc.nasa.gov/datasets/OCO2_L2_Lite_FP_11.1r/summary?keywords=OCO2_L2_Lite_FP_11.1r), and [`OCO3_L2_Lite_SIF`](https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_SIF_10r/summary?keywords=oco3) datasets from the [GES DISC](https://disc.gsfc.nasa.gov/) DAAC.
 
 ### What is Zarr & Why Produce it?
 
@@ -141,30 +145,35 @@ The first is defined by `inputs.files` which should be a list of either paths to
 
 By default, local paths or S3 objects in the `inputs.files` list will be processed as OCO-3 files, with the corresponding
 OCO-2 variables being empty in the output product for the corresponding day. To specify OCO-2 files, the paths/objects 
-should be specified as a dictionary with `oco2` and `oco3` as the keys. If no granule for one of the source datasets 
-exists for the day, a null value could be used or the key omitted. NOTE: It is up to the user to ensure the files 
-correspond to the same day.
+should be specified as a dictionary with `oco2` and `oco3` as the keys - OCO-3 SIF data should use `oco3_sif`. If no 
+granule for one of the source datasets exists for the day, a null value could be used or the key omitted. NOTE: It is 
+up to the user to ensure the files correspond to the same day.
 
-Example (OCO-2 & OCO-3)
+Example (OCO-2 & OCO-3 (+ SIF))
 
 ```yaml
 input:
   files:
-      # Local inputs with both datasets
+      # Local inputs with all datasets
     - oco2: /tmp/oco2/oco2_LtCO2_191012_B11100Ar_230603005524s.nc4
       oco3: /tmp/oco3/oco3_LtCO2_191012_B10400Br_220317234818s.nc4
+      oco3_sif: /tmp/oco3/oco3_LtSIF_191012_B10309r_211129210717s.nc4
       # Local inputs with just one dataset
     - oco2: /tmp/oco2/oco2_LtCO2_150211_B11100Ar_230524225123s.nc4
       oco3: ~
       # Local inputs with just one dataset (Alternate)
     - oco2: /tmp/oco2/oco2_LtCO2_150211_B11100Ar_230524225123s.nc4
-      # S3 inputs with both datasets
+      # S3 inputs with all datasets
     - oco2: 
         path: s3://example-bucket/oco2_LtCO2_191012_B11100Ar_230603005524s.nc4
         accessKeyID: <secret>
         secretAccessKey: <secret>
       oco3: 
         path: s3://example-bucket/oco3_LtCO2_191012_B10400Br_220317234818s.nc4
+        accessKeyID: <secret>
+        secretAccessKey: <secret>
+      oco3_sif: 
+        path: s3://example-bucket/oco3_LtSIF_191012_B10309r_211129210717s.nc4
         accessKeyID: <secret>
         secretAccessKey: <secret>
       # S3 inputs with just one dataset
@@ -471,15 +480,19 @@ Base configuration can be set by exporting the following environment variables i
 
 - `SEARCH_YAML`: Granule search Docker Compose config file, if not set, use the one provided
 - `DOWNLOAD_YAML`: Granule stage Docker Compose config file, if not set, use the one provided
-- `LOGGING_DIR`: Directory to place all captured log files
 - `PIPELINE_IMAGE`: Pipeline image to run
-- `VERBOSE`: Set to enable verbose logging
+- `RC_TEMPLATE` : Path to template RunConfig YAML file. Use this to set various output settings
+- `STATE_FILE` : Path to file which will store state information to track which data days have been processed
 - `GRANULE_LIMIT`: Max number of granules to process per invocation
+- `LOGGING_DIR`: Directory to place all captured log files
+- `GAP_FILE`: Optional JSON file to specify known gaps in OCO-2 and OCO-3 data availability. Used to help determine whether granules on a certain date are ready to be processed or should be held to wait for other granules on that day to become available.
+- `TARGET_FILE`: Path to target JSON file for OCO-3
+- `TARGET_FILE_OCO2`: Path to target JSON file for OCO-2
+- `VERBOSE`: Set to enable verbose logging
+- `SKIP` : Optional: comma-separated list of source datasets to skip. Datasets: oco3, oco2, oco3_sif
 - `S3_PATH`: S3 URI path to upload logs to
 - `AWS_PROFILE`: AWS profile (`~/.aws/credentials`) which should have permissions for S3 and SNS
 - `SNS_ARN`: SNS topic ARN (Currently unused)
-- `GAP_FILE`: Optional JSON file to specify known gaps in OCO-2 and OCO-3 data availability. Used to help determine whether granules on a certain date are ready to be processed or should be held to wait for other granules on that day to become available.
-- `TARGET_FILE`: Path to target JSON file
 
 Prerequisites to run:
 - [Earthdata login](https://urs.earthdata.nasa.gov/) free access to NASA EOSDIS data

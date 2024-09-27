@@ -51,7 +51,7 @@ python run.py \
   $([[ ! -z "$TARGET_FILE" ]] && echo --target-file-oco3=$TARGET_FILE) \
   $([[ ! -z "$TARGET_FILE_OCO2" ]] && echo --target-file-oco2=$TARGET_FILE_OCO2) \
   $([[ ! -z "$VERBOSE" ]] && echo -v) \
-  $([[ ! -z "$SKIP_OCO2" ]] && echo --skip-oco2) \
+  $([[ ! -z "$SKIP" ]] && echo --skip=$SKIP) \
 
 exit_code=$?
 

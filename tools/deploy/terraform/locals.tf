@@ -974,6 +974,60 @@ locals {
               "Type": "Fail"
             }
           }
+        },
+        {
+          "StartAt": "cmr_search_oco3_sif",
+          "States": {
+            "cmr_search_oco3_sif": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::batch:submitJob.sync",
+              "Parameters": {
+                "JobName": "cmr_search",
+                "JobDefinition": "${aws_batch_job_definition.batch_job_def_search.arn}",
+                "JobQueue": "${aws_batch_job_queue.batch_queue.arn}",
+                "ContainerOverrides": {
+                  "Environment": [
+                    {
+                      "Name": "OUTPUT_FILE",
+                      "Value": "/tmp/cmr-results-oco3_sif.json"
+                    },
+                    {
+                      "Name": "COLLECTION_ID",
+                      "Value": "C2082387249-GES_DISC"
+                    }
+                  ]
+                }
+              },
+              "Comment": "Queries CMR for granules in collection",
+              "Catch": [
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "Next": "oco3_sif_search_fail",
+                  "Comment": "General error catch"
+                }
+              ],
+              "Next": "err_check_0_oco3_sif"
+            },
+            "err_check_0_oco3_sif": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.Container.ExitCode",
+                  "NumericEquals": 0,
+                  "Next": "oco3_sif_search_success"
+                }
+              ],
+              "Default": "oco3_sif_search_fail"
+            },
+            "oco3_sif_search_success": {
+              "Type": "Succeed"
+            },
+            "oco3_sif_search_fail": {
+              "Type": "Fail"
+            }
+          }
         }
       ],
       "Catch": [

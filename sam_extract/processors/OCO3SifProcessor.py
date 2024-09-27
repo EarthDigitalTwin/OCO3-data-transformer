@@ -17,7 +17,7 @@ import json
 import logging
 import re
 import warnings
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Dict
 from typing import List, Optional
 
@@ -34,7 +34,7 @@ from shapely.geometry import Polygon, box
 
 logger = logging.getLogger(__name__)
 
-OPERATION_MODE_SAM = 4
+OPERATION_MODE_SAM = 3
 OPERATION_MODE_TARGET = 2
 
 PROCESSOR_PREFIX = ''
@@ -43,11 +43,16 @@ WARN_ON_UNKNOWN_TARGET = True
 
 GROUPS = {
     '/': None,
-    '/Meteorology': 'Meteorology',
-    '/Preprocessors': 'Preprocessors',
-    '/Retrieval': 'Retrieval',
-    '/Sounding': 'Sounding',
+    # '/Cloud': 'Cloud',
+    # '/Geolocation': 'Geolocation',
+    '/Metadata': 'Metadata',
+    # '/Meteo': 'Meteo',
+    # '/Offset': 'Offset',
+    # '/Science': 'Science',
+    '/Sequences': 'Sequences',
 }
+
+SIF_EPOCH = datetime(1990, 1, 1)
 
 
 def tr(s: str, chars: str = None):
@@ -55,6 +60,8 @@ def tr(s: str, chars: str = None):
 
 
 def fit_data_to_grid(sam, target, bounds, cfg: RunConfig):
+    logger.debug('Concatenating extracted datasets for interpolation')
+
     if len(sam) == 0:
         return None
 
@@ -70,22 +77,20 @@ def fit_data_to_grid(sam, target, bounds, cfg: RunConfig):
 
     sam = sam.copy()
 
-    lats = sam['/'].latitude.to_numpy()
-    lons = sam['/'].longitude.to_numpy()
-    time = np.array([datetime(*sam['/'].date[0].to_numpy().astype(int)).replace(tzinfo=timezone.utc).timestamp()])
+    lats = sam['/'].Latitude.to_numpy()
+    lons = sam['/'].Longitude.to_numpy()
+    time = np.array([
+        (SIF_EPOCH + timedelta(seconds=sam['/'].Delta_Time[0].item())).replace(tzinfo=timezone.utc).timestamp()
+    ])
 
     points = list(zip(lons, lats))
 
     # Dimensions that will not be interpolated and fit to grid
     drop_dims = {
-        '/': ['bands', 'date', 'file_index', 'latitude', 'levels', 'longitude', 'pressure_levels', 'pressure_weight',
-              'sensor_zenith_angle', 'solar_zenith_angle', 'source_files', 'time', 'vertex_latitude',
-              'vertex_longitude', 'vertices', 'xco2_averaging_kernel', 'xco2_qf_bitflag', 'xco2_qf_simple_bitflag',
-              'xco2_quality_flag', 'co2_profile_apriori', 'xco2_apriori'],
-        '/Retrieval': ['diverging_steps', 'iterations', 'surface_type', 'SigmaB'],
-        '/Sounding': ['att_data_source', 'footprint', 'land_fraction', 'land_water_indicator', 'operation_mode',
-                      'orbit', 'pma_azimuth_angle', 'pma_elevation_angle', 'sensor_azimuth_angle',
-                      'solar_azimuth_angle', 'target_id', 'target_name']
+        '/': ['Delta_Time', 'Quality_Flag', 'SAz', 'Latitude', 'Latitude_Corners', 'SZA', 'Longitude',
+              'Longitude_Corners', 'VAz', 'VZA'],
+        '/Metadata': ['BuildId', 'CollectionLabel', 'FootprintId', 'MeasurementMode', 'OrbitId', 'SoundingId'],
+        '/Sequences': ['SegmentsIndex', 'SequencesId', 'SequencesIndex', 'SequencesMode', 'SequencesName']
     }
 
     logger.debug('Dropping variables that will be excluded from interpolation (ie, non-numeric values)')
@@ -222,11 +227,11 @@ def mask_data(sam, grid_ds, cfg: RunConfig) -> Dict[str, xr.Dataset] | None:
     scaling = min(max(scaling, 1), 1.5)
 
     logger.trace(f'Footprint scaling factor: {scaling}')
-    logger.trace(f'Creating bounding polys for region of {len(sam["/"].vertex_latitude):,} footprints')
+    logger.trace(f'Creating bounding polys for region of {len(sam["/"].Latitude_Corners):,} footprints')
 
     for lats, lons in zip(
-            sam['/'].vertex_latitude.to_numpy(),
-            sam['/'].vertex_longitude.to_numpy()
+            sam['/'].Latitude_Corners.to_numpy(),
+            sam['/'].Longitude_Corners.to_numpy()
     ):
         vertices = [(lons[i].item(), lats[i].item()) for i in range(len(lats))]
         vertices.append((lons[0].item(), lats[0].item()))
@@ -294,7 +299,7 @@ def mask_data(sam, grid_ds, cfg: RunConfig) -> Dict[str, xr.Dataset] | None:
     return grid_ds
 
 
-class OCO3SamProcessor(Processor):
+class OCO3SamSIFProcessor(Processor):
     @classmethod
     def process_input(
             cls,
@@ -334,12 +339,17 @@ class OCO3SamProcessor(Processor):
         else:
             path = input_file
 
-        logger.info(f'Processing OCO-3 input at {path}')
+        logger.info(f'Processing OCO-3 SIF input at {path}')
 
         try:
             with GranuleReader(path, GROUPS, **additional_params) as ds:
-                mode_array = ds['/Sounding']['operation_mode']
-                target_array = ds['/Sounding']['target_id']
+                mode_array = ds['/Metadata']['MeasurementMode']
+                # target_array = ds['/Sounding']['target_id']
+
+                seq_ids = ds['/Sequences']['SequencesId'].values
+                seq_idx = ds['/Sequences']['SequencesIndex'].values
+
+                target_array = [seq_ids[idx] if idx >= 0 else 'none' for idx in seq_idx]
 
                 logger.info('Splitting into individual SAM regions')
 
@@ -351,19 +361,26 @@ class OCO3SamProcessor(Processor):
                 start = None
                 target_id = None
 
-                for i, (mode, target) in enumerate(zip(mode_array.to_numpy(), target_array.to_numpy())):
-                    # print('SAM', region_slices[-1:], i, mode, target, in_region, start, target_id, n_sams)
+                for i, (mode, target) in enumerate(zip(mode_array.to_numpy(), target_array)):
+                    logger.trace(f'SAM, {region_slices[-1:]}, {len(region_slices)}, {i}, {mode}, {target}, {in_region}, {start}, {target_id}, {n_sams}')
 
                     if mode.item() == OPERATION_MODE_SAM:
                         if not in_region:
                             in_region = True
                             target_id = target
                             start = i
-                        elif target != target_id:
-                            region_slices.append((slice(start, i), target_id))
-                            target_id = target
-                            start = i
-                            n_sams += 1
+                        else:
+                            if target_id == 'none':
+                                target_id = target
+
+                            if target != target_id:
+                                if target == 'none':
+                                    continue
+
+                                region_slices.append((slice(start, i), target_id))
+                                start = i
+                                n_sams += 1
+                                target_id = target
 
                     if mode.item() != OPERATION_MODE_SAM:
                         if in_region:
@@ -382,19 +399,26 @@ class OCO3SamProcessor(Processor):
                 start = None
                 target_id = None
 
-                for i, (mode, target) in enumerate(zip(mode_array.to_numpy(), target_array.to_numpy())):
-                    # print('Target', region_slices[-1:], i, mode, target, in_region, start, target_id, n_sams)
+                for i, (mode, target) in enumerate(zip(mode_array.to_numpy(), target_array)):
+                    logger.trace(f'Target, {region_slices[-1:]}, {len(region_slices)}, {i}, {mode}, {target}, {in_region}, {start}, {target_id}, {n_sams}')
 
                     if mode.item() == OPERATION_MODE_TARGET:
                         if not in_region:
                             in_region = True
                             target_id = target
                             start = i
-                        elif target != target_id:
-                            region_slices.append((slice(start, i), target_id))
-                            target_id = target
-                            start = i
-                            n_targets += 1
+                        else:
+                            if target_id == 'none':
+                                target_id = target
+
+                            if target != target_id:
+                                if target == 'none':
+                                    continue
+
+                                region_slices.append((slice(start, i), target_id))
+                                start = i
+                                n_sams += 1
+                                target_id = target
 
                     if mode.item() != OPERATION_MODE_TARGET:
                         if in_region:
@@ -415,23 +439,29 @@ class OCO3SamProcessor(Processor):
 
                 for s, target in region_slices:
                     if target in ['Missing', 'missing']:
-                        logger.error(f'Region from sounding_id range {ds["/"].sounding_id[s.start].item()} to '
-                                     f'{ds["/"].sounding_id[s.stop-1].item()} does not have a defined target and will '
+                        logger.error(f'Region from sounding_dim range {ds["/"].sounding_dim[s.start].item()} to '
+                                     f'{ds["/"].sounding_dim[s.stop-1].item()} does not have a defined target and will '
                                      f'need to be excluded')
                         continue
 
-                    sam_group = {group: ds[group].isel(sounding_id=s) for group in ds if group not in exclude_groups}
+                    sam_group = {group: ds[group].isel(sounding_dim=s) for group in ds if group not in exclude_groups}
 
                     if output_pre_qf:
                         extracted_sams_pre_qf.append((sam_group, target))
 
-                    quality = sam_group['/'].xco2_quality_flag == 0
+                    quality = sam_group['/'].Quality_Flag
+
+                    # There has to be a better way to combine these
+                    best = quality == 0
+                    good = quality == 1
+
+                    quality[:] = np.logical_or(best.values, good.values)
 
                     # If this SAM has no good data
                     if not any(quality):
-                        logger.info(f'Dropping region from sounding_id range '
-                                    f'{ds["/"].sounding_id[s.start].item()} to '
-                                    f'{ds["/"].sounding_id[s.stop-1].item()} ({len(quality):,} soundings) as there are '
+                        logger.info(f'Dropping region from sounding_dim range '
+                                    f'{ds["/"].sounding_dim[s.start].item()} to '
+                                    f'{ds["/"].sounding_dim[s.stop-1].item()} ({len(quality):,} soundings) as there are '
                                     f'no points flagged as good.')
                         continue
 
@@ -448,7 +478,7 @@ class OCO3SamProcessor(Processor):
                 processed_sams_pre_qf = []
                 processed_sams_post_qf = []
 
-                with open(cfg.target_file_3) as fp:
+                with open(cfg.target_file) as fp:
                     target_bounds = json.load(fp)
 
                 if output_pre_qf:
@@ -515,4 +545,4 @@ class OCO3SamProcessor(Processor):
         raise NotImplementedError()
 
 
-PROCESSORS['local']['oco3'] = OCO3SamProcessor
+PROCESSORS['local']['oco3_sif'] = OCO3SamSIFProcessor

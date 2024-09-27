@@ -20,7 +20,7 @@ import logging
 import os
 import threading
 from concurrent.futures import ThreadPoolExecutor, Future, as_completed
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import partial
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -208,7 +208,9 @@ def process_inputs(in_files, cfg: RunConfig):
                     ))
 
                     # Bit hacky, but it's better than bundling the dt with the input spec
-                    dt = Processor.granule_to_dt(input if isinstance(input, str) else input['path'])
+                    dt = Processor.granule_to_dt(input if isinstance(input, str) else input['path']).replace(
+                        hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc
+                    )
 
                     for k in list(set([p for k in PROCESSORS.keys() for p in PROCESSORS[k].keys()])):
                         if k == 'oco3':
@@ -258,7 +260,9 @@ def process_inputs(in_files, cfg: RunConfig):
                     # Bit hacky, but it's better than bundling the dt with the input spec
                     sample_input = input[list(input_keys)[0]]
                     sample_granule = sample_input['path'] if isinstance(sample_input, dict) else sample_input
-                    dt = Processor.granule_to_dt(sample_granule)
+                    dt = Processor.granule_to_dt(sample_granule).replace(
+                        hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc
+                    )
 
                     for t in output_keys - input_keys:
                         empty_ds = PROCESSORS[product_type][t].empty_dataset(dt, cfg, temp_dir)
@@ -433,20 +437,33 @@ def process_inputs(in_files, cfg: RunConfig):
 
             targets = {}
 
+            def have_data_for_types(*types: str):
+                return any(
+                    [len(o.get(t, [])) > 0 for t in types for o in [processed_groups_pre, processed_groups_post]]
+                )
+
             try:
                 with open(cfg.target_file_3) as fp:
-                    targets['oco3'] = json.load(fp)
-            except ValueError:
+                    target_data = json.load(fp)
+
+                    for t in ['oco3', 'oco3_sif']:
+                        if have_data_for_types(t):
+                            targets[t] = target_data
+            except (ValueError, FileNotFoundError):
                 logger.error(f'Could not load target file for OCO-3')
-                if 'oco3' in processed_groups_pre or 'oco3' in processed_groups_post:
+                if have_data_for_types('oco3', 'oco3_sif'):
                     raise
 
             try:
                 with open(cfg.target_file_2) as fp:
-                    targets['oco2'] = json.load(fp)
-            except ValueError:
+                    target_data = json.load(fp)
+
+                    for t in ['oco2']:
+                        if have_data_for_types(t):
+                            targets[t] = target_data
+            except (ValueError, FileNotFoundError):
                 logger.error(f'Could not load target file for OCO-2')
-                if 'oco2' in processed_groups_pre or 'oco2' in processed_groups_post:
+                if have_data_for_types('oco2'):
                     raise
 
             for m in set(list(processed_groups_pre.keys()) + list(processed_groups_post.keys())):

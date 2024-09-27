@@ -23,7 +23,6 @@ from datetime import datetime
 from functools import partial
 from os.path import basename, dirname, join
 from shutil import copytree, rmtree
-from typing import Literal
 from urllib.parse import urlparse
 from uuid import uuid4
 

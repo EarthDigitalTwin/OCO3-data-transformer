@@ -413,7 +413,7 @@ resource "aws_lambda_function" "transform_lambda" {
       LAMBDA_GAP_FILE         = "/mnt/transform/gaps.json"
       LAMBDA_TARGET_FILE      = "/mnt/transform/targets.json"
       LAMBDA_TARGET_FILE_OCO2 = "/mnt/transform/targets_oco2.json"
-      LAMBDA_SKIP_OCO2        = var.skip_oco2_tfp ? "true" : "false"
+      LAMBDA_SKIP             = join(",", var.skip_datasets)
     }
   }
 

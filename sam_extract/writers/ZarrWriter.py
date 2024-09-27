@@ -50,6 +50,15 @@ TIME_CHUNKING = (4000,)  # 3650 days in OCO-3's 10-year nominal mission, rounded
 
 ENCODINGS: Dict[str, Dict[str, Dict[str, Any]]] = {}
 
+# List of attributes that cause errors if set on a data var when appending, if we're appending, we need to remove
+# all of these
+IMMUTABLE_ATTRS = [
+    'missing_value',
+    '_FillValue',
+    'add_offset',
+    'scale_factor'
+]
+
 
 class ZarrWriter(Writer):
     def __init__(self,
@@ -111,6 +120,14 @@ class ZarrWriter(Writer):
 
             return groups
 
+    @staticmethod
+    def remove_immutable_attributes(group):
+        for g in group:
+            for var in group[g].data_vars:
+                for attr in IMMUTABLE_ATTRS:
+                    if attr in group[g][var].attrs:
+                        del group[g][var].attrs[attr]
+
     def write(
             self,
             ds: Dict[str, Dataset],
@@ -166,6 +183,8 @@ class ZarrWriter(Writer):
                     coverage_end=coverage_end,
                 )
 
+                self.remove_immutable_attributes(ds)
+
         else:
             logger.info('Group does not exist so it will be created.')
 
@@ -181,7 +200,10 @@ class ZarrWriter(Writer):
             if global_product:
                 fixed = FIXED_ATTRIBUTES['global']
             else:
-                fixed = FIXED_ATTRIBUTES['local'][mission]
+                fixed = FIXED_ATTRIBUTES['local'].get(mission, {})
+
+                if mission not in FIXED_ATTRIBUTES['local']:
+                    logger.warning(f'No fixed attributes found for {mission}. Please contact developers.')
 
             attributes = dict(chain(
                 attrs.items(),

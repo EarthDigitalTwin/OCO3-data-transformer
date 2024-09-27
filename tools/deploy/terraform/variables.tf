@@ -339,7 +339,7 @@ variable "image_tag" {
   }
 
   validation {
-    condition     = element(sort([substr(var.image_tag, 0, 10), "2024.08.22"]), 0) == "2024.08.22"
+    condition     = element(sort([substr(var.image_tag, 0, 10), "2024.09.24"]), 0) == "2024.09.24"
     error_message = "Docker image tag is too old"
   }
 }
@@ -351,10 +351,15 @@ variable "cog_options" {
   nullable    = false
 }
 
-variable "skip_oco2_tfp" {
-  type        = bool
-  description = "For target-focused product, just generate OCO-3 data"
-  default     = false
+variable "skip_datasets" {
+  type        = list(string)
+  description = "List of datasets to not process. Valid values: oco2, oco3, oco3_sif"
+  default     = []
+
+  validation {
+    condition     = alltrue([for s in var.skip_datasets : contains(["oco2", "oco3", "oco3_sif"], s)])
+    error_message = "Invalid dataset name"
+  }
 }
 
 variable "verbose" {

@@ -42,6 +42,14 @@ PROCESSOR_PREFIX = ''
 
 WARN_ON_UNKNOWN_TARGET = True
 
+GROUPS = {
+    '/': None,
+    '/Meteorology': 'Meteorology',
+    '/Preprocessors': 'Preprocessors',
+    '/Retrieval': 'Retrieval',
+    '/Sounding': 'Sounding',
+}
+
 
 def tr(s: str, chars: str = None):
     return re.sub(rf'([{chars}])(\1+)', r'\1', s)
@@ -327,7 +335,7 @@ class OCO2Processor(Processor):
         logger.info(f'Processing OCO-2 input at {path}')
 
         try:
-            with GranuleReader(path, **additional_params) as ds:
+            with GranuleReader(path, GROUPS, **additional_params) as ds:
                 mode_array = ds['/Sounding']['operation_mode']
 
                 logger.info('Splitting into individual target regions')

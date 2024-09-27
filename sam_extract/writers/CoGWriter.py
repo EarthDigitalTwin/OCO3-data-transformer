@@ -31,6 +31,12 @@ logger = logging.getLogger(__name__)
 
 DATETIME_FMT = "%Y%m%d%H%M%S"
 
+DATASET_FILENAME_PREFIXES = {
+    'oco2': 'oco2-co2',
+    'oco3': 'oco3-co2',
+    'oco3_sif': 'oco3-sif',
+}
+
 
 class CoGWriter(Writer):
     DRIVER_OPTIONS = [
@@ -99,7 +105,11 @@ class CoGWriter(Writer):
         if attrs is None:
             attrs = {}
 
-        attrs.update(FIXED_ATTRIBUTES['local'][self.__mission])
+        fixed_attrs = FIXED_ATTRIBUTES['local'].get(self.__mission, {})
+        if self.__mission not in FIXED_ATTRIBUTES['local']:
+            logger.warning(f'No fixed attributes found for {self.__mission}. Please contact developers.')
+
+        attrs.update(fixed_attrs)
 
         temp_dir: TemporaryDirectory | None = None
         tiffs = []
@@ -133,7 +143,9 @@ class CoGWriter(Writer):
                         data.attrs['datetime_of_first_sounding'] = dt.strftime('%Y-%m-%dT%H:%M:%SZ')
                         data.attrs = {k.upper(): v for k, v in data.attrs.items()}
 
-                        filename = (f'{self.__mission}_{target_id}_{dt.strftime(DATETIME_FMT)}_'
+                        fn_mission = DATASET_FILENAME_PREFIXES.get(self.__mission, self.__mission)
+
+                        filename = (f'{fn_mission}_{target_id}_{dt.strftime(DATETIME_FMT)}_'
                                     f'{"filtered" if self.__filtered else "unfiltered"}_{var_name}.tif')
 
                         if not self.__efs:

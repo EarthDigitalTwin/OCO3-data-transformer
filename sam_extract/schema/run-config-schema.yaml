@@ -18,7 +18,7 @@ target-file: include('targets', required=False)
 ---
 
 input-files:
-  files: list(str(), include('s3_input'), map(str(), include('s3_input'), null(), key=enum('oco3', 'oco2')))
+  files: list(str(), include('s3_input'), map(str(), include('s3_input'), null(), key=enum('oco3', 'oco2', 'oco3_sif')))
 input-rmq:
   queue:
     host: str()

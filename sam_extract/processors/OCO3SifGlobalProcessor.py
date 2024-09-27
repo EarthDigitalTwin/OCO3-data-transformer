@@ -15,7 +15,7 @@
 import logging
 import os
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Dict
 from typing import List, Optional, Tuple
 
@@ -25,6 +25,8 @@ from sam_extract.exceptions import *
 from sam_extract.processors import Processor
 from sam_extract.processors.Processor import PROCESSORS
 from sam_extract.readers import GranuleReader
+from sam_extract.targets import FILL_VALUE as TARGET_FILL
+from sam_extract.targets import extract_id, determine_id_type
 from sam_extract.runconfig import RunConfig
 from sam_extract.utils import INTERP_SEMA, get_f_xi, get_xi
 from sam_extract.writers import ZarrWriter
@@ -36,17 +38,23 @@ from shapely.ops import unary_union
 
 logger = logging.getLogger(__name__)
 
+OPERATION_MODE_SAM = 3
 OPERATION_MODE_TARGET = 2
 
-PROCESSOR_PREFIX = 'OCO2_global'
+PROCESSOR_PREFIX = 'OCO3_SIF_global'
 
 GROUPS = {
     '/': None,
-    '/Meteorology': 'Meteorology',
-    '/Preprocessors': 'Preprocessors',
-    '/Retrieval': 'Retrieval',
-    '/Sounding': 'Sounding',
+    # '/Cloud': 'Cloud',
+    # '/Geolocation': 'Geolocation',
+    '/Metadata': 'Metadata',
+    # '/Meteo': 'Meteo',
+    # '/Offset': 'Offset',
+    # '/Science': 'Science',
+    '/Sequences': 'Sequences',
 }
+
+SIF_EPOCH = datetime(1990, 1, 1)
 
 
 def tr(s: str, chars: str = None):
@@ -59,26 +67,22 @@ def fit_data_to_grid(sams, cfg: RunConfig):
     if len(sams) == 0:
         return None
 
-    interp_ds = {group: xr.concat([sam[group] for sam in sams], 'sounding_id') for group in sams[0]}
+    interp_ds = {group: xr.concat([sam[group] for sam in sams], 'sounding_dim') for group in sams[0]}
 
-    lats = interp_ds['/'].latitude.to_numpy()
-    lons = interp_ds['/'].longitude.to_numpy()
-    time = np.array([datetime(*interp_ds['/'].date[0].to_numpy()[:3].astype(int)).replace(
-        hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc
-    ).timestamp()])
+    lats = interp_ds['/'].Latitude.to_numpy()
+    lons = interp_ds['/'].Longitude.to_numpy()
+    time = SIF_EPOCH + timedelta(seconds=interp_ds['/'].Delta_Time[0].item())
+    time = time.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
+    time = np.array([time.timestamp()])
 
     points = list(zip(lons, lats))
 
     # Dimensions that will not be interpolated and fit to grid
     drop_dims = {
-        '/': ['bands', 'date', 'file_index', 'latitude', 'levels', 'longitude', 'pressure_levels', 'pressure_weight',
-              'sensor_zenith_angle', 'solar_zenith_angle', 'source_files', 'time', 'vertex_latitude',
-              'vertex_longitude', 'vertices', 'xco2_averaging_kernel', 'xco2_qf_bitflag', 'xco2_qf_simple_bitflag',
-              'xco2_quality_flag', 'co2_profile_apriori', 'xco2_apriori'],
-        '/Retrieval': ['diverging_steps', 'iterations', 'surface_type', 'SigmaB', 'snow_flag'],
-        '/Sounding': ['footprint', 'land_fraction', 'land_water_indicator', 'operation_mode', 'orbit',
-                      'sensor_azimuth_angle', 'solar_azimuth_angle'],
-        '/Auxiliary': ['n_dem_points']
+        '/': ['Delta_Time', 'Quality_Flag', 'SAz', 'Latitude', 'Latitude_Corners', 'SZA', 'Longitude',
+              'Longitude_Corners', 'VAz', 'VZA'],
+        '/Metadata': ['BuildId', 'CollectionLabel', 'FootprintId', 'MeasurementMode', 'OrbitId', 'SoundingId'],
+        '/Sequences': ['SegmentsIndex', 'SequencesId', 'SequencesIndex', 'SequencesMode', 'SequencesName']
     }
 
     logger.info('Dropping variables that will be excluded from interpolation (ie, non-numeric values)')
@@ -125,8 +129,7 @@ def fit_data_to_grid(sams, cfg: RunConfig):
 
     gridded_ds = {}
 
-    logger.info(f"Interpolating retained data variables to {cfg.grid['longitude']:,} by {cfg.grid['latitude']:,}"
-                f" grid")
+    logger.info(f"Interpolating retained data variables to {cfg.grid['longitude']:,} by {cfg.grid['latitude']:,} grid")
 
     desired_method = cfg.grid_method(Processor.DEFAULT_INTERPOLATE_METHOD)
 
@@ -191,12 +194,14 @@ def fit_data_to_grid(sams, cfg: RunConfig):
     return gridded_ds
 
 
-def mask_data(sams, grid_ds, cfg: RunConfig):
+def mask_data(sams, targets, op_modes, grid_ds, cfg: RunConfig):
     if sams is None:
         return None
 
     if grid_ds is None:
         return None
+
+    assert len(sams) == len(targets)
 
     logger.info('Constructing polygons to build mask')
 
@@ -210,15 +215,18 @@ def mask_data(sams, grid_ds, cfg: RunConfig):
 
     logger.debug(f'Footprint scaling factor: {scaling}')
 
-    for i, sam in enumerate(sams):
-        logger.info(f'Creating bounding polys for region of {len(sam["/"].vertex_latitude):,} footprints '
+    meta_dict = {}
+
+    for i, (sam, target, op_mode) in enumerate(zip(sams, targets, op_modes)):
+        logger.info(f'Creating bounding polys for region of {len(sam["/"].Latitude_Corners):,} footprints '
                     f'[{i+1}/{len(sams)}]')
 
         footprint_polygons = []
 
-        for lats, lons in zip(
-                sam['/'].vertex_latitude.to_numpy(),
-                sam['/'].vertex_longitude.to_numpy(),
+        for lats, lons, (tid, tn) in zip(
+                sam['/'].Latitude_Corners.to_numpy(),
+                sam['/'].Longitude_Corners.to_numpy(),
+                target,
         ):
             vertices = [(lons[i].item(), lats[i].item()) for i in range(len(lats))]
             vertices.append((lons[0].item(), lats[0].item()))
@@ -227,6 +235,15 @@ def mask_data(sams, grid_ds, cfg: RunConfig):
             else:
                 p = Polygon(vertices)
 
+            tid, tn = tid, tn
+
+            if isinstance(tid, np.ndarray):
+                tid = tid.item()
+
+            if isinstance(tn, np.ndarray):
+                tn = tn.item()
+
+            meta_dict[p.wkt] = (tid, tn, op_mode)
             footprint_polygons.append(p)
 
         if scaling != 1.0:
@@ -241,6 +258,9 @@ def mask_data(sams, grid_ds, cfg: RunConfig):
     logger.info('Producing geo mask from generated polys')
 
     geo_mask = np.full((len(latitudes), len(longitudes)), False)
+    target_ids = np.full((len(latitudes), len(longitudes)), TARGET_FILL, dtype='int')
+    target_types = np.full((len(latitudes), len(longitudes)), TARGET_FILL, dtype='byte')
+    operation_mode = np.full((len(latitudes), len(longitudes)), TARGET_FILL, dtype='byte')
 
     lon_len = longitudes[1] - longitudes[0]
     lat_len = latitudes[1] - latitudes[0]
@@ -262,6 +282,7 @@ def mask_data(sams, grid_ds, cfg: RunConfig):
             indices.append((
                 np.argwhere(np.logical_and(miny <= latitudes, latitudes <= maxy)),
                 np.argwhere(np.logical_and(minx <= longitudes, longitudes <= maxx)),
+                meta_dict.get(poly.wkt, ('UNKNOWN', 'UNKNOWN')),
                 poly
             ))
 
@@ -275,7 +296,7 @@ def mask_data(sams, grid_ds, cfg: RunConfig):
 
         valid_points = 0
 
-        for lat_indices, lon_indices, poly in indices:
+        for lat_indices, lon_indices, (tid, tn, op_mode), poly in indices:
             for lon_i in lon_indices:
                 for lat_i in lat_indices:
                     lon_i = tuple(lon_i)
@@ -294,7 +315,20 @@ def mask_data(sams, grid_ds, cfg: RunConfig):
                         geo_mask[lat_i][lon_i] = True
                         valid_points += 1
 
+                        id_type = determine_id_type(tid)
+
+                        if target_ids[lat_i][lon_i] == TARGET_FILL:
+                            target_ids[lat_i][lon_i] = extract_id(tid, id_type)
+
+                        if target_types[lat_i][lon_i] == TARGET_FILL:
+                            target_types[lat_i][lon_i] = id_type
+
+                        if operation_mode[lat_i][lon_i] == TARGET_FILL:
+                            operation_mode[lat_i][lon_i] = op_mode
+
         logger.debug(f'Finished applying polys in ({bounds}) to geo mask. Added {valid_points:,} valid points')
+
+    # Apply mask RIGHT AWAY, seems to be BAD for memory otherwise
 
     mask = np.array([geo_mask])
 
@@ -304,10 +338,69 @@ def mask_data(sams, grid_ds, cfg: RunConfig):
         for var in grid_ds[group].data_vars:
             grid_ds[group][var] = grid_ds[group][var].where(mask)
 
+    logger.info('Adding target id and name variables to dataset')
+
+    target_id_attrs = dict(
+        units='none',
+        long_name='OCO-3 Target (or SAM) ID numerical component',
+        comment='ID number is derived for target types ECOSTRESS and SIF as they are non-numerical. Special value of 0 '
+                'is used for non-numerical ids for other types'
+    )
+
+    target_type_attrs = dict(
+        units='none',
+        long_name='OCO-3 Target (or SAM) ID target type: 1=fossil, 2=ecostress, 3=sif, 4=volcano, 5=tccon, 6=other',
+    )
+
+    operation_mode_attrs = dict(
+        units='none',
+        long_name='OCO-3 Operation Mode: 2=Target, 4=Snapshot Area Map',
+    )
+
+    target_ids_da = xr.DataArray(
+        data=np.array([target_ids], dtype='int'),
+        coords={dim: grid_ds['/'].coords[dim] for dim in grid_ds['/'].coords},
+        dims=[
+            'time',
+            'latitude',
+            'longitude'
+        ],
+        name=f'{PROCESSOR_PREFIX}_target_id',
+        attrs=target_id_attrs
+    )
+
+    target_types_da = xr.DataArray(
+        data=np.array([target_types], dtype='byte'),
+        coords={dim: grid_ds['/'].coords[dim] for dim in grid_ds['/'].coords},
+        dims=[
+            'time',
+            'latitude',
+            'longitude'
+        ],
+        name=f'{PROCESSOR_PREFIX}_target_type',
+        attrs=target_type_attrs
+    )
+
+    operation_mode_da = xr.DataArray(
+        data=np.array([operation_mode], dtype='byte'),
+        coords={dim: grid_ds['/'].coords[dim] for dim in grid_ds['/'].coords},
+        dims=[
+            'time',
+            'latitude',
+            'longitude'
+        ],
+        name=f'{PROCESSOR_PREFIX}_operation_mode',
+        attrs=operation_mode_attrs
+    )
+
+    grid_ds['/'][f'{PROCESSOR_PREFIX}_target_id'] = target_ids_da
+    grid_ds['/'][f'{PROCESSOR_PREFIX}_target_type'] = target_types_da
+    grid_ds['/'][f'{PROCESSOR_PREFIX}_operation_mode'] = operation_mode_da
+
     return grid_ds
 
 
-class OCO2GlobalProcessor(Processor):
+class OCO3SamSIFGlobalProcessor(Processor):
     @classmethod
     def process_input(
             cls,
@@ -347,17 +440,38 @@ class OCO2GlobalProcessor(Processor):
         else:
             path = input_file
 
-        logger.info(f'Processing OCO-2 input at {path}')
+        logger.info(f'Processing OCO-3 SIF input at {path}')
 
         try:
             with GranuleReader(path, GROUPS, **additional_params) as ds:
-                mode_array = ds['/Sounding']['operation_mode']
+                mode_array = ds['/Metadata']['MeasurementMode']
 
                 logger.info('Splitting into individual SAM regions')
 
-                logger.info('Splitting into individual target regions')
+                n_sams = 0
+                n_targets = 0
 
                 region_slices = []
+                in_region = False
+                start = None
+
+                for i, mode in enumerate(mode_array.to_numpy()):
+                    if mode.item() == OPERATION_MODE_SAM:
+                        if not in_region:
+                            in_region = True
+                            start = i
+                    else:
+                        if in_region:
+                            in_region = False
+                            region_slices.append((slice(start, i), OPERATION_MODE_SAM))
+                            n_sams += 1
+
+                if in_region:
+                    region_slices.append((slice(start, i), OPERATION_MODE_SAM))
+                    n_sams += 1
+
+                logger.info('Splitting into individual target regions')
+
                 in_region = False
                 start = None
 
@@ -370,36 +484,77 @@ class OCO2GlobalProcessor(Processor):
                         if in_region:
                             in_region = False
                             region_slices.append((slice(start, i), OPERATION_MODE_TARGET))
+                            n_targets += 1
 
                 if in_region:
                     region_slices.append((slice(start, i), OPERATION_MODE_TARGET))
+                    n_targets += 1
 
                 extracted_sams_pre_qf = []
                 extracted_sams_post_qf = []
 
-                logger.info(f'Identified {len(region_slices)} Target regions')
+                extracted_targets_pre_qf = []
+                extracted_targets_post_qf = []
+
+                extracted_op_modes_pre_qf = []
+                extracted_op_modes_post_qf = []
+
+                logger.info(f'Identified {n_sams} SAM regions and {n_targets} Target regions')
 
                 logger.info('Filtering out bad quality soundings in selected ranges')
 
+                seq_ids = ds['/Sequences']['SequencesId'].values
+                seq_names = ds['/Sequences']['SequencesName'].values
+
                 for s, op_mode in region_slices:
-                    sam_group = {group: ds[group].isel(sounding_id=s) for group in ds if group not in exclude_groups}
+                    sam_group = {group: ds[group].isel(sounding_dim=s) for group in ds if group not in exclude_groups}
+                    seq_group = ds['/Sequences'].isel(sounding_dim=s)
+
+                    seq_idx = seq_group['SequencesIndex'].values
+
+                    tid_group = [(
+                        seq_ids[int(idx)] if int(idx) >= 0 else 'none',
+                        seq_names[int(idx)] if int(idx) >= 0 else 'none',
+                    ) for idx in seq_idx]
 
                     if output_pre_qf:
                         extracted_sams_pre_qf.append(sam_group)
+                        extracted_targets_pre_qf.append(tid_group)
+                        extracted_op_modes_pre_qf.append(op_mode)
 
-                    quality = sam_group['/'].xco2_quality_flag == 0
+                    quality = sam_group['/'].Quality_Flag
+
+                    # There has to be a better way to combine these
+                    best = quality == 0
+                    good = quality == 1
+
+                    quality[:] = np.logical_or(best.values, good.values)
 
                     # If this SAM has no good data
                     if not any(quality):
-                        logger.info(f'Dropping region from sounding_id range '
-                                    f'{ds["/"].sounding_id[s.start].item()} to '
-                                    f'{ds["/"].sounding_id[s.stop].item()} ({len(quality):,} soundings) as there are no'
-                                    f' points flagged as good.')
+                        logger.info(f'Dropping region from sounding_dim range '
+                                    f'{ds["/"].sounding_dim[s.start].item()} to '
+                                    f'{ds["/"].sounding_dim[s.stop].item()} ({len(quality):,} soundings) as there are'
+                                    f' no points flagged as good.')
                         continue
 
                     extracted_sams_post_qf.append(
                         {group: sam_group[group].where(quality, drop=True) for group in sam_group}
                     )
+
+                    seq_group = ds['/Sequences'].isel(sounding_dim=s).where(quality, drop=True)
+
+                    seq_idx = seq_group['SequencesIndex'].values
+
+                    tid_group = [(
+                        seq_ids[int(idx)] if int(idx) >= 0 else 'none',
+                        seq_names[int(idx)] if int(idx) >= 0 else 'none',
+                    ) for idx in seq_idx]
+
+                    extracted_targets_post_qf.append(
+                        tid_group
+                    )
+                    extracted_op_modes_post_qf.append(op_mode)
 
                 if output_pre_qf:
                     logger.info(f'Extracted {len(extracted_sams_pre_qf)} regions total, {len(extracted_sams_post_qf)} '
@@ -414,7 +569,7 @@ class OCO2GlobalProcessor(Processor):
 
                     if len(extracted_sams_pre_qf) > 0:
                         gridded_groups_pre_qf = mask_data(
-                            extracted_sams_pre_qf,
+                            extracted_sams_pre_qf, extracted_targets_pre_qf, extracted_op_modes_pre_qf,
                             fit_data_to_grid(
                                 extracted_sams_pre_qf,
                                 cfg
@@ -423,15 +578,15 @@ class OCO2GlobalProcessor(Processor):
                         )
                     else:
                         logger.info('No pre-qf data to extract, creating an empty day of data')
-                        gridded_groups_pre_qf = OCO2GlobalProcessor.empty_dataset(
-                            datetime(*ds['/'].date[0].to_numpy()[:3].astype(int)).replace(
-                                hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc
-                            ),
-                            cfg
-                        )
+
+                        time = SIF_EPOCH + timedelta(seconds=ds['/'].Delta_Time[0].item())
+                        time = time.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
+
+                        gridded_groups_pre_qf = OCO3SamSIFGlobalProcessor.empty_dataset(time, cfg)
 
                     extracted_sams_pre_qf.clear()
-                    del extracted_sams_pre_qf
+                    extracted_targets_pre_qf.clear()
+                    del extracted_sams_pre_qf, extracted_targets_pre_qf
 
                     if gridded_groups_pre_qf is not None:
                         temp_path_pre = os.path.join(temp_dir, 'pre_qf', os.path.basename(input_file)) + '.zarr'
@@ -451,7 +606,7 @@ class OCO2GlobalProcessor(Processor):
 
                 if len(extracted_sams_post_qf) > 0:
                     gridded_groups_post_qf = mask_data(
-                        extracted_sams_post_qf,
+                        extracted_sams_post_qf, extracted_targets_post_qf, extracted_op_modes_post_qf,
                         fit_data_to_grid(
                             extracted_sams_post_qf,
                             cfg
@@ -460,15 +615,15 @@ class OCO2GlobalProcessor(Processor):
                     )
                 else:
                     logger.info('No post-qf data to extract, creating an empty day of data')
-                    gridded_groups_post_qf = OCO2GlobalProcessor.empty_dataset(
-                        datetime(*ds['/'].date[0].to_numpy()[:3].astype(int)).replace(
-                            hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc
-                        ),
-                        cfg
-                    )
+
+                    time = SIF_EPOCH + timedelta(seconds=ds['/'].Delta_Time[0].item())
+                    time = time.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
+
+                    gridded_groups_post_qf = OCO3SamSIFGlobalProcessor.empty_dataset(time, cfg)
 
                 extracted_sams_post_qf.clear()
-                del extracted_sams_post_qf
+                extracted_targets_post_qf.clear()
+                del extracted_sams_post_qf, extracted_targets_post_qf
 
                 if gridded_groups_post_qf is not None:
                     temp_path_post = os.path.join(temp_dir, 'post_qf', os.path.basename(input_file)) + '.zarr'
@@ -495,9 +650,14 @@ class OCO2GlobalProcessor(Processor):
     @staticmethod
     def _empty_dataset(date: datetime, cfg: RunConfig):
         variables = [
-            f'{PROCESSOR_PREFIX}_xco2',
-            f'{PROCESSOR_PREFIX}_xco2_uncertainty',
-            f'{PROCESSOR_PREFIX}_xco2_x2019'
+            f'{PROCESSOR_PREFIX}_Daily_SIF_740nm',
+            f'{PROCESSOR_PREFIX}_Daily_SIF_757nm',
+            f'{PROCESSOR_PREFIX}_Daily_SIF_771nm',
+            f'{PROCESSOR_PREFIX}_SIF_740nm',
+            f'{PROCESSOR_PREFIX}_SIF_Uncertainty_740nm',
+            f'{PROCESSOR_PREFIX}_target_id',
+            f'{PROCESSOR_PREFIX}_target_type',
+            f'{PROCESSOR_PREFIX}_operation_mode',
         ]
 
         _, lon_coord, lat_coord = get_xi(cfg)
@@ -556,4 +716,9 @@ class OCO2GlobalProcessor(Processor):
         return gridded_ds
 
 
-PROCESSORS['global']['oco2'] = OCO2GlobalProcessor
+ENCODINGS['/'] = {
+    f'{PROCESSOR_PREFIX}_target_id': {'_FillValue': TARGET_FILL, 'dtype': 'int32'},
+    f'{PROCESSOR_PREFIX}_target_type': {'_FillValue': TARGET_FILL, 'dtype': 'int8'},
+    f'{PROCESSOR_PREFIX}_operation_mode': {'_FillValue': TARGET_FILL, 'dtype': 'int8'},
+}
+PROCESSORS['global']['oco3_sif'] = OCO3SamSIFGlobalProcessor

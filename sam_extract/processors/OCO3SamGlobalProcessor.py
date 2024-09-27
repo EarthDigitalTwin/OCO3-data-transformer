@@ -15,7 +15,7 @@
 import logging
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict
 from typing import List, Optional, Tuple
 
@@ -43,6 +43,14 @@ OPERATION_MODE_TARGET = 2
 
 PROCESSOR_PREFIX = 'OCO3_global'
 
+GROUPS = {
+    '/': None,
+    '/Meteorology': 'Meteorology',
+    '/Preprocessors': 'Preprocessors',
+    '/Retrieval': 'Retrieval',
+    '/Sounding': 'Sounding',
+}
+
 
 def tr(s: str, chars: str = None):
     return re.sub(rf'([{chars}])(\1+)', r'\1', s)
@@ -58,7 +66,9 @@ def fit_data_to_grid(sams, cfg: RunConfig):
 
     lats = interp_ds['/'].latitude.to_numpy()
     lons = interp_ds['/'].longitude.to_numpy()
-    time = np.array([datetime(*interp_ds['/'].date[0].to_numpy()[:3].astype(int)).timestamp()])
+    time = np.array([datetime(*interp_ds['/'].date[0].to_numpy()[:3].astype(int)).replace(
+        hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc
+    ).timestamp()])
 
     points = list(zip(lons, lats))
 
@@ -433,7 +443,7 @@ class OCO3SamGlobalProcessor(Processor):
         logger.info(f'Processing OCO-3 input at {path}')
 
         try:
-            with GranuleReader(path, **additional_params) as ds:
+            with GranuleReader(path, GROUPS, **additional_params) as ds:
                 mode_array = ds['/Sounding']['operation_mode']
 
                 logger.info('Splitting into individual SAM regions')
@@ -545,7 +555,9 @@ class OCO3SamGlobalProcessor(Processor):
                     else:
                         logger.info('No pre-qf data to extract, creating an empty day of data')
                         gridded_groups_pre_qf = OCO3SamGlobalProcessor.empty_dataset(
-                            datetime(*ds['/'].date[0].to_numpy()[:3].astype(int)),
+                            datetime(*ds['/'].date[0].to_numpy()[:3].astype(int)).replace(
+                                hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc
+                            ),
                             cfg
                         )
 
@@ -581,7 +593,9 @@ class OCO3SamGlobalProcessor(Processor):
                 else:
                     logger.info('No post-qf data to extract, creating an empty day of data')
                     gridded_groups_post_qf = OCO3SamGlobalProcessor.empty_dataset(
-                        datetime(*ds['/'].date[0].to_numpy()[:3].astype(int)),
+                        datetime(*ds['/'].date[0].to_numpy()[:3].astype(int)).replace(
+                            hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc
+                        ),
                         cfg
                     )
 

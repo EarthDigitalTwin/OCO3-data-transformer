@@ -19,5 +19,7 @@ from sam_extract.processors import (
     OCO3SamProcessor,
     OCO3SamGlobalProcessor,
     OCO2Processor,
-    OCO2GlobalProcessor
+    OCO2GlobalProcessor,
+    OCO3SifProcessor,
+    OCO3SifGlobalProcessor
 )
