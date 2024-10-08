@@ -346,7 +346,7 @@ variable "image" {
 
 variable "image_tag" {
   type        = string
-  description = "Docker image tag version to use for data processing, sync and restore. Format: <tag>. <tag> should be formatted as \"YYYY.MM.DD[-[a-z0-9-_]+]\". Minimum version: 2024.10.01"
+  description = "Docker image tag version to use for data processing, sync and restore. Format: <tag>. <tag> should be formatted as \"YYYY.MM.DD[-[a-z0-9-_]+]\". Minimum version: 2024.10.08"
 
   validation {
     condition     = can(regex("^\\d{4}\\.\\d{2}\\.\\d{2}(-[a-z0-9-_]+)?$", var.image_tag))
@@ -354,7 +354,7 @@ variable "image_tag" {
   }
 
   validation {
-    condition     = element(sort([substr(var.image_tag, 0, 10), "2024.10.01"]), 0) == "2024.10.01"
+    condition     = element(sort([substr(var.image_tag, 0, 10), "2024.10.08"]), 0) == "2024.10.08"
     error_message = "Docker image tag is too old"
   }
 }
