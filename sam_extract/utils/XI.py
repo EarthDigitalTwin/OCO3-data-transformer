@@ -22,6 +22,9 @@ from typing import Tuple
 
 import numpy as np
 
+# TODO: It may be worthwhile to update the naming in and around this module to something more clear than XI (which is
+#  the parameter name in the interpolation methods this is used for...
+
 logger = logging.getLogger(__name__)
 
 XI_LOCK = threading.Lock()
@@ -75,7 +78,7 @@ def get_xi(cfg) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         if XI is not None:
             return XI
 
-        logger.debug('Building coordinate meshes')
+        logger.info('Building coordinate meshes for global interpolations')
 
         if XI_DIR is None:
             XI_DIR = TemporaryDirectory(prefix='oco-sam-extract-', suffix='-grid-coords', ignore_cleanup_errors=True)
@@ -130,4 +133,5 @@ def get_f_xi():
 
 def cleanup_xi():
     if XI_DIR is not None:
+        logger.info(f'Cleaning up shared coordinate mesh data in {XI_DIR.name}')
         XI_DIR.cleanup()

@@ -15,6 +15,7 @@
 import logging
 import threading
 from datetime import datetime
+from threading import Lock
 from time import sleep
 
 from dask.callbacks import Callback
@@ -34,6 +35,7 @@ class ProgressLogging(Callback):
         self.next_frac = self.interval
 
         self._complete = False  # In case of nesting
+        self._lock = Lock()
 
     def _start(self, dsk):
         if self._complete:
@@ -50,7 +52,8 @@ class ProgressLogging(Callback):
             self.logger.log(self.log_level, 'Beginning dask task...')
 
     def _pretask(self, key, dsk, state):
-        self._state = state
+        with self._lock:
+            self._state = state
 
     def _finish(self, dsk, state, errored):
         if self._complete:
@@ -72,8 +75,9 @@ class ProgressLogging(Callback):
             s = self._state
 
             if s:
-                n_done = len(s["finished"])
-                n_tasks = sum(len(s[k]) for k in ["ready", "waiting", "running"]) + n_done
+                with self._lock:
+                    n_done = len(s["finished"])
+                    n_tasks = sum(len(s[k]) for k in ["ready", "waiting", "running"]) + n_done
 
                 if n_tasks != 0:
                     percent_done = n_done / n_tasks
