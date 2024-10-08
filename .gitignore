@@ -148,6 +148,7 @@ test_data/
 /s3_src_demo_pre_qf/
 /tools/deploy/dc-002-download.filled.yaml
 /notebooks/zarr_demo/
+/notebooks/readme_product_type/
 
 /tools/deploy/package/
 /tools/deploy/terraform/.terraform.lock.hcl

@@ -1,8 +1,4 @@
-[//]: # (# OCO-3 Snapshot Area Map &#40;SAM&#41; Global, Level 3 Zarr Product Generation)
-
-[//]: # (# Orbiting Carbon Observatories Targeted Observations: Target-focused, Level 3 Zarr + CoG Product Generation)
-
-# Orbiting Carbon Observatory 3 Targeted Observations: Target-focused, Level 3 Zarr + CoG Product Generation
+# Orbiting Carbon Observatories 2 & 3 Targeted Observations: Level 3 Zarr + CoG Product Generation on Global and Target-Focused Scales
 
 ## Introduction and Description
 
@@ -32,8 +28,6 @@ grids for a collection of level 3 output products.
 not yet been verified as OK to publish, thus only limited data can be produced in target-focused mode at this time for those sites which have been confirmed to 
 be publicly available. (See [OCO-2 Validation](https://ocov2.jpl.nasa.gov/science/validation/) and [Wunch et al. (2017)](https://doi.org/10.5194/amt-10-2209-2017)).**
 
-**[See the global product README](README-Global.md) for the global-mode product which supports all data from both OCO-2 and OCO-3 simultaneously**
-
 NASA-JPL's OCO-2 (Orbiting Carbon Observatory 2) is an Earth satellite mission to study the sources and sinks of carbon 
 dioxide globally. The satellite retrieves column-averaged CO2 dry air mole fraction (XCO2) by measuring the spectra of 
 reflected sunlight from the Earth's surface. OCO-2 operates in one of three modes: nadir, glint, and target. Nadir mode
@@ -54,10 +48,32 @@ OCO-2 and OCO-3 data can also be processed to measure solar-induced florescence 
 
 ### Source Data
 
-The software was designed to take as input NetCDF files from the [`OCO3_L2_Lite_FP v10.4r`](https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_FP_10.4r/summary?keywords=oco3), 
-[`OCO2_L2_Lite_FP v11.1r`](https://disc.gsfc.nasa.gov/datasets/OCO2_L2_Lite_FP_11.1r/summary?keywords=OCO2_L2_Lite_FP_11.1r), and [`OCO3_L2_Lite_SIF`](https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_SIF_10r/summary?keywords=oco3) datasets from the [GES DISC](https://disc.gsfc.nasa.gov/) DAAC.
+The software was designed to take as input NetCDF files from the 
+[`OCO3_L2_Lite_FP v10.4r`](https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_FP_10.4r/summary?keywords=oco3), 
+[`OCO2_L2_Lite_FP v11.1r`](https://disc.gsfc.nasa.gov/datasets/OCO2_L2_Lite_FP_11.1r/summary?keywords=OCO2_L2_Lite_FP_11.1r), 
+and [`OCO3_L2_Lite_SIF`](https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_SIF_10r/summary?keywords=oco3) datasets from 
+the [GES DISC](https://disc.gsfc.nasa.gov/) DAAC.
 
-### What is Zarr & Why Produce it?
+### Output Formats
+
+This software can be configured to produce two kinds of output product: a global-daily product, wherein all target observations
+in a given data day are combined and fitted to a single, global grid; or a target-focused product (TFP), wherein each individual
+target- or SAM-mode observation is fitted to a localized, configurable grid centered around the target's center 
+(see [here](tools/bbox-tools) for more on how to retrieve target centers and configure grid boundaries), with each observation
+being its own distinct entry in the output data store.
+
+Global products are more useful for basemaps and integrate easier with global analysis tools like [Apache SDAP](https://sdap.apache.org/),
+but are lower resolution and require a greater memory footprint. Target-focused products are higher resolution, but are more 
+difficult to work with on a target-independent basis and, for Cloud-Optimized GeoTIFF output, produce a very large number 
+of individual output files. 
+
+<p align="center">
+    <img src="images/product_type_sample.png" alt="Comparison of global and target-focused products generated with both nearest neighbor and linear interpolation methods." />
+    <br>
+    Comparison of global and target-focused products generated with both nearest neighbor and linear interpolation methods.
+</p>
+
+#### What is Zarr & Why Produce it?
 
 [Zarr](https://zarr.dev/) is a novel, cloud-optimized format "for storage of large N-dimensional typed arrays, &lbrack;stored&rbrack; 
 using distributed systems like cloud object stores, and &lbrack;enabling&rbrack; efficient I/O for parallel computing 
@@ -77,9 +93,16 @@ Zarr support is being developed for analysis tools like [Apache SDAP](https://sd
 [here](https://ideas-digitaltwin.jpl.nasa.gov/) (dataset name: `oco3_sams_l3_post_qf`) 
 [[Sample notebook](https://github.com/EarthDigitalTwin/FireAlarm-notebooks/blob/main/AirQuality_Demo.ipynb)].
 
-### What is CoG & Why Produce it?
+#### What is CoG & Why Produce it?
 
-Section TBA
+GeoTIFF is a metadata standard to georeference data in a TIFF image file. Cloud-Optimized GeoTIFF (CoG) is a derived standard
+to optimize GeoTIFF data stored on HTTP webservers such that users can make use of partial data within the file without having
+to download the whole file. 
+
+As stated above, CoG is being considered as an alternative to NetCDF, and many datasets are already being published in this
+format.
+
+CoG output is currently only supported for target-focused output.
 
 ### Process Description
 
