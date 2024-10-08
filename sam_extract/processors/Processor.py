@@ -15,7 +15,9 @@
 import logging
 import random
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from datetime import datetime
+from itertools import chain
 from os.path import basename, join
 from typing import Tuple, List, Optional, Dict, Type, Literal
 
@@ -37,7 +39,6 @@ class Processor(ABC):
             cfg: RunConfig,
             temp_dir,
             output_pre_qf=True,
-            exclude_groups: Optional[List[str]] = None
     ) -> Tuple[Optional[Dict[str, xr.Dataset]], Optional[Dict[str, xr.Dataset]], bool, str]:
         ...
 
@@ -79,6 +80,22 @@ class Processor(ABC):
             basename(granule_name).split('_')[2],  # Location of date info in oco2/3 lite file names
             "%y%m%d"
         )
+
+    @staticmethod
+    def determine_variables_to_load(
+        required_vars: Dict[str, List[str]],
+        default_vars: Dict[str, List[str]],
+        config_vars: Dict[str, List[str]],
+    ) -> Dict[str, List[str]]:
+        add_vars = config_vars if len(config_vars) > 0 else default_vars
+        load_vars = deepcopy(required_vars)
+
+        groups = list(set(chain(required_vars.keys(), add_vars.keys())))
+
+        for group in groups:
+            load_vars[group] = list(set(load_vars.get(group, []) + add_vars.get(group, [])))
+
+        return load_vars
 
 
 PROCESSORS: Dict[Literal['local', 'global'], Dict[str, Type[Processor]]] = {'local': {}, 'global': {}}

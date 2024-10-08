@@ -387,44 +387,69 @@ You can find a sample targets file for OCO-3 [here](targets.json). To generate y
 
 For OCO-2, an example can be found [here](targets_oco2.json), and the tools can be found [here](tools/bbox-tools/oco2).
 
-#### Exclusions
+#### Variable selection
 
-The script will try to interpolate most of the (many) variables present in the source data. It is recommended to exclude what you don't want to process, either by:
+The input datasets have many different science variables across many groups. We recommend only selecting the variables
+you need to process. Initially, the code would process every decimal variable in the input data, with the user having to 
+provide long lists of variables or groups to exclude from the output. Now the user need only provide which variables should
+be included for each dataset in the `variables` section.
 
-- Excluding the group outright
-
-```yaml
-exclude-groups:
-  - /Preprocessors
-  - /Meteorology
-```
-
-- Excluding the individual variable
+Example:
 
 ```yaml
-drop-dims:
-  - group: /Retrieval
-    name: dp_o2a
-  - group: /Retrieval
-    name: dp_sco2
-  - group: /Retrieval
-    name: dpfrac
-  - group: /Retrieval
-    name: s31
-  - group: /Retrieval
-    name: s32
-  - group: /Retrieval
-    name: co2_grad_del
+variables: 
+  oco3:
+    - group: /
+      name: xco2
+    - group: /Meteorology
+      name: psurf_apriori_o2a
+  oco2:
+    - group: /
+      name: xco2
+  oco3_sif:
+    - group: /
+      name: Daily_SIF_757nm
 ```
 
-The following variables cannot be dropped:
+For convenience, the following sets of variables will be selected if no variables are specified for their particular dataset
+or if the `variables` section is omitted entirely:
 
-- `/Sounding/operation_mode`
-- `/Sounding/target_id`
-- `/Sounding/target_name`
-- All variables in the root group
+<table><thead>
+  <tr>
+    <th>Dataset</th>
+    <th>Group</th>
+    <th>Variable</th>
+  </tr></thead>
+<tbody>
+  <tr>
+    <td rowspan="2">OCO-3 CO<sub>2</sub></td>
+    <td rowspan="2">/</td>
+    <td>xco2</td>
+  </tr>
+  <tr>
+    <td>xco2_uncertainty</td>
+  </tr>
+  <tr>
+    <td rowspan="3">OCO-2 CO<sub>2</sub></td>
+    <td rowspan="3">/</td>
+    <td>xco2</td>
+  </tr>
+  <tr>
+    <td>xco2_uncertainty</td>
+  </tr>
+  <tr>
+    <td>xco2_x2019</td>
+  </tr>
+  <tr>
+    <td>OCO-3 SIF</td>
+    <td>/</td>
+    <td>Daily_SIF_757nm</td>
+  </tr>
+</tbody>
+</table>
 
-For a complete list of variables, [see this document](https://web.archive.org/web/20231031164835/https://docserver.gesdisc.eosdis.nasa.gov/public/project/OCO/OCO2_OCO3_B10_DUG.pdf) (§11).
+For more information on available variables, consult the source dataset pages on the GES-DISC website or manually inspect
+source data files with a tool like [Panoply](https://www.giss.nasa.gov/tools/panoply/).
 
 #### Additional Options
 

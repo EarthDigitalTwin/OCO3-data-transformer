@@ -49,6 +49,25 @@ ISO_8601 = "%Y-%m-%dT%H:%M:%S%zZ"
 TIME_CHUNKING = (4000,)  # 3650 days in OCO-3's 10-year nominal mission, rounded up to nearest thousand
 
 ENCODINGS: Dict[str, Dict[str, Dict[str, Any]]] = {}
+"""
+Array to hold initial encoding data for output array groups.
+Top level: group name
+Second level: variable name
+Third level: encoding parameter
+
+Note: DO NOT directly assign a top-level entry unless it does not exist, use update instead
+
+Eg: 
+
+ENCODINGS['/Group'] = {...}  # No!!!
+
+--- 
+
+if '/Group' not in ENCODINGS:
+    ENCODINGS['/Group'] = {}
+    
+ENCODINGS['/Group'].update({...})  # Do this
+"""
 
 # List of attributes that cause errors if set on a data var when appending, if we're appending, we need to remove
 # all of these

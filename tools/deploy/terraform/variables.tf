@@ -211,6 +211,21 @@ variable "output_ds_name" {
   type        = string
 }
 
+variable "variables" {
+  description = "Variables to select for each dataset. Format: map[oco3, oco2, oco3_sif] -> list[{group: str, name: str}]"
+  type = map(list(object({
+    group = string
+    name  = string
+  })))
+  nullable = true
+  default  = null
+
+  validation {
+    condition     = try(alltrue([for d in keys(var.variables) : contains(["oco2", "oco3", "oco3_sif"], d)]), var.variables == null)
+    error_message = "Invalid dataset name provided"
+  }
+}
+
 variable "output_chunk_lat" {
   description = "Output Zarr chunk latitude length. Use integers"
   type        = number
@@ -331,7 +346,7 @@ variable "image" {
 
 variable "image_tag" {
   type        = string
-  description = "Docker image tag version to use for data processing, sync and restore. Format: <tag>. <tag> should be formatted as \"YYYY.MM.DD[-[a-z0-9-_]+]\". Minimum version: 2024.08.22"
+  description = "Docker image tag version to use for data processing, sync and restore. Format: <tag>. <tag> should be formatted as \"YYYY.MM.DD[-[a-z0-9-_]+]\". Minimum version: 2024.10.01"
 
   validation {
     condition     = can(regex("^\\d{4}\\.\\d{2}\\.\\d{2}(-[a-z0-9-_]+)?$", var.image_tag))
@@ -339,7 +354,7 @@ variable "image_tag" {
   }
 
   validation {
-    condition     = element(sort([substr(var.image_tag, 0, 10), "2024.09.27"]), 0) == "2024.09.27"
+    condition     = element(sort([substr(var.image_tag, 0, 10), "2024.10.01"]), 0) == "2024.10.01"
     error_message = "Docker image tag is too old"
   }
 }

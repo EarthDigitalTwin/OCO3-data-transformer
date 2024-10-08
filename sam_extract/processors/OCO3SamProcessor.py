@@ -18,8 +18,7 @@ import logging
 import re
 import warnings
 from datetime import datetime, timezone
-from typing import Dict
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import numpy as np
 import xarray as xr
@@ -47,6 +46,15 @@ GROUPS = {
     '/Preprocessors': 'Preprocessors',
     '/Retrieval': 'Retrieval',
     '/Sounding': 'Sounding',
+}
+
+NEEDED_VARS = {
+    '/': ['latitude', 'longitude', 'date', 'vertex_latitude', 'vertex_longitude', 'sounding_id', 'xco2_quality_flag'],
+    '/Sounding': ['operation_mode', 'target_id']
+}
+
+DEFAULT_INCLUDED_VARS = {
+    '/': ['xco2', 'xco2_uncertainty']
 }
 
 
@@ -302,15 +310,14 @@ class OCO3SamProcessor(Processor):
             cfg: RunConfig,
             temp_dir,
             output_pre_qf=True,
-            exclude_groups: Optional[List[str]] = None
     ):
-        additional_params = {'drop_dims': cfg.exclude_vars}
+        process_vars = Processor.determine_variables_to_load(
+            NEEDED_VARS,
+            DEFAULT_INCLUDED_VARS,
+            cfg.variables('oco3')
+        )
 
-        if exclude_groups is None:
-            exclude_groups = []
-
-        if '/' in exclude_groups:
-            raise ValueError('Cannot exclude root group')
+        additional_params = {'variables': process_vars}
 
         if isinstance(input_file, dict):
             path = input_file['path']
@@ -420,7 +427,7 @@ class OCO3SamProcessor(Processor):
                                      f'need to be excluded')
                         continue
 
-                    sam_group = {group: ds[group].isel(sounding_id=s) for group in ds if group not in exclude_groups}
+                    sam_group = {group: ds[group].isel(sounding_id=s) for group in ds if len(ds[group].data_vars) > 0}
 
                     if output_pre_qf:
                         extracted_sams_pre_qf.append((sam_group, target))

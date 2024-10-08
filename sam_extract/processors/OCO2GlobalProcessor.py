@@ -16,8 +16,7 @@ import logging
 import os
 import re
 from datetime import datetime, timezone
-from typing import Dict
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import xarray as xr
@@ -46,6 +45,15 @@ GROUPS = {
     '/Preprocessors': 'Preprocessors',
     '/Retrieval': 'Retrieval',
     '/Sounding': 'Sounding',
+}
+
+NEEDED_VARS = {
+    '/': ['latitude', 'longitude', 'date', 'vertex_latitude', 'vertex_longitude', 'sounding_id', 'xco2_quality_flag'],
+    '/Sounding': ['operation_mode']
+}
+
+DEFAULT_INCLUDED_VARS = {
+    '/': ['xco2', 'xco2_x2019', 'xco2_uncertainty']
 }
 
 
@@ -315,15 +323,14 @@ class OCO2GlobalProcessor(Processor):
             cfg: RunConfig,
             temp_dir,
             output_pre_qf=True,
-            exclude_groups: Optional[List[str]] = None
     ) -> Tuple[Optional[Dict[str, xr.Dataset]], Optional[Dict[str, xr.Dataset]], bool, str]:
-        additional_params = {'drop_dims': cfg.exclude_vars}
+        process_vars = Processor.determine_variables_to_load(
+            NEEDED_VARS,
+            DEFAULT_INCLUDED_VARS,
+            cfg.variables('oco2')
+        )
 
-        if exclude_groups is None:
-            exclude_groups = []
-
-        if '/' in exclude_groups:
-            raise ValueError('Cannot exclude root group')
+        additional_params = {'variables': process_vars}
 
         if isinstance(input_file, dict):
             path = input_file['path']
@@ -382,7 +389,7 @@ class OCO2GlobalProcessor(Processor):
                 logger.info('Filtering out bad quality soundings in selected ranges')
 
                 for s, op_mode in region_slices:
-                    sam_group = {group: ds[group].isel(sounding_id=s) for group in ds if group not in exclude_groups}
+                    sam_group = {group: ds[group].isel(sounding_id=s) for group in ds if len(ds[group].data_vars) > 0}
 
                     if output_pre_qf:
                         extracted_sams_pre_qf.append(sam_group)
@@ -494,11 +501,15 @@ class OCO2GlobalProcessor(Processor):
 
     @staticmethod
     def _empty_dataset(date: datetime, cfg: RunConfig):
-        variables = [
-            f'{PROCESSOR_PREFIX}_xco2',
-            f'{PROCESSOR_PREFIX}_xco2_uncertainty',
-            f'{PROCESSOR_PREFIX}_xco2_x2019'
-        ]
+        selected_variables = cfg.variables('oco2')
+
+        if len(selected_variables) == 0:
+            selected_variables = DEFAULT_INCLUDED_VARS
+
+        variables = {}
+
+        for group in selected_variables:
+            variables[group] = [f'{PROCESSOR_PREFIX}_{var}' for var in selected_variables[group]]
 
         _, lon_coord, lat_coord = get_xi(cfg)
         time = np.array([date.timestamp()])
@@ -538,19 +549,20 @@ class OCO2GlobalProcessor(Processor):
         shape = (1, cfg.grid['latitude'], cfg.grid['longitude'])
 
         gridded_ds = {
-            '/': xr.Dataset(
+            group: xr.Dataset(
                 data_vars={
                     var: (
                         ('time', 'latitude', 'longitude'),
                         np.full(
                             shape,
-                            ENCODINGS['/'][var]['_FillValue'] if var in ENCODINGS['/'] else np.nan,
-                            ENCODINGS['/'][var]['dtype'] if var in ENCODINGS['/'] else 'float64'
+                            ENCODINGS.get(group, {})[var]['_FillValue'] if var in ENCODINGS.get(group, {}) else np.nan,
+                            ENCODINGS.get(group, {})[var]['dtype'] if var in ENCODINGS.get(group, {}) else 'float64'
                         )
-                    ) for var in variables
+                    ) for var in variables[group]
                 },
                 coords=coords
             )
+            for group in variables
         }
 
         return gridded_ds

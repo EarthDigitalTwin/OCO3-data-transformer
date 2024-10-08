@@ -46,6 +46,7 @@ class GranuleReader:
             self,
             path: str,
             groups: Dict[str, str],
+            variables: Optional[Dict[str, List[str]]] = None,
             drop_dims: Optional[List[Tuple[str, str]]] = None,
             s3_region=None,
             s3_auth: Dict[str, str] = None
@@ -55,7 +56,15 @@ class GranuleReader:
         self.__ds_dict: Dict[str, xr.Dataset] | None = None
         self.__s3_file = None
         self.__s3_region = s3_region
-        self.__drop = drop_dims if drop_dims else []
+
+        if drop_dims is None:
+            drop_dims = []
+        else:
+            logger.warning('Granule reader drop-dims param is deprecated and should no longer be used. Variables '
+                           'should be explicitly included through the variables parameter instead.')
+
+        self.__drop = drop_dims
+        self.__vars = variables
         self.__auth = s3_auth
 
     def __enter__(self):
@@ -93,12 +102,19 @@ class GranuleReader:
                 logger.debug(
                     f'Opening NetCDF group {self.__groups[group] if self.__groups[group] is not None else "root"}'
                 )
-                ds_dict[group] = xr.open_dataset(
+                opened_ds = xr.open_dataset(
                     path,
                     group=self.__groups[group],
                     mask_and_scale=False,
                     engine='h5netcdf',
-                ).load()
+                )
+
+                if self.__vars is not None:
+                    logger.debug(f'Selecting variables for group {group}: {self.__vars.get(group, [])}')
+                    opened_ds = opened_ds[self.__vars.get(group, [])]
+
+                logger.debug(f'Loading dataset group {group} to memory')
+                ds_dict[group] = opened_ds.load()
         except FileNotFoundError:
             logger.error(f'Input file {path} does not exist')
             raise ReaderException(f'Input file {path} does not exist')

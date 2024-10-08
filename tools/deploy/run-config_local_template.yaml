@@ -1,0 +1,54 @@
+# Copyright 2024 California Institute of Technology (Caltech)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+output:
+  local: file:///tmp/oco3/
+  global: false
+  naming:
+    pre_qf: output_zarr_name_pre_qf.zarr
+    post_qf: output_zarr_name_post_qf.zarr
+  title:
+    pre_qf: OUTPUT_ZARR_TITLE_PRE_QF
+    post_qf: OUTPUT_ZARR_TITLE_POST_QF
+  cog:
+    output:
+      local: file:///tmp/oco3/cog/
+    options:
+      BLOCKSIZE: 128
+      overview_count: 4
+input:
+  files: []
+variables:
+  oco3:
+    - group: /
+      name: xco2
+  oco2:
+    - group: /
+      name: xco2
+  oco3_sif:
+    - group: /
+      name: Daily_SIF_757nm
+grid:
+  latitude: 800
+  longitude: 800
+  method: nearest
+chunking:
+  latitude: 800
+  longitude: 800
+  time: 14
+max-workers: 4
+mask-scaling: 1.00
+target-file:
+  oco3: /tmp/targets.json
+  oco2: /tmp/targets_oco2.json

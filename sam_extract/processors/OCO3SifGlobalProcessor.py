@@ -16,8 +16,7 @@ import logging
 import os
 import re
 from datetime import datetime, timezone, timedelta
-from typing import Dict
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import xarray as xr
@@ -25,9 +24,9 @@ from sam_extract.exceptions import *
 from sam_extract.processors import Processor
 from sam_extract.processors.Processor import PROCESSORS
 from sam_extract.readers import GranuleReader
+from sam_extract.runconfig import RunConfig
 from sam_extract.targets import FILL_VALUE as TARGET_FILL
 from sam_extract.targets import extract_id, determine_id_type
-from sam_extract.runconfig import RunConfig
 from sam_extract.utils import INTERP_SEMA, get_f_xi, get_xi
 from sam_extract.writers import ZarrWriter
 from sam_extract.writers.ZarrWriter import ENCODINGS
@@ -52,6 +51,17 @@ GROUPS = {
     # '/Offset': 'Offset',
     # '/Science': 'Science',
     '/Sequences': 'Sequences',
+}
+
+NEEDED_VARS = {
+    '/': ['Latitude', 'Longitude', 'Delta_Time', 'Latitude_Corners', 'Longitude_Corners', 'sounding_dim',
+          'Quality_Flag'],
+    '/Metadata': ['MeasurementMode'],
+    '/Sequences': ['SequencesId', 'SequencesIndex', 'SequencesName'],
+}
+
+DEFAULT_INCLUDED_VARS = {
+    '/': ['Daily_SIF_757nm']
 }
 
 SIF_EPOCH = datetime(1990, 1, 1)
@@ -408,15 +418,14 @@ class OCO3SamSIFGlobalProcessor(Processor):
             cfg: RunConfig,
             temp_dir,
             output_pre_qf=True,
-            exclude_groups: Optional[List[str]] = None
     ) -> Tuple[Optional[Dict[str, xr.Dataset]], Optional[Dict[str, xr.Dataset]], bool, str]:
-        additional_params = {'drop_dims': cfg.exclude_vars}
+        process_vars = Processor.determine_variables_to_load(
+            NEEDED_VARS,
+            DEFAULT_INCLUDED_VARS,
+            cfg.variables('oco3_sif')
+        )
 
-        if exclude_groups is None:
-            exclude_groups = []
-
-        if '/' in exclude_groups:
-            raise ValueError('Cannot exclude root group')
+        additional_params = {'variables': process_vars}
 
         if isinstance(input_file, dict):
             path = input_file['path']
@@ -507,7 +516,7 @@ class OCO3SamSIFGlobalProcessor(Processor):
                 seq_names = ds['/Sequences']['SequencesName'].values
 
                 for s, op_mode in region_slices:
-                    sam_group = {group: ds[group].isel(sounding_dim=s) for group in ds if group not in exclude_groups}
+                    sam_group = {group: ds[group].isel(sounding_dim=s) for group in ds if len(ds[group].data_vars) > 0}
                     seq_group = ds['/Sequences'].isel(sounding_dim=s)
 
                     seq_idx = seq_group['SequencesIndex'].values
@@ -649,16 +658,21 @@ class OCO3SamSIFGlobalProcessor(Processor):
 
     @staticmethod
     def _empty_dataset(date: datetime, cfg: RunConfig):
-        variables = [
-            f'{PROCESSOR_PREFIX}_Daily_SIF_740nm',
-            f'{PROCESSOR_PREFIX}_Daily_SIF_757nm',
-            f'{PROCESSOR_PREFIX}_Daily_SIF_771nm',
-            f'{PROCESSOR_PREFIX}_SIF_740nm',
-            f'{PROCESSOR_PREFIX}_SIF_Uncertainty_740nm',
+        selected_variables = cfg.variables('oco3_sif')
+
+        if len(selected_variables) == 0:
+            selected_variables = DEFAULT_INCLUDED_VARS
+
+        variables = {}
+
+        for group in selected_variables:
+            variables[group] = [f'{PROCESSOR_PREFIX}_{var}' for var in selected_variables[group]]
+
+        variables.setdefault('/', []).extend([
             f'{PROCESSOR_PREFIX}_target_id',
             f'{PROCESSOR_PREFIX}_target_type',
             f'{PROCESSOR_PREFIX}_operation_mode',
-        ]
+        ])
 
         _, lon_coord, lat_coord = get_xi(cfg)
         time = np.array([date.timestamp()])
@@ -698,27 +712,32 @@ class OCO3SamSIFGlobalProcessor(Processor):
         shape = (1, cfg.grid['latitude'], cfg.grid['longitude'])
 
         gridded_ds = {
-            '/': xr.Dataset(
+            group: xr.Dataset(
                 data_vars={
                     var: (
                         ('time', 'latitude', 'longitude'),
                         np.full(
                             shape,
-                            ENCODINGS['/'][var]['_FillValue'] if var in ENCODINGS['/'] else np.nan,
-                            ENCODINGS['/'][var]['dtype'] if var in ENCODINGS['/'] else 'float64'
+                            ENCODINGS.get(group, {})[var]['_FillValue'] if var in ENCODINGS.get(group, {}) else np.nan,
+                            ENCODINGS.get(group, {})[var]['dtype'] if var in ENCODINGS.get(group, {}) else 'float64'
                         )
-                    ) for var in variables
+                    ) for var in variables[group]
                 },
                 coords=coords
             )
+            for group in variables
         }
 
         return gridded_ds
 
 
-ENCODINGS['/'] = {
+if '/' not in ENCODINGS:
+    ENCODINGS['/'] = {}
+
+ENCODINGS['/'].update({
     f'{PROCESSOR_PREFIX}_target_id': {'_FillValue': TARGET_FILL, 'dtype': 'int32'},
     f'{PROCESSOR_PREFIX}_target_type': {'_FillValue': TARGET_FILL, 'dtype': 'int8'},
     f'{PROCESSOR_PREFIX}_operation_mode': {'_FillValue': TARGET_FILL, 'dtype': 'int8'},
-}
+})
+
 PROCESSORS['global']['oco3_sif'] = OCO3SamSIFGlobalProcessor

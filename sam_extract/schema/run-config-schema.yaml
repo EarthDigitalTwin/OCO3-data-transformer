@@ -1,7 +1,6 @@
 output: include('output', strict=False)
 input: any(include('input-files'), include('input-rmq'))
-drop-dims: list(include('dim'), required=False)
-exclude-groups: list(str(), required=False)
+variables: map(list(include('dim')), key=enum('oco3', 'oco2', 'oco3_sif'), required=False)
 grid:
   latitude: int(min=1)
   longitude: int(min=1)

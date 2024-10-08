@@ -18,8 +18,7 @@ import logging
 import re
 import warnings
 from datetime import datetime, timezone, timedelta
-from typing import Dict
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import numpy as np
 import xarray as xr
@@ -50,6 +49,17 @@ GROUPS = {
     # '/Offset': 'Offset',
     # '/Science': 'Science',
     '/Sequences': 'Sequences',
+}
+
+NEEDED_VARS = {
+    '/': ['Latitude', 'Longitude', 'Delta_Time', 'Latitude_Corners', 'Longitude_Corners', 'sounding_dim',
+          'Quality_Flag'],
+    '/Metadata': ['MeasurementMode'],
+    '/Sequences': ['SequencesId', 'SequencesIndex'],
+}
+
+DEFAULT_INCLUDED_VARS = {
+    '/': ['Daily_SIF_757nm']
 }
 
 SIF_EPOCH = datetime(1990, 1, 1)
@@ -307,15 +317,14 @@ class OCO3SamSIFProcessor(Processor):
             cfg: RunConfig,
             temp_dir,
             output_pre_qf=True,
-            exclude_groups: Optional[List[str]] = None
     ):
-        additional_params = {'drop_dims': cfg.exclude_vars}
+        process_vars = Processor.determine_variables_to_load(
+            NEEDED_VARS,
+            DEFAULT_INCLUDED_VARS,
+            cfg.variables('oco3_sif')
+        )
 
-        if exclude_groups is None:
-            exclude_groups = []
-
-        if '/' in exclude_groups:
-            raise ValueError('Cannot exclude root group')
+        additional_params = {'variables': process_vars}
 
         if isinstance(input_file, dict):
             path = input_file['path']
@@ -444,7 +453,7 @@ class OCO3SamSIFProcessor(Processor):
                                      f'need to be excluded')
                         continue
 
-                    sam_group = {group: ds[group].isel(sounding_dim=s) for group in ds if group not in exclude_groups}
+                    sam_group = {group: ds[group].isel(sounding_dim=s) for group in ds if len(ds[group].data_vars) > 0}
 
                     if output_pre_qf:
                         extracted_sams_pre_qf.append((sam_group, target))

@@ -109,13 +109,6 @@ FILES_SCHEMA = Schema([
 ])
 
 
-DEFAULT_EXCLUDE_GROUPS = [
-    '/Preprocessors',
-    '/Meteorology',
-    '/Sounding'
-]
-
-
 def __validate_files(files):
     FILES_SCHEMA.validate(files)
 
@@ -157,8 +150,6 @@ def process_inputs(in_files, cfg: RunConfig):
         return path_root, additional_params
 
     with TemporaryDirectory(prefix='oco-sam-extract-', suffix='-zarr-scratch', ignore_cleanup_errors=True) as td:
-        exclude = cfg.exclude_groups
-
         chunking: Tuple[int, int, int] = cfg.chunking
 
         output_root, output_kwargs = output_cfg(cfg)
@@ -193,8 +184,6 @@ def process_inputs(in_files, cfg: RunConfig):
                 input,
                 cfg: RunConfig,
                 temp_dir,
-                output_pre_qf=True,
-                exclude_groups: Optional[List[str]] = None
         ):
             processed_data_tuples = []
 
@@ -204,7 +193,6 @@ def process_inputs(in_files, cfg: RunConfig):
                         input,
                         cfg=cfg,
                         temp_dir=temp_dir,
-                        exclude_groups=exclude_groups
                     ))
 
                     # Bit hacky, but it's better than bundling the dt with the input spec
@@ -230,7 +218,6 @@ def process_inputs(in_files, cfg: RunConfig):
                             input['oco3'],
                             cfg=cfg,
                             temp_dir=temp_dir,
-                            exclude_groups=exclude_groups
                         )}
                     )
             elif isinstance(input, dict):
@@ -254,7 +241,6 @@ def process_inputs(in_files, cfg: RunConfig):
                             input[t],
                             cfg=cfg,
                             temp_dir=temp_dir,
-                            exclude_groups=exclude_groups
                         ))
 
                     # Bit hacky, but it's better than bundling the dt with the input spec
@@ -279,7 +265,6 @@ def process_inputs(in_files, cfg: RunConfig):
                             input[t],
                             cfg=cfg,
                             temp_dir=temp_dir,
-                            exclude_groups=exclude_groups
                         ) for t in input}
                     )
             else:
@@ -289,7 +274,7 @@ def process_inputs(in_files, cfg: RunConfig):
                 if len(groups) <= 1:
                     return groups[0]
 
-                return {group: xr.merge([g[group] for g in groups]) for group in groups[0]}
+                return {group: xr.merge([g[group] for g in groups if group in g]) for group in groups[0]}
 
             if cfg.is_global:
                 return (
@@ -306,7 +291,7 @@ def process_inputs(in_files, cfg: RunConfig):
                     input
                 )
 
-        process = partial(process_input, cfg=cfg, temp_dir=td, exclude_groups=exclude)
+        process = partial(process_input, cfg=cfg, temp_dir=td)
 
         with ThreadPoolExecutor(max_workers=cfg.max_workers, thread_name_prefix='process_worker') as pool:
             processed_groups_pre = []

@@ -16,7 +16,7 @@
 import logging
 import warnings
 from copy import deepcopy
-from typing import Literal
+from typing import Literal, Dict, List
 
 import yamale
 from pkg_resources import resource_filename
@@ -65,10 +65,6 @@ class RunConfig(object):
 
         input_section['type'] = 'files' if 'files' in input_section else 'queue'
 
-        config_dict['drop-dims'] = [
-            (dim['group'], dim['name']) for dim in config_dict.get('drop-dims', [])
-        ]
-
         config_dict['chunking']['config'] = (
             config_dict['chunking']['time'],
             config_dict['chunking']['longitude'],
@@ -91,8 +87,6 @@ class RunConfig(object):
             DeprecationWarning,
             stacklevel=2
         )
-        #
-        # logger.warning('Shouldn\'t be here :(')
 
         if item in self.__dict:
             return deepcopy(self.__dict)[item]
@@ -144,13 +138,15 @@ class RunConfig(object):
     def grid_method(self, default):
         return self.grid.get('method', default)
 
-    @property
-    def exclude_vars(self):
-        return self.__dict['drop-dims']
+    def variables(self, ds) -> Dict[str, List[str]]:
+        return_dict = {}
 
-    @property
-    def exclude_groups(self):
-        return self.__dict.get('exclude-groups', [])
+        user_vars: List[Dict[str, str]] = self.__dict.setdefault('variables', {}).get(ds, [])
+
+        for var in user_vars:
+            return_dict.setdefault(var['group'], []).append(var['name'])
+
+        return return_dict
 
     @property
     def chunking(self):
