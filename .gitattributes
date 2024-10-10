@@ -1,2 +1,2 @@
-# Mark notebooks dir to exclude from language stats
 notebooks/** linguist-vendored
+*.ipynb linguist-vendored
