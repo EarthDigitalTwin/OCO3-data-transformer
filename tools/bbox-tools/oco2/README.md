@@ -124,7 +124,7 @@ target ID for Target-mode distances from center. It will also include statistics
 standard deviation, and 90thm 95th and 99th percentiles. It can also aggregate for all data.
 
 <p align="center">
-    <img src="plots/priv/all data.png" alt="Sample plot: all data" />
+    <img src="plots/all data.png" alt="Sample plot: all data" />
     <br>
     Sample plot: all data
 </p>

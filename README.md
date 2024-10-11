@@ -158,7 +158,7 @@ pip install .
 
 ### Runtime Configuration
 
-The conversion script is controlled by a configuration YAML file, a template of which can be found [here](sample-sam-config.yml).
+The conversion script is controlled by a configuration YAML file, a template of which can be found [here](sample-run-config.yaml).
 
 #### Inputs Section
 
