@@ -691,7 +691,7 @@ def main(phase_override=None):
         with open(args.rc) as fp:
             pipeline_config = load(fp, Loader=Loader)
 
-        pipeline_config['input']['files'] = [granule_date_mapping[date] for date in granule_date_mapping]
+        pipeline_config['input']['files'] = [granule_date_mapping[date] for date in sorted(granule_date_mapping)]
 
         if LAMBDA_PHASE is not None:
             with open(os.path.join(mount_dir, 'pipeline-rc.yaml'), 'w') as fp:
