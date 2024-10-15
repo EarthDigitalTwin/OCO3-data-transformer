@@ -29,7 +29,7 @@ from xarray import Dataset
 
 logger = logging.getLogger(__name__)
 
-DATETIME_FMT = "%Y%m%d%H%M%S"
+DATETIME_FMT = "%Y-%m-%dT%H%M%SZ"
 
 DATASET_FILENAME_PREFIXES = {
     'oco2': 'oco2-co2',
