@@ -130,7 +130,9 @@ def merge_groups(groups: list):
     if len(groups) == 0:
         return None, 0
 
-    return {group: xr.concat([g[group] for g in groups], dim='time').sortby('time') for group in groups[0]}, len(groups)
+    return {
+        group: xr.concat([g[group] for g in groups if group in g], dim='time').sortby('time') for group in groups[0]
+    }, len(groups)
 
 
 def process_inputs(in_files, cfg: RunConfig):

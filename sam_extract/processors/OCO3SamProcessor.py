@@ -181,6 +181,10 @@ def fit_data_to_grid(sam, target, bounds, cfg: RunConfig):
         return [grid.T]
 
     for group in sam:
+        if len(sam[group].data_vars) == 0:
+            logger.debug(f'Skipping group {group} as it contains no data variables')
+            continue
+
         gridded_ds[group] = xr.Dataset(
             data_vars={
                 f'{PROCESSOR_PREFIX}{var_name}':

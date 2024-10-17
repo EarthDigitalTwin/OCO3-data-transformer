@@ -170,6 +170,10 @@ def fit_data_to_grid(sams, cfg: RunConfig):
         return [grid]
 
     for group in interp_ds:
+        if len(interp_ds[group].data_vars) == 0:
+            logger.debug(f'Skipping group {group} as it contains no data variables')
+            continue
+
         with INTERP_SEMA:
             logger.debug(f'Acquired semaphore {repr(INTERP_SEMA)}')
 
