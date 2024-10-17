@@ -14,7 +14,8 @@
 
 
 locals {
-  name_root = var.testing ? "oco3-tftest-" : "oco3-"
+  workspace_name = terraform.workspace == "default" ? "" : "${terraform.workspace}-"
+  name_root      = var.testing ? "oco3-tftest-${local.workspace_name}" : "oco3-${local.workspace_name}"
 
   schedule_name = "${local.name_root}transform-schedule"
   sfn_name      = "${local.name_root}transform"

@@ -33,6 +33,20 @@ provider "aws" {
   }
 }
 
+check "deployment_or_default" {
+  assert {
+    condition     = terraform.workspace == "default" || var.deployment_name == terraform.workspace
+    error_message = "Configured deployment name for non-default workspace disagrees with workspace name"
+  }
+}
+
+check "default" {
+  assert {
+    condition     = terraform.workspace != "default"
+    error_message = "You are about to deploy using the default workspace. This should only be used for development purposes"
+  }
+}
+
 /*
 
 AWS
@@ -47,7 +61,7 @@ data "aws_partition" "current" {}
 
 /*
 
-SECRETS MANAGER
+Secrets Manager
 
 */
 
@@ -125,6 +139,12 @@ data "local_file" "oco2_target_file" {
   count = fileexists(var.s3_oco2_target_config_source) ? 1 : 0
 }
 
+data "local_file" "data_gaps" {
+  filename = var.s3_data_gap_config_source
+
+  count = var.s3_data_gap_config_source != null ? 1 : 0
+}
+
 resource "aws_s3_object" "rct" {
   bucket  = data.aws_s3_bucket.s3_bucket.id
   key     = var.s3_rc_template_key
@@ -145,6 +165,14 @@ resource "aws_s3_object" "oco2_target_json" {
   content = data.local_file.oco2_target_file[0].content
 
   count = (var.global_product || !fileexists(var.s3_oco2_target_config_source)) ? 0 : 1
+}
+
+resource "aws_s3_object" "data_gaps" {
+  bucket  = data.aws_s3_bucket.s3_bucket.id
+  key     = var.s3_data_gap_config_key
+  content = data.local_file.data_gaps[0].content
+
+  count = var.s3_data_gap_config_source != null ? 1 : 0
 }
 
 /*
@@ -318,7 +346,7 @@ data "local_file" "reset_package" {
 }
 
 resource "aws_lambda_function" "init_lambda" {
-  function_name    = "${local.name_root}transform-rc-template-copy"
+  function_name    = "${local.name_root}transform-copy-config-files"
   role             = data.aws_iam_role.iam_lambda_role.arn
   architectures    = ["x86_64"]
   filename         = data.local_file.init_package.filename
@@ -336,6 +364,7 @@ resource "aws_lambda_function" "init_lambda" {
       TARGET_KEY       = var.global_product ? null : var.s3_oco3_target_config_key
       TARGET_KEY_OCO2  = var.global_product ? null : var.s3_oco2_target_config_key
       ZARR_BACKUP_FILE = "/mnt/transform/oco_pipeline_zarr_state/ZARR_WRITE.json"
+      GAP_FILE         = var.s3_data_gap_config_source != null ? var.s3_data_gap_config_key : null
     }
   }
 
@@ -410,7 +439,7 @@ resource "aws_lambda_function" "transform_lambda" {
       LAMBDA_STAC_PATH        = "/mnt/transform/"
       LAMBDA_STAGE_DIR        = "/mnt/transform/inputs/"
       LAMBDA_STATE            = var.global_product ? "/mnt/transform/state_global.json" : "/mnt/transform/state.json"
-      LAMBDA_GAP_FILE         = "/mnt/transform/gaps.json"
+      LAMBDA_GAP_FILE         = var.s3_data_gap_config_source != null ? "/mnt/transform/gaps.json" : null
       LAMBDA_TARGET_FILE      = "/mnt/transform/targets.json"
       LAMBDA_TARGET_FILE_OCO2 = "/mnt/transform/targets_oco2.json"
       LAMBDA_SKIP             = join(",", var.skip_datasets)

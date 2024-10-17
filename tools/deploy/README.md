@@ -119,7 +119,7 @@ Estimates:
 
 ## Deployment
 
-### Step 1: Create manual resources
+### Before You Begin: Create manual resources
 
 AWS deployment of this workflow is handled by Terraform, allowing for creation, deletion, or changes in configuration with simple shell commands; however, 
 the Terraform code was developed in an environment with certain restrictions and, thus, assumes several key resources exist already. They will be described here
@@ -150,7 +150,7 @@ Create a general-purpose S3 bucket. This will hold configuration data and final 
 - Throughput mode: Bursting
 - Performance mode: Max I/O
 - Configure one mount target with desired subnet in VPC and EFS SG
-- Create an access point
+- Create access points
   - POSIX User:
     - User ID: 1000
     - Group ID: 1000
@@ -158,6 +158,29 @@ Create a general-purpose S3 bucket. This will hold configuration data and final 
     - Owner user ID: 1000
     - Owner group ID: 1000
     - Access point permissions: 755
+
+With the filesystem created, you must now create access points. Depending on the configuration of the deployment, you 
+may need more than one, so just create all that you could need now. Each should have the following configuration:
+
+- POSIX User:
+  - User ID: 1000
+  - Group ID: 1000
+- Root directory creation permissions:
+  - Owner user ID: 1000
+  - Owner group ID: 1000
+  - Access point permissions: 755
+
+Create 3 access points in this configuration - the first for a single deployment and development and the other two for
+deployments supporting data production in both global and target-focused formats. We recommend the following as their 
+root directory paths:
+
+- `/`
+- `/global`
+- `/target-focused`
+
+You can choose to name the paths as you wish, but keep in mind the following:
+- The latter two of these must be independent (ie, not the parent or child path of the other)
+- The first access point may or may not be the parent of the other two, though it can be useful as the parent if you wish to mount to an EC2 instance to monitor the filesystem
 
 #### IAM Roles & Policies
 
@@ -302,16 +325,19 @@ Trust relationships:
 - Type: Fargate
 - Service role: `AWSServiceRoleForBatch`
 - Use Fargate Spot: `DISABLED`
-- Maximum vCPUs: 16
+- Maximum vCPUs: 
+  - If you only intend to produce EITHER global OR target-focused data: 16
+  - If you intend to produce both global AND target-focused data: 32
+  - Alternatively, this can be left unset
 - VPC: VPC being used for this deployment
 - Subnets: Use the same subnet the EFS mount target was configured with
 - Security groups: Compute SG
 
-### Step 2: Configuration
+### Configuration
 
 #### Variables
 
-This section will cover the variables that can be used to configure both the deployment and the output product. We recommend specifying these in a file `main.tfvars`.
+This section will cover the variables that can be used to configure both the deployment and the output product.
 
 | Name                              | Type              | Description                                                                                                                                                                                                                                                                                      | Required? | Default                    |
 |-----------------------------------|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|----------------------------|
@@ -330,8 +356,10 @@ This section will cover the variables that can be used to configure both the dep
 | `efs_ap_id`                       | String            | EFS Access Point ID for the Access Point created in Step 1                                                                                                                                                                                                                                       | Yes       |                            |
 | `s3_bucket`                       | String            | Name of the S3 bucket created in Step 1                                                                                                                                                                                                                                                          | Yes       |                            |
 | `s3_rc_template_key`              | String            | Key for the RC template (YAML file that holds configuration data for the data process step) object in S3                                                                                                                                                                                         | No        | `deploy/run-config.yaml`   |
+| `s3_data_gap_config_key`          | String            | Key for the data gap (JSON file) object in S3                                                                                                                                                                                                                                                    | No        | `deploy/gaps.json`         |
 | `s3_oco3_target_config_key`       | String            | Key for the OCO-3 target config (JSON file) object in S3                                                                                                                                                                                                                                         | No        | `deploy/targets.json`      |
 | `s3_oco2_target_config_key`       | String            | Key for the OCO-2 target config (JSON file) object in S3                                                                                                                                                                                                                                         | No        | `deploy/targets_oco2.json` |
+| `s3_oco3_data_gap_config_source`  | String            | Path to source data gap JSON file to copy to S3                                                                                                                                                                                                                                                  | No        | `null`                     |
 | `s3_oco3_target_config_source`    | String            | Path to source target JSON file to copy to S3                                                                                                                                                                                                                                                    | Yes       |                            |
 | `s3_oco2_target_config_source`    | String            | Path to source target JSON file to copy to S3                                                                                                                                                                                                                                                    | Yes       |                            |
 | `s3_outputs_prefix`               | String            | Key prefix for output product objects in S3 bucket                                                                                                                                                                                                                                               | No        | `outputs`                  |
@@ -358,7 +386,8 @@ This section will cover the variables that can be used to configure both the dep
 
 #### AWS Keys
 
-Generate a key/secret pair for Terraform to use, either for the `dev` role created in step 1, or use any keys that will provide you with sufficient permissions.
+Generate a key/secret pair for Terraform to use, either for the `dev` role created in step 1, or use any keys that 
+will provide you with sufficient permissions.
 
 Now set environment variables:
 
@@ -373,24 +402,50 @@ Alternatively, configure an [AWS credentials profile](https://docs.aws.amazon.co
 export AWS_PROFILE=<profile name>
 ```
 
-### Step 3: Deploy
+### Deploy/Update/Teardown Resources
 
-Navigate to `<repo root>/tools/deploy/terraform`
+There are two ways to deploy and manage resources depending on what you wish to do: the first deploys a single set of managed 
+resources for EITHER global- OR target-focused-mode generation; the second supports SIMULTANEOUS deployments of both modes, 
+but requires an added layer over the base `terraform` commands.
+
+For either method, you must first navigate to `<repo root>/tools/deploy/terraform` and run everything from there.
+
+Once in the terraform directory, you must first initialize the terraform environment by running
+
+```shell
+terraform init
+```
+
+#### Single-mode/Development Deployment
+
+##### Deploy
+
+Before deploying, we recommend you define the variables in the [configuration section](#configuration) in a file called 
+`main.tfvars` formatted as follows:
+
+```terraform
+variable_name = variable_value
+```
+
+For this method of deployment, be sure to set `efs_ap_id` to the Access Point ID of the first access point created in 
+[the above EFS section](#efs-filesystem).
+
+Once ready, run
 
 ```shell
 terraform apply
 ```
 
-If you did not create a `main.tfvars` file (or yours is named differently), you will be prompted to enter all required variables. You can use `-var=<value>` to manually set
-individual variables or use `-var-file=<path>` to configure a differently named variables file.
+If you did not create a `main.tfvars` file (or yours is named differently), you will be prompted to enter all required 
+variables. You can use `-var=<value>` to manually set individual variables or use `-var-file=<path>` to configure a 
+differently named variables file.
 
-Terraform will print a list of resources/attributes that will be created, altered or deleted and prompt you to continue. Type `yes` and hit enter to proceed, ctrl + C (or type something else and hit enter) to cancel.
+Terraform will print a list of resources/attributes that will be created, altered or deleted and prompt you to 
+continue. Type `yes` and hit enter to proceed, ctrl + C (or type something else and hit enter) to cancel.
 
 It may take a couple of minutes, but Terraform will then automatically create all resources to your specification.
 
-### Step 4: Change
-
-Navigate to `<repo root>/tools/deploy/terraform`
+##### Change
 
 Make any changes to your `.tfvars` file, if applicable.
 
@@ -398,21 +453,93 @@ Make any changes to your `.tfvars` file, if applicable.
 terraform apply
 ```
 
-Specify changes through the `.tfvars` file (`main.tfvars` will be used automatically, otherwise, specify file path with `-var-file`), the `-var` options, or through the prompt(s) for required variables.
+Specify changes through the `.tfvars` file (`main.tfvars` will be used automatically, otherwise, specify file path 
+with `-var-file`), the `-var` options, or through the prompt(s) for required variables.
 
-Terraform will print a list of resources/attributes that will be created, altered or deleted and prompt you to continue. Type `yes` and hit enter to proceed, ctrl + C (or type something else and hit enter) to cancel.
+Terraform will print a list of resources/attributes that will be created, altered or deleted and prompt you to 
+continue. Type `yes` and hit enter to proceed, ctrl + C (or type something else and hit enter) to cancel.
 
-### Step 5: Teardown
+##### Teardown
 
-Navigate to `<repo root>/tools/deploy/terraform`
+To delete the resources, simply run
 
 ```shell
 terraform destroy
 ```
 
-Make sure this is run with the same configuration you previously deployed.
+Terraform will print a list of all resources that will be deleted and prompt you to continue. Type `yes` and hit enter 
+to proceed, ctrl + C (or type something else and hit enter) to cancel.
 
-Terraform will print a list of all resources that will be deleted and prompt you to continue. Type `yes` and hit enter to proceed, ctrl + C (or type something else and hit enter) to cancel.
+#### Dual-mode/Production Deployment
+
+##### Prerequisite
+
+Part of this method of deployment relies on checks of `.tfvars` files which requires parsing them. A parser utility is 
+provided in `tfvars2json`, but is written in Golang. Before continuing, [ensure Go is installed](https://go.dev/doc/install).
+
+##### Deploy
+
+This method of deployment utilizes Terraform's [workspaces](https://developer.hashicorp.com/terraform/cli/workspaces)
+feature to maintain separated states for each set of resources. A set of scripts has been provided to prepare and deploy
+to these workspaces. 
+
+First, run
+
+```shell
+./workspace_init.sh
+```
+
+This script will create the workspaces if they do not already exist and will create 3 `.tfvars` files: `common.tfvars`, 
+which contains common configuration options such as EDL login, and identifiers for the manually-created AWS resources;
+`global.tfvars`, which contains the configuration for global-mode data; and `target_focused.tfvars`, which contains
+the configuration for target-focused-mode data. If these files already exist in your directory, they will be renamed
+with a `.old` suffixed to their filename. 
+
+Edit the files to set the configuration options, taking care that variable values in both `global.tfvars` and 
+`target_focused.tfvars` are not equal (with the exception of `input_granule_limit`, `output_chunk_time`, 
+`output_chunk_lat`, `output_chunk_lon`, `output_grid_resolution`, `schedule_frequency`, and `disable_schedule`).
+
+For this method of deployment, be sure to set `efs_ap_id` values in `global.tfvars` and `target_focused.tfvars` to the 
+Access Point IDs of the second and third access points created in [the above EFS section](#efs-filesystem).
+
+NOTE: If a `main.tfvars` or `terraform.tfvars` or any other `.tfvars` files exist in the terraform directory, we 
+recommend moving them elsewhere or changing their extension so as to avoid interfering with the terraform processes
+with automatically-loaded variable definitions.
+
+With this completed, run the pair of deploy scripts:
+
+```shell
+./deploy_global.sh
+./deploy_target_focused.sh
+```
+
+These scripts will run several checks that the variables in each mode aren't colliding or that the user is deploying to 
+the correct workspace and will then present the user with the Terraform plan and a prompt for confirmation.
+
+##### Change
+
+To alter the deployments, simply make the desired changes to the required `.tfvars` files and rerun
+
+```shell
+./deploy_global.sh
+./deploy_target_focused.sh
+```
+
+If no changes will be deployed to a workspace, the corresponding script should simply exit.
+
+##### Teardown
+
+As with deployment, a pair of scripts are provided to tear down the resources in each workspace:
+
+```shell
+./destroy_global.sh
+./destroy_target_focused.sh
+```
+
+These will display all the resources set to be deleted and prompt the user for confirmation.
+
+NOTE: These scripts do not delete the corresponding workspaces; that will need to be done manually if so desired with 
+`terraform workspace delete <workspace_name>`.
 
 ## State Machine Diagram
 
@@ -425,5 +552,3 @@ Terraform will print a list of all resources that will be deleted and prompt you
 Points of contact:
 - Lead developer: @RKuttruff ([Riley.K.Kuttruff\@jpl.nasa.gov](mailto:Riley.K.Kuttruff@jpl.nasa.gov?subject=OCO-3%20Zarr))
 - Project manager: @ngachung
-
-

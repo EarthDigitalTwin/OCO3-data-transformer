@@ -58,6 +58,12 @@ def lambda_handler(event, context):
         logger.info('Copying OCO-2 target JSON file')
         s3.download_file(bucket, target_key_oco2, '/mnt/transform/targets_oco2.json')
 
+    gap_file = os.getenv('GAP_FILE')
+
+    if gap_file is not None:
+        logger.info('Copying gap file')
+        s3.download_file(bucket, gap_file, '/mnt/transform/gaps.json')
+
     try:
         logger.info('Trying to purge the staging dir if it exists...')
         rmtree('/mnt/transform/inputs/')

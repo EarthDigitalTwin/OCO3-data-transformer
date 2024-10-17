@@ -1,0 +1,11 @@
+terraform.tfvars
+terraform.tfstate
+terraform.tfstate.backup
+
+*.old
+
+common.tfvars
+global.tfvars
+target_focused.tfvars
+
+terraform.tfstate.d/

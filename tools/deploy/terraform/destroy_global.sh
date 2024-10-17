@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Copyright 2024 California Institute of Technology (Caltech)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,4 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-boto3
+current_ws=$(terraform workspace show)
+terraform workspace select global
+
+terraform destroy
+
+destroy_ec=$?
+
+if [ $destroy_ec -ne 0 ]; then
+  echo "Destroy failed"
+else
+  echo "Destroy succeeded"
+fi
+
+terraform workspace select $current_ws
+exit $destroy_ec

@@ -129,6 +129,12 @@ variable "s3_oco2_target_config_key" {
   default     = "deploy/targets_oco2.json"
 }
 
+variable "s3_data_gap_config_key" {
+  description = "Key for the data gap (JSON file) object in S3"
+  type        = string
+  default     = "deploy/gaps.json"
+}
+
 variable "s3_oco3_target_config_source" {
   description = "Path to source OCO-3 target JSON file to copy to S3"
   type        = string
@@ -137,6 +143,14 @@ variable "s3_oco3_target_config_source" {
 variable "s3_oco2_target_config_source" {
   description = "Path to source OCO-2 target JSON file to copy to S3"
   type        = string
+}
+
+variable "s3_data_gap_config_source" {
+  description = "Path to source data gap JSON file to copy to S3"
+  type        = string
+  nullable    = true
+
+  default = null
 }
 
 variable "s3_outputs_prefix" {
@@ -387,4 +401,16 @@ variable "testing" {
   description = "Is this plan/apply for testing?"
   type        = bool
   default     = false
+}
+
+variable "deployment_name" {
+  description = "Name of the deployment: global or TFP. MUST equal workspace name if in non-default workspace"
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.deployment_name != null ? contains(["global", "target_focused"], var.deployment_name) : true
+    error_message = "Invalid deployment name"
+  }
 }
