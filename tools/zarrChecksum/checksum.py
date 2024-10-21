@@ -51,6 +51,10 @@ def format_long_bytes(b: bytes):
 def open_local(path: str) -> Tuple[str, bytes]:
     data = open(path, 'rb').read()
 
+    m = hashlib.md5()
+    m.update(data)
+    data = m.digest()
+
     logger.debug(f'local file {path} -> 0x{format_long_bytes(data)}')
 
     return str(path), data
@@ -58,6 +62,10 @@ def open_local(path: str) -> Tuple[str, bytes]:
 
 def open_s3(key, bucket, s3) -> Tuple[str, bytes]:
     data = s3.get_object(Bucket=bucket, Key=key)['Body'].read()
+
+    m = hashlib.md5()
+    m.update(data)
+    data = m.digest()
 
     url = urlunparse(('s3', bucket, key, None, None, None))
 
