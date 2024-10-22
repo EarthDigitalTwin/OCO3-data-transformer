@@ -24,6 +24,8 @@ locals {
 
   chunk_config = "${var.output_chunk_time}_${var.output_chunk_lat}_${var.output_chunk_lon}"
 
+  sns_subject_ws_id = terraform.workspace == "default" ? "" : " [${upper(terraform.workspace)}]"
+
   invoke_frequency = {
     quarter-hourly = "cron(*/15 * * * ? *)"
     half-hourly    = "cron(*/30 * * * ? *)"
@@ -788,7 +790,7 @@ locals {
       "Parameters": {
         "TopicArn": "${aws_sns_topic.oco3-transform-notify.arn}",
         "Message.$": "$.Message",
-        "Subject": "OCO-3 Processing failed"
+        "Subject": "OCO-3 Processing failed${local.sns_subject_ws_id}"
       },
       "Next": "FAIL_GENERAL",
       "Comment": "Publish a message to SNS that we've failed"
@@ -1171,7 +1173,7 @@ locals {
       "Parameters": {
         "TopicArn": "${aws_sns_topic.oco3-transform-notify.arn}",
         "Message": "OCO-3 pipeline failed during final result write. This very likely caused the output data to be corrupted. Tried and failed to restore from backup. No further data will be processed until this is manually evaluated.\nWas unable to disable automatic trigger; will only get worse. Intervention is REQUIRED.",
-        "Subject": "[CRITICAL] OCO-3 Processing failed in result write - Could not disable"
+        "Subject": "[CRITICAL] OCO-3 Processing failed during result write - Could not disable${local.sns_subject_ws_id}"
       },
       "Next": "FAIL_CRITICAL",
       "Comment": "Publish a message to SNS that we've failed at a really really bad time AND failed to prevent making it worse"
@@ -1182,7 +1184,7 @@ locals {
       "Parameters": {
         "TopicArn": "${aws_sns_topic.oco3-transform-notify.arn}",
         "Message": "OCO-3 pipeline failed during final result write. This very likely caused the output data to be corrupted. Tried and failed to restore from backup. No further data will be processed until this is manually evaluated.",
-        "Subject": "[CRITICAL] OCO-3 Processing failed in result write"
+        "Subject": "[CRITICAL] OCO-3 Processing failed during result write${local.sns_subject_ws_id}"
       },
       "Next": "FAIL_CRITICAL",
       "Comment": "Publish a message to SNS that we've failed at a really really bad time"
