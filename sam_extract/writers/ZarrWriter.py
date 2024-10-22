@@ -85,6 +85,7 @@ class ZarrWriter(Writer):
                  chunking: Tuple[int, int, int],
                  overwrite: bool = False,
                  append_dim: str = 'time',
+                 quiet=False,
                  **kwargs):
         Writer.__init__(self, path, overwrite, **kwargs)
         self.__chunking = chunking
@@ -92,11 +93,13 @@ class ZarrWriter(Writer):
         self.__correct_ct = None  # Used in the event that the outputted array needs to be corrected resetting the
         # date_created attr because overwrite is set to True
 
+        self.__quiet = quiet
+
         self.__verify = False if 'verify' not in kwargs else kwargs['verify']
 
     @staticmethod
     def open_zarr_group(path, store_type, params, root=False, **xr_open_kwargs) -> Dict[str, Dataset]:
-        logger.info(f'Opening Zarr array group at {path}')
+        logger.debug(f'Opening Zarr array group at {path}')
 
         if store_type == 'local':
             store = path
@@ -155,7 +158,10 @@ class ZarrWriter(Writer):
             global_product=True,
             mission=None
     ):
-        logger.info(f'Writing dataset group to Zarr array at {self.path}')
+        if not self.__quiet:
+            logger.info(f'Writing dataset group to Zarr array at {self.path}')
+        else:
+            logger.debug(f'Writing dataset group to Zarr array at {self.path}')
 
         if attrs is None:
             attrs = {}
@@ -180,7 +186,10 @@ class ZarrWriter(Writer):
                     coverage_end=np.max(ds['/'].time.values.astype('datetime64[s]')).item().strftime(ISO_8601)
                 )
         elif exists and not self.overwrite:
-            logger.info('Group exists and will be appended to')
+            if not self.__quiet:
+                logger.info('Group exists and will be appended to')
+            else:
+                logger.debug('Group exists and will be appended to')
 
             if self.final:
                 logger.debug('Getting dynamic attributes from store')
@@ -205,7 +214,10 @@ class ZarrWriter(Writer):
                 self.remove_immutable_attributes(ds)
 
         else:
-            logger.info('Group does not exist so it will be created.')
+            if not self.__quiet:
+                logger.info('Group does not exist so it will be created.')
+            else:
+                logger.debug('Group does not exist so it will be created.')
 
             if self.final:
                 dynamic_attrs = dict(
@@ -332,7 +344,10 @@ class ZarrWriter(Writer):
                         consolidated=True,
                     )
 
-        logger.info(f'Finished writing Zarr array to {self.path}')
+        if not self.__quiet:
+            logger.info(f'Finished writing Zarr array to {self.path}')
+        else:
+            logger.debug(f'Finished writing Zarr array to {self.path}')
 
         if self.__verify and not self.overwrite and not skip_verification:
             good = True
@@ -411,4 +426,7 @@ class ZarrWriter(Writer):
                     with ProgressLogging(log_level=logging.INFO, interval=10):
                         self.write(corrected_group)
             else:
-                logger.info('Appended Zarr array looks good')
+                if not self.__quiet:
+                    logger.info('Appended Zarr array looks good')
+                else:
+                    logger.debug('Appended Zarr array looks good')

@@ -25,7 +25,7 @@ from functools import partial
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from time import sleep
-from typing import Tuple, Optional, List, Literal
+from typing import Tuple, Literal
 
 import pika
 import psutil
@@ -36,7 +36,7 @@ from pika.exceptions import AMQPChannelError, AMQPConnectionError, ConnectionClo
 from pika.spec import Basic, BasicProperties
 from sam_extract.exceptions import *
 from sam_extract.processors import Processor, PROCESSORS
-from sam_extract.utils import ProgressLogging
+from sam_extract.utils import ProgressLogging, Progress
 from sam_extract.utils import ZARR_REPAIR_FILE, PW_STATE_DIR, backup_zarr, delete_zarr_backup, cleanup_xi
 from sam_extract.writers import ZarrWriter, CoGWriter
 from schema import Optional as Opt
@@ -136,8 +136,21 @@ def merge_groups(groups: list):
 
 
 def process_inputs(in_files, cfg: RunConfig):
-    logger.info(f'Interpolating {len(in_files)} L2 Lite file(s) with interpolation method '
+    logger.info(f'Interpolating {len(in_files)} data days with interpolation method '
                 f'{cfg.grid_method(Processor.DEFAULT_INTERPOLATE_METHOD)}')
+
+    in_dataset_counts = {}
+
+    for file in in_files:
+        if isinstance(file, str) or (isinstance(file, dict) and 'path' in file):
+            in_dataset_counts.setdefault('oco3', 0)
+            in_dataset_counts['oco3'] += 1
+        else:
+            for dataset in file:
+                in_dataset_counts.setdefault(dataset, 0)
+                in_dataset_counts[dataset] += 1
+
+    processing_progress = Progress('data generation', **in_dataset_counts)
 
     def output_cfg(config: RunConfig):
         additional_params = {'verify': True, 'final': True}
@@ -222,6 +235,9 @@ def process_inputs(in_files, cfg: RunConfig):
                             temp_dir=temp_dir,
                         )}
                     )
+
+                processing_progress.update_progress('oco3')
+                logger.info(processing_progress)
             elif isinstance(input, dict):
                 input = {k: input[k] for k in input if input[k] is not None}
 
@@ -245,6 +261,9 @@ def process_inputs(in_files, cfg: RunConfig):
                             temp_dir=temp_dir,
                         ))
 
+                        processing_progress.update_progress(t)
+                        logger.info(processing_progress)
+
                     # Bit hacky, but it's better than bundling the dt with the input spec
                     sample_input = input[list(input_keys)[0]]
                     sample_granule = sample_input['path'] if isinstance(sample_input, dict) else sample_input
@@ -262,13 +281,19 @@ def process_inputs(in_files, cfg: RunConfig):
                             None
                         ))
                 else:
-                    processed_data_tuples.append(
-                        {t: PROCESSORS[product_type][t].process_input(
+                    processed = {}
+
+                    for t in input:
+                        processed[t] = PROCESSORS[product_type][t].process_input(
                             input[t],
                             cfg=cfg,
                             temp_dir=temp_dir,
-                        ) for t in input}
-                    )
+                        )
+
+                        processing_progress.update_progress(t)
+                        logger.info(processing_progress)
+
+                    processed_data_tuples.append(processed)
             else:
                 raise TypeError(f'Invalid input type {type(input)}')
 
@@ -453,6 +478,15 @@ def process_inputs(in_files, cfg: RunConfig):
                 if have_data_for_types('oco2'):
                     raise
 
+            write_progress = {}
+
+            for groups, qf in zip([processed_groups_pre, processed_groups_post], ['pre', 'post']):
+                for m in groups:
+                    write_progress.setdefault(f'{m}-{qf}_qf', 0)
+                    write_progress[f'{m}-{qf}_qf'] += len(groups[m])
+
+            write_progress = Progress('data write', **write_progress)
+
             for m in set(list(processed_groups_pre.keys()) + list(processed_groups_post.keys())):
                 logger.info(f'Writing produced outputs for {m}')
 
@@ -508,6 +542,7 @@ def process_inputs(in_files, cfg: RunConfig):
                         str(os.path.join(output_root, cfg.naming_dict[qf_key], m, f'{target}.zarr')),
                         chunking,
                         overwrite=False,
+                        quiet=True,
                         **output_kwargs
                     )
 
@@ -574,6 +609,9 @@ def process_inputs(in_files, cfg: RunConfig):
                         else:
                             logger.info(f'Skipped undefined target on output. {m} progress: [{i:,}/{len(futures):,}] '
                                         f'[{i/len(futures)*100:7.3f}%]')
+
+                        write_progress.update_progress(f'{m}-{qf}')
+                        logger.info(write_progress)
 
                         i += 1
 

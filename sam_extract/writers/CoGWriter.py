@@ -150,13 +150,13 @@ class CoGWriter(Writer):
 
                         if not self.__efs:
                             out_path = os.path.join(root_dir, filename)
-                            logger.info(f'Writing Cloud-Optimized GeoTIFF to {out_path}')
+                            logger.debug(f'Writing Cloud-Optimized GeoTIFF to {out_path}')
                             data.rio.to_raster(out_path, driver='COG', sharing=False, **self.__driver_kwargs)
                             tiffs.append(out_path)
                         else:
                             out_path = os.path.join(self.__td.name, filename)
-                            logger.info(f'Writing Cloud-Optimized GeoTIFF {filename}')
-                            logger.debug(f'Writing Cloud-Optimized GeoTIFF to {out_path}')
+                            logger.debug(f'Writing Cloud-Optimized GeoTIFF {filename}')
+                            logger.trace(f'Writing Cloud-Optimized GeoTIFF to {out_path}')
                             data.rio.to_raster(out_path, driver='COG', sharing=False, **self.__driver_kwargs)
 
                             dst_path = os.path.join(root_dir, filename)
@@ -166,7 +166,7 @@ class CoGWriter(Writer):
                             )
                             logger.trace(f'Queued move of {out_path} -> {dst_path}')
             if self.store == 's3':
-                logger.info(f'Pushing {len(tiffs):,} to {self.path}')
+                logger.debug(f'Pushing {len(tiffs):,} to {self.path}')
 
                 url = urlparse(self.path)
 
