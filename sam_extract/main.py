@@ -863,16 +863,16 @@ if __name__ == '__main__':
     start_time = datetime.now()
     v = -1
 
-    DEBUG_MPROF = os.getenv('DEBUG_MPROF')
+    METRICS_PROFILE_RATE = os.getenv('METRICS_PROFILE_RATE')
 
     profile_logger = None
     process = None
     start_rss, start_vms = None, None
 
-    if DEBUG_MPROF is not None:
+    if METRICS_PROFILE_RATE is not None:
         try:
-            interval = float(DEBUG_MPROF)
-            assert 0.1 <= interval <= 300
+            interval = float(METRICS_PROFILE_RATE)
+            assert 1 <= interval <= 3600
         except:
             interval = 15
 
@@ -880,21 +880,26 @@ if __name__ == '__main__':
 
         start_rss = process.memory_info().rss
         start_vms = process.memory_info().vms
+        _ = process.cpu_percent(None)
 
-        profile_logger = logging.getLogger('debug_mprof')
+        profile_logger = logging.getLogger('metrics')
 
         def profile_memory():
-            while True:
-                KB_rss = int((process.memory_info().rss - start_rss) / (1024 ** 2))
-                KB_vms = int((process.memory_info().vms - start_vms) / (1024 ** 2))
-                profile_logger.info('rss_used={0:10,d} MiB vms_used={1:10,d} MiB'.format(KB_rss, KB_vms))
+            msg = 'CPU_utilization={0:6.2f} | physical_memory={1:10,d} MiB | virtual_memory={2:10,d} MiB | run_time={3}'
 
+            while True:
                 sleep(interval)
+
+                rss_kb = int((process.memory_info().rss - start_rss) / (1024 ** 2))
+                vms_kb = int((process.memory_info().vms - start_vms) / (1024 ** 2))
+                cpu_percent = process.cpu_percent(None)
+
+                profile_logger.info(msg.format(cpu_percent, rss_kb, vms_kb, datetime.now() - start_time))
 
         threading.Thread(
             target=profile_memory,
             daemon=True,
-            name='mprof_thread'
+            name='metrics'
         ).start()
 
     try:
@@ -907,10 +912,14 @@ if __name__ == '__main__':
     finally:
         cleanup_xi()
 
-        logger.info(f'Exiting code {v}. Runtime={datetime.now() - start_time}')
-        if DEBUG_MPROF is not None:
-            KB_rss = int((process.memory_info().rss - start_rss) / (1024 ** 2))
-            KB_vms = int((process.memory_info().vms - start_vms) / (1024 ** 2))
-            profile_logger.info('rss_used={0:10,d} MiB vms_used={1:10,d} MiB (final)'.format(KB_rss, KB_vms))
+        if METRICS_PROFILE_RATE is not None:
+            msg = 'CPU_utilization={0:6.2f} physical_memory={1:10,d} MiB virtual_memory={2:10,d} MiB [FINAL]'
 
+            rss_kb_final = int((process.memory_info().rss - start_rss) / (1024 ** 2))
+            vms_kb_final = int((process.memory_info().vms - start_vms) / (1024 ** 2))
+            cpu_percent_final = process.cpu_percent(None)
+
+            profile_logger.info(msg.format(cpu_percent_final, rss_kb_final, vms_kb_final))
+
+        logger.info(f'Exiting code {v}. Runtime={datetime.now() - start_time}')
         exit(v)

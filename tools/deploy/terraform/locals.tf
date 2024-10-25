@@ -307,10 +307,10 @@ locals {
           value = "/var/oco_pipeline_zarr_state"
         }
       ],
-      var.mprof_interval != -1 ? [
+      var.metrics_profile_rate != -1 ? [
         {
-          name  = "DEBUG_MPROF"
-          value = tostring(var.mprof_interval)
+          name  = "METRICS_PROFILE_RATE"
+          value = tostring(var.metrics_profile_rate)
         }
       ] : [],
       var.interpolate_max_parallel_global != -1 ? [

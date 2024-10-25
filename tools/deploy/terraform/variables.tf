@@ -307,18 +307,18 @@ variable "input_granule_limit" {
   }
 }
 
-variable "mprof_interval" {
+variable "metrics_profile_rate" {
   type        = number
-  description = "Number of seconds between log reports of memory consumption in the processing stage. Must be between 10 and 3600 (-1 to disable)"
+  description = "Number of seconds between log reports of CPU & memory utilization in the processing stage. Must be an integer between 1 and 3600 (-1 to disable)"
   default     = -1
 
   validation {
-    condition     = var.mprof_interval == -1 || (var.mprof_interval >= 10 && var.mprof_interval <= 3600)
-    error_message = "mprof_interval must be between 10 and 3600 (-1 to disable)"
+    condition     = var.metrics_profile_rate == -1 || (var.metrics_profile_rate >= 1 && var.metrics_profile_rate <= 3600)
+    error_message = "metrics_profile_rate must be between 1 and 3600 (-1 to disable)"
   }
   validation {
-    condition     = var.mprof_interval == floor(var.mprof_interval)
-    error_message = "mprof_interval must be an integer"
+    condition     = var.metrics_profile_rate == floor(var.metrics_profile_rate)
+    error_message = "metrics_profile_rate must be an integer"
   }
 }
 

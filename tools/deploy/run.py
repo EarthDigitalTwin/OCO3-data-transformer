@@ -746,6 +746,16 @@ def main(phase_override=None):
                             f'{args.target_file_2}:/etc/targets_oco2.json'
                         ])
 
+                    if os.getenv('METRICS_PROFILE_RATE') is not None:
+                        try:
+                            p_args.extend([
+                                '-e',
+                                'METRICS_PROFILE_RATE=' + str(float(os.getenv('METRICS_PROFILE_RATE'))),
+                            ])
+                        except:
+                            logger.error('Debug profiling environment variable was set but could not be converted to '
+                                         'a number so it will be ignored')
+
                     p_args.extend([
                         args.image,
                         'python',

@@ -44,9 +44,9 @@ efs_fs_id     = "fs-xxxxxxxxxxxxxxxxx"
 s3_data_gap_config_source = ""
 
 // Logging configurations
-mprof_interval     = 10
-log_retention_time = 7
-verbose            = false
+metrics_profile_rate = 10
+log_retention_time   = 7
+verbose              = false
 
 // Desired output variables. Sample provided
 variables = {
