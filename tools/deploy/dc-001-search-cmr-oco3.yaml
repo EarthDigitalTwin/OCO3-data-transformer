@@ -20,7 +20,7 @@ services:
     command: ["SEARCH"]
     environment:
 
-      COLLECTION_ID: 'C2716248872-GES_DISC'
+      COLLECTION_ID: 'C2912085112-GES_DISC'
       LIMITS: '-1'
       DATE_FROM: '1970-01-01T00:00:00Z'
 #      DATE_FROM: '2022-01-01T00:00:00Z'
@@ -41,7 +41,7 @@ services:
     command: ["SEARCH"]
     environment:
 
-      COLLECTION_ID: 'C2237732007-GES_DISC'
+      COLLECTION_ID: 'C2910086168-GES_DISC'
       LIMITS: '-1'
       DATE_FROM: '1970-01-01T00:00:00Z'
 #      DATE_FROM: '2022-01-01T00:00:00Z'

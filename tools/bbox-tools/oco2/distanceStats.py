@@ -27,7 +27,7 @@ from shapely import wkt
 from tqdm import tqdm
 
 OPERATION_MODE_TARGET = 2
-OCO3_FILENAME_PATTERN = re.compile(r'oco2_LtCO2_\d{6}_B\d+[a-zA-Z]*_\d{12}s\.nc4')
+OCO2_FILENAME_PATTERN = re.compile(r'oco2_LtCO2_\d{6}_B\d+[a-zA-Z]*_\d{12}s\.nc4')
 
 
 def main():

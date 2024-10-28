@@ -118,7 +118,7 @@ locals {
       },
       {
         name  = "COLLECTION_ID",
-        value = "C2237732007-GES_DISC"
+        value = "C2910086168-GES_DISC"
       },
       {
         name  = "CMR_BASE_URL",
@@ -581,7 +581,7 @@ locals {
                     },
                     {
                       "Name": "COLLECTION_ID",
-                      "Value": "C2716248872-GES_DISC"
+                      "Value": "C2912085112-GES_DISC"
                     }
                   ]
                 }

@@ -32,9 +32,9 @@ FIXED_ATTRIBUTES = {
     'global': {
         'pipeline_version': sam_extract.__version__,
         'institution': 'Jet Propulsion Laboratory',
-        'source': 'Derived from the OCO3_L2_Lite_FP_10.4r, OCO2_L2_Lite_FP_11.1r, and OCO3_L2_Lite_SIF_10r datasets '
-                  'from GES-DISC (https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_FP_10.4r/summary, '
-                  'https://disc.gsfc.nasa.gov/datasets/OCO2_L2_Lite_FP_11.1r/summary, '
+        'source': 'Derived from the OCO3_L2_Lite_FP_11r, OCO2_L2_Lite_FP_11.2r, and OCO3_L2_Lite_SIF_10r datasets '
+                  'from GES-DISC (https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_FP_11r/summary, '
+                  'https://disc.gsfc.nasa.gov/datasets/OCO2_L2_Lite_FP_11.2r/summary, '
                   'https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_SIF_10r/summary)',
         'references': '10.5194/amt-12-2341-2019, '
                       '10.1016/j.rse.2020.112032, '
@@ -52,8 +52,8 @@ FIXED_ATTRIBUTES = {
         'oco3': {
             'pipeline_version': sam_extract.__version__,
             'institution': 'Jet Propulsion Laboratory',
-            'source': 'Derived from the OCO3_L2_Lite_FP_10.4r dataset from GES-DISC '
-                      '(https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_FP_10.4r/summary)',
+            'source': 'Derived from the OCO3_L2_Lite_FP_11r dataset from GES-DISC '
+                      '(https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_FP_11r/summary)',
             'references': '10.5194/amt-12-2341-2019, '
                           '10.1016/j.rse.2020.112032, '
                           '10.1016/j.rse.2021.112314',
@@ -69,8 +69,8 @@ FIXED_ATTRIBUTES = {
         'oco2': {
             'pipeline_version': sam_extract.__version__,
             'institution': 'Jet Propulsion Laboratory',
-            'source': 'Derived from the OCO2_L2_Lite_FP_11.1r dataset from GES-DISC '
-                      '(https://disc.gsfc.nasa.gov/datasets/OCO2_L2_Lite_FP_11.1r/summary)',
+            'source': 'Derived from the OCO2_L2_Lite_FP_11.2r dataset from GES-DISC '
+                      '(https://disc.gsfc.nasa.gov/datasets/OCO2_L2_Lite_FP_11.2r/summary)',
             # 'references': '10.5194/amt-12-2341-2019, '
             #               '10.1016/j.rse.2020.112032, '
             #               '10.1016/j.rse.2021.112314',
