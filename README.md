@@ -51,7 +51,7 @@ OCO-2 and OCO-3 data can also be processed to measure solar-induced florescence 
 The software was designed to take as input NetCDF files from the 
 [`OCO3_L2_Lite_FP v11r`](https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_FP_11r/summary), 
 [`OCO2_L2_Lite_FP v11.2r`](https://disc.gsfc.nasa.gov/datasets/OCO2_L2_Lite_FP_11.2r/summary), 
-and [`OCO3_L2_Lite_SIF`](https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_SIF_10r/summary) datasets from 
+and [`OCO3_L2_Lite_SIF v11r`](https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_SIF_11r/summary) datasets from 
 the [GES DISC](https://disc.gsfc.nasa.gov/) DAAC.
 
 ### Output Formats
