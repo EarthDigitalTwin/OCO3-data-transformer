@@ -15,7 +15,8 @@
 import json
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('progress')
+json_logger = logging.getLogger('progress_json')
 
 
 class Progress:
@@ -70,6 +71,10 @@ class Progress:
 
     def to_json(self, **dumps_kwargs) -> str:
         return json.dumps(self.to_dict(), **dumps_kwargs)
+
+    def log_progress(self):
+        logger.info(self.to_string())
+        json_logger.info(self.to_json(separators=(',', ':')))
 
     def __repr__(self):
         return self.to_string()

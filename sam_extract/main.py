@@ -151,6 +151,7 @@ def process_inputs(in_files, cfg: RunConfig):
                 in_dataset_counts[dataset] += 1
 
     processing_progress = Progress('data generation', **in_dataset_counts)
+    processing_progress.log_progress()
 
     def output_cfg(config: RunConfig):
         additional_params = {'verify': True, 'final': True}
@@ -237,7 +238,7 @@ def process_inputs(in_files, cfg: RunConfig):
                     )
 
                 processing_progress.update_progress('oco3')
-                logger.info(processing_progress)
+                processing_progress.log_progress()
             elif isinstance(input, dict):
                 input = {k: input[k] for k in input if input[k] is not None}
 
@@ -262,7 +263,7 @@ def process_inputs(in_files, cfg: RunConfig):
                         ))
 
                         processing_progress.update_progress(t)
-                        logger.info(processing_progress)
+                        processing_progress.log_progress()
 
                     # Bit hacky, but it's better than bundling the dt with the input spec
                     sample_input = input[list(input_keys)[0]]
@@ -291,7 +292,7 @@ def process_inputs(in_files, cfg: RunConfig):
                         )
 
                         processing_progress.update_progress(t)
-                        logger.info(processing_progress)
+                        processing_progress.log_progress()
 
                     processed_data_tuples.append(processed)
             else:
@@ -486,6 +487,7 @@ def process_inputs(in_files, cfg: RunConfig):
                     write_progress[f'{m}-{qf}_qf'] += len(groups[m])
 
             write_progress = Progress('data write', **write_progress)
+            write_progress.log_progress()
 
             for m in set(list(processed_groups_pre.keys()) + list(processed_groups_post.keys())):
                 logger.info(f'Writing produced outputs for {m}')
@@ -611,7 +613,7 @@ def process_inputs(in_files, cfg: RunConfig):
                                         f'[{i/len(futures)*100:7.3f}%]')
 
                         write_progress.update_progress(f'{m}-{qf}')
-                        logger.info(write_progress)
+                        write_progress.log_progress()
 
                         i += 1
 
