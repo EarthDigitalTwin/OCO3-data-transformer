@@ -354,7 +354,7 @@ resource "aws_lambda_function" "init_lambda" {
   handler          = "lambda_function.lambda_handler"
   memory_size      = 128
   runtime          = "python3.11"
-  timeout          = 120
+  timeout          = 300
   depends_on       = [local.mount_point_dep, aws_s3_object.rct]
 
   environment {
@@ -427,7 +427,7 @@ resource "aws_lambda_function" "transform_lambda" {
   handler          = "run.lambda_handler"
   memory_size      = 128
   runtime          = "python3.11"
-  timeout          = 60
+  timeout          = 300
   depends_on       = [local.mount_point_dep]
 
   environment {
@@ -472,7 +472,7 @@ resource "aws_lambda_function" "reset_lambda" {
   handler          = "lambda_function.lambda_handler"
   memory_size      = 128
   runtime          = "python3.11"
-  timeout          = 120
+  timeout          = 300
   depends_on       = [local.mount_point_dep, aws_s3_object.rct]
 
   environment {
