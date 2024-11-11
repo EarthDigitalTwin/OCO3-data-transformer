@@ -574,20 +574,20 @@ def main(phase_override=None):
 
         dl_features = stac_filter(cmr_features, state, gap_file)
 
-        if len(dl_features) == 0:
-            logger.info('No new data to process')
-            return NO_NEW_DATA
-
         granule_date_mapping = {}
 
         for date, feature in dl_features:
             granule_date_mapping.setdefault(date, []).append(feature)
 
-        logger.info(f"CMR returned {cmr_feature_count:,} features with {len(dl_features):,} new granules "
+        logger.info(f"CMR queries returned {cmr_feature_count:,} features with {len(dl_features):,} new granules "
                     f"over {len(granule_date_mapping):,} days to process")
 
+        if len(dl_features) == 0:
+            logger.info('No new data to process')
+            return NO_NEW_DATA
+
         if args.limit and len(granule_date_mapping) > args.limit:
-            logger.info(f'CMR returned more days of data ({len(granule_date_mapping):,}) than the provided limit '
+            logger.info(f'There are more days of new data ({len(granule_date_mapping):,}) than the provided limit '
                         f'({args.limit:,}). Truncating list of granules to process.')
 
             granule_date_mapping = dict(list(granule_date_mapping.items())[:args.limit])

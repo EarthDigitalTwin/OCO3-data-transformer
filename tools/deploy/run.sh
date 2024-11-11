@@ -75,8 +75,8 @@ if [ -z ${KEEP+x} ]; then
   rm *.log
 else
   echo 'Keeping logs; this should only be done for debugging purposes. unset KEEP to disable.'
-  mkdir -p saved_logs
-  mv *.log saved_logs/.
+  mkdir -p saved_logs/${dt_start}
+  mv *.log saved_logs/${dt_start}/.
 fi
 
 echo Uploading logs to S3
