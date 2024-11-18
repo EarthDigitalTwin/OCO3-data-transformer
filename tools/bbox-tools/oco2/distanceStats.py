@@ -99,7 +99,7 @@ def main():
 
     Path(os.path.dirname(outfile)).mkdir(parents=True, exist_ok=True)
 
-    inputs = [f.path for f in os.scandir(args.input_dir) if re.match(OCO3_FILENAME_PATTERN, f.name)]
+    inputs = [f.path for f in os.scandir(args.input_dir) if re.match(OCO2_FILENAME_PATTERN, f.name)]
     inputs.sort()
 
     if len(inputs) == 0:
