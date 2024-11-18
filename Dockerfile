@@ -12,22 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#FROM continuumio/miniconda3:23.5.2-0
 FROM continuumio/miniconda3:23.10.0-1
 
 # Install mamba because conda solve time is abysmal
-RUN conda install -yn base --override-channels -c conda-forge -c defaults  \
-#    mamba=1.5.0=py311h3072747_0  \
-#    libmamba=1.5.0=h658169a_0  \
-#    libmambapy=1.5.0=py311h527f279_0  \
-#    libarchive=3.6.2=h039dbb9_1  \
-    mamba=1.5.4 \
-    && conda clean -afy
-
+RUN conda install -yn base --override-channels -c conda-forge -c defaults mamba=1.5.4 && conda clean -afy
 
 # Copy requirements list & install them
 COPY conda-requirements.txt ./conda-requirements.txt
-RUN mamba install -yc conda-forge --file conda-requirements.txt # && mamba clean -afy
+RUN mamba install -yc conda-forge --file conda-requirements.txt && conda clean -ay
 
 # Copy program data & setup scrip
 COPY sam_extract /sam_extract
