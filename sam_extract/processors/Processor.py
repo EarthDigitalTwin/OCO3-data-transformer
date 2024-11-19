@@ -73,7 +73,7 @@ class Processor(ABC):
         writer = ZarrWriter(path, chunking, overwrite=True, verify=False)
         writer.write(ds)
 
-        return open_zarr_group(path, 'local', None)
+        return open_zarr_group(path, 'local', None, decode_times=False)
 
     @staticmethod
     def granule_to_dt(granule_name: str) -> datetime:

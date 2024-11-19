@@ -241,6 +241,27 @@ class ZarrWriter(Writer):
 
             ds[group]['time'].chunk(TIME_CHUNKING)
 
+        if (self.final and exists and not self.overwrite and
+                tuple([int(n) for n in xr.__version__.split('.')[:3]]) >= (2024, 10, 0)):
+            logger.info('Aligning generated dataset to existing chunk boundaries')
+
+            zarr_group = open_zarr_group(self.path, self.store, self.store_params, decode_times=False)
+
+            for group in ds:
+                existing_dataset = zarr_group[group]
+                new_dataset = ds[group]
+
+                if type(new_dataset.time.dtype) is type(np.dtype('datetime64[ns]')):
+                    existing_dataset = xr.decode_cf(existing_dataset)
+
+                attrs = new_dataset.attrs
+
+                ds[group] = xr.concat(
+                    [existing_dataset, new_dataset], dim='time', combine_attrs='drop'
+                ).chunk(time=self.__chunking[0]).sel(time=slice(new_dataset.coords['time'][0], None))
+
+                ds[group].attrs.update(attrs)
+
         logger.debug('Outputting Zarr array')
 
         if self.store == 'local':
