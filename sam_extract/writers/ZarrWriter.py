@@ -18,13 +18,13 @@ from datetime import datetime
 from itertools import chain
 from tempfile import TemporaryDirectory
 from typing import Dict, Tuple, Any
-from urllib.parse import urlparse
 
 import numpy as np
 import s3fs
 import xarray as xr
 import zarr
-
+from sam_extract import GROUP_KEYS
+from sam_extract.utils import open_zarr_group
 from sam_extract.writers import Writer
 from sam_extract.writers.Writer import FIXED_ATTRIBUTES
 from xarray import Dataset
@@ -98,51 +98,6 @@ class ZarrWriter(Writer):
         self.__verify = False if 'verify' not in kwargs else kwargs['verify']
 
     @staticmethod
-    def open_zarr_group(path, store_type, params, root=False, **xr_open_kwargs) -> Dict[str, Dataset]:
-        logger.debug(f'Opening Zarr array group at {path}')
-
-        if store_type == 'local':
-            store = path
-        elif store_type == 's3':
-            url = urlparse(path)
-
-            bucket = url.netloc
-            key = url.path
-
-            if params.get('public', False):
-                store = f'https://{bucket}.s3.{params["region"]}.amazonaws.com{key}'  # key has leading /
-            else:
-                s3 = s3fs.S3FileSystem(
-                    False,
-                    key=params['auth']['accessKeyID'],
-                    secret=params['auth']['secretAccessKey'],
-                    client_kwargs=dict(region_name=params["region"])
-                )
-                store = s3fs.S3Map(root=path, s3=s3, check=False)
-        else:
-            raise ValueError(store_type)
-
-        if root:
-            return {
-                '/': xr.open_zarr(store, consolidated=True, **xr_open_kwargs),
-            }
-        else:
-            groups = {'/': xr.open_zarr(store, consolidated=True, mask_and_scale=True, **xr_open_kwargs)}
-
-            for group in Writer.GROUP_KEYS:
-                if group == '/':
-                    continue
-
-                try:
-                    groups[group] = xr.open_zarr(
-                        store, group=group[1:], consolidated=True, mask_and_scale=True, **xr_open_kwargs
-                    )
-                except:
-                    pass
-
-            return groups
-
-    @staticmethod
     def remove_immutable_attributes(group):
         for g in group:
             for var in group[g].data_vars:
@@ -193,7 +148,7 @@ class ZarrWriter(Writer):
 
             if self.final:
                 logger.debug('Getting dynamic attributes from store')
-                zarr_group = ZarrWriter.open_zarr_group(self.path, self.store, self.store_params, root=True)
+                zarr_group = open_zarr_group(self.path, self.store, self.store_params, root=True)
 
                 append_start = np.min(ds['/'].time.values.astype('datetime64[s]')).item().strftime(ISO_8601)
                 append_end = np.max(ds['/'].time.values.astype('datetime64[s]')).item().strftime(ISO_8601)
@@ -276,7 +231,7 @@ class ZarrWriter(Writer):
                 for ln in APPEND_WARNING:
                     logger.warning(ln)
 
-            encodings = {group: None for group in Writer.GROUP_KEYS}
+            encodings = {group: None for group in GROUP_KEYS}
 
         logger.debug(f'Setting Zarr chunk shapes: {self.__chunking}')
 
@@ -299,7 +254,7 @@ class ZarrWriter(Writer):
             )
             ds_store = s3fs.S3Map(root=self.path, s3=s3, check=False)
 
-        for group in Writer.GROUP_KEYS:
+        for group in GROUP_KEYS:
             if group not in ds:
                 continue
 
@@ -352,7 +307,7 @@ class ZarrWriter(Writer):
         if self.__verify and not self.overwrite and not skip_verification:
             good = True
 
-            zarr_group = ZarrWriter.open_zarr_group(self.path, self.store, self.store_params, root=True)
+            zarr_group = open_zarr_group(self.path, self.store, self.store_params, root=True)
             dim = zarr_group['/'][self.__append_dim].to_numpy()
 
             # Note: in this section, we need to specify decode_times=False when opening the group for modification
@@ -362,9 +317,9 @@ class ZarrWriter(Writer):
                 logger.warning('Appended Zarr array not monotonically increasing along append dimension. '
                                'It will need to be sorted')
 
-                zarr_group = ZarrWriter.open_zarr_group(self.path, self.store, self.store_params, decode_times=False)
+                zarr_group = open_zarr_group(self.path, self.store, self.store_params, decode_times=False)
 
-                for key in Writer.GROUP_KEYS:
+                for key in GROUP_KEYS:
                     if key not in zarr_group:
                         continue
 
@@ -382,7 +337,7 @@ class ZarrWriter(Writer):
 
                 # If we've already fully opened and modified the zarr group, don't reopen it
                 if good:
-                    zarr_group = ZarrWriter.open_zarr_group(self.path, self.store, self.store_params, decode_times=False)
+                    zarr_group = open_zarr_group(self.path, self.store, self.store_params, decode_times=False)
 
                 prev = None
                 drop = []
@@ -395,7 +350,7 @@ class ZarrWriter(Writer):
 
                 logger.info(f'Dropping {len(drop)} duplicate slices at indices: {drop}')
 
-                for key in Writer.GROUP_KEYS:
+                for key in GROUP_KEYS:
                     if key not in zarr_group:
                         continue
 
@@ -418,7 +373,7 @@ class ZarrWriter(Writer):
                     with ProgressLogging(log_level=logging.INFO, interval=10):
                         writer.write(zarr_group)
 
-                    corrected_group = ZarrWriter.open_zarr_group(temp_path, 'local', None, decode_times=False)
+                    corrected_group = open_zarr_group(temp_path, 'local', None, decode_times=False)
 
                     self.overwrite = True
                     self.__correct_ct = corrected_group['/'].attrs.get('date_created', None)

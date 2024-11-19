@@ -23,6 +23,7 @@ from typing import Tuple, List, Optional, Dict, Type, Literal
 
 import xarray as xr
 from sam_extract.runconfig import RunConfig
+from sam_extract.utils import open_zarr_group
 from sam_extract.writers import ZarrWriter
 
 logger = logging.getLogger(__name__)
@@ -72,7 +73,7 @@ class Processor(ABC):
         writer = ZarrWriter(path, chunking, overwrite=True, verify=False)
         writer.write(ds)
 
-        return ZarrWriter.open_zarr_group(path, 'local', None)
+        return open_zarr_group(path, 'local', None)
 
     @staticmethod
     def granule_to_dt(granule_name: str) -> datetime:

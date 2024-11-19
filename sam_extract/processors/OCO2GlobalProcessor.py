@@ -16,7 +16,7 @@ import logging
 import os
 import re
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import numpy as np
 import xarray as xr
@@ -25,7 +25,7 @@ from sam_extract.processors import Processor
 from sam_extract.processors.Processor import PROCESSORS
 from sam_extract.readers import GranuleReader
 from sam_extract.runconfig import RunConfig
-from sam_extract.utils import INTERP_SEMA, get_f_xi, get_xi
+from sam_extract.utils import INTERP_SEMA, get_f_xi, get_xi, open_zarr_group
 from sam_extract.writers import ZarrWriter
 from sam_extract.writers.ZarrWriter import ENCODINGS
 from scipy.interpolate import griddata
@@ -454,7 +454,7 @@ class OCO2GlobalProcessor(Processor):
 
                         del gridded_groups_pre_qf
 
-                        ret_pre_qf = ZarrWriter.open_zarr_group(temp_path_pre, 'local', None)
+                        ret_pre_qf = open_zarr_group(temp_path_pre, 'local', None)
                     else:
                         ret_pre_qf = None
 
@@ -489,7 +489,7 @@ class OCO2GlobalProcessor(Processor):
                     writer = ZarrWriter(str(temp_path_post), chunking, overwrite=True, verify=False)
                     writer.write(gridded_groups_post_qf)
 
-                    ret_post_qf = ZarrWriter.open_zarr_group(temp_path_post, 'local', None)
+                    ret_post_qf = open_zarr_group(temp_path_post, 'local', None)
                 else:
                     ret_post_qf = None
 

@@ -18,7 +18,7 @@ import logging
 import re
 import warnings
 from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Optional
+from typing import Dict
 
 import numpy as np
 import xarray as xr

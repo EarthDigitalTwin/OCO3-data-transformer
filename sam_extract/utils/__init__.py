@@ -17,12 +17,10 @@ import threading
 
 from os.path import join
 
-# TODO: There's a circular import issue somewhere in here, but it doesn't cause issues when running normally for some
-#  reason. I don't currently have time to untangle this
-
 from sam_extract.utils.DaskLogging import ProgressLogging
 from sam_extract.utils.XI import get_xi, get_f_xi, cleanup_xi
 from sam_extract.utils.ZarrUtils import AWSConfig
+from sam_extract.utils.ZarrUtils import open_zarr_group
 from sam_extract.utils.ZarrUtils import create_backup as backup_zarr
 from sam_extract.utils.ZarrUtils import delete_backup as delete_zarr_backup
 from sam_extract.utils.Progress import Progress

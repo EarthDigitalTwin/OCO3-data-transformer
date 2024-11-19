@@ -27,8 +27,7 @@ from typing import Literal
 from urllib.parse import urlparse
 
 import boto3
-from sam_extract.writers import ZarrWriter
-from sam_extract.utils import ZARR_REPAIR_FILE, delete_zarr_backup, AWSConfig
+from sam_extract.utils import ZARR_REPAIR_FILE, delete_zarr_backup, AWSConfig, open_zarr_group
 from yaml import load
 
 try:
@@ -77,7 +76,7 @@ def delete_group(
         try:
             # Check that the path we're deleting is actually Zarr data
             if not path.endswith('.tar'):
-                ZarrWriter.open_zarr_group(path, store_type, store_params, root=True)
+                open_zarr_group(path, store_type, store_params, root=True)
             else:
                 likely_zarr = False
                 with tarfile.open(path, 'r') as tar:

@@ -16,9 +16,9 @@ import logging
 from typing import Dict
 from urllib.parse import urlparse
 
-from xarray import Dataset
-
+from sam_extract import GROUP_KEYS
 from sam_extract.writers import Writer
+from xarray import Dataset
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ class NetCDFWriter(Writer):
         if self.store == 'local':
             local_path = urlparse(self.path).path
 
-            for group in Writer.GROUP_KEYS:
+            for group in GROUP_KEYS:
                 cdf_group = group[1:]
 
                 if group not in ds:
