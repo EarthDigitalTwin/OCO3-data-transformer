@@ -19,7 +19,7 @@ import re
 import warnings
 from datetime import datetime, timezone
 from math import sqrt
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import numpy as np
 import xarray as xr

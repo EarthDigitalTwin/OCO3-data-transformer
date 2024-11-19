@@ -15,20 +15,24 @@
 
 import logging
 import os
-import tarfile
 import subprocess
 import sys
+import tarfile
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from functools import partial
 from os.path import basename, dirname, join
 from shutil import copytree, rmtree
+from typing import Dict
 from urllib.parse import urlparse
 from uuid import uuid4
 
 import boto3
+import s3fs
+import xarray as xr
 from botocore.config import Config
-from sam_extract.writers.ZarrWriter import ZarrWriter
+from sam_extract import GROUP_KEYS
+from xarray import Dataset
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -63,6 +67,51 @@ class AWSConfig:
         return kwargs
 
 
+def open_zarr_group(path, store_type, params, root=False, **xr_open_kwargs) -> Dict[str, Dataset]:
+    logger.debug(f'Opening Zarr array group at {path}')
+
+    if store_type == 'local':
+        store = path
+    elif store_type == 's3':
+        url = urlparse(path)
+
+        bucket = url.netloc
+        key = url.path
+
+        if params.get('public', False):
+            store = f'https://{bucket}.s3.{params["region"]}.amazonaws.com{key}'  # key has leading /
+        else:
+            s3 = s3fs.S3FileSystem(
+                False,
+                key=params['auth']['accessKeyID'],
+                secret=params['auth']['secretAccessKey'],
+                client_kwargs=dict(region_name=params["region"])
+            )
+            store = s3fs.S3Map(root=path, s3=s3, check=False)
+    else:
+        raise ValueError(store_type)
+
+    if root:
+        return {
+            '/': xr.open_zarr(store, consolidated=True, **xr_open_kwargs),
+        }
+    else:
+        groups = {'/': xr.open_zarr(store, consolidated=True, mask_and_scale=True, **xr_open_kwargs)}
+
+        for group in GROUP_KEYS:
+            if group == '/':
+                continue
+
+            try:
+                groups[group] = xr.open_zarr(
+                    store, group=group[1:], consolidated=True, mask_and_scale=True, **xr_open_kwargs
+                )
+            except:
+                pass
+
+        return groups
+
+
 def create_backup(src_path: str, store_type, store_params: dict = None, verify_zarr=True) -> str | None:
     start_t = datetime.now()
     backup_id = str(uuid4())
@@ -78,7 +127,7 @@ def create_backup(src_path: str, store_type, store_params: dict = None, verify_z
     if verify_zarr:
         try:
             # Check that the path we're deleting is actually Zarr data
-            ZarrWriter.open_zarr_group(src_path, store_type, store_params, root=True)
+            open_zarr_group(src_path, store_type, store_params, root=True)
         except Exception as e:
             logger.warning(f'Zarr group at path {src_path} could not be opened for backup. Maybe it does not exist yet.'
                            f' A backup will not be created. Error: {repr(e)}')
@@ -213,7 +262,7 @@ def delete_backup(path: str, store_type, store_params: dict = None, verify=True)
         try:
             # Check that the path we're deleting is actually Zarr data
             if not path.endswith('.tar'):
-                ZarrWriter.open_zarr_group(path, store_type, store_params, root=True)
+                open_zarr_group(path, store_type, store_params, root=True)
             else:
                 likely_zarr = False
                 with tarfile.open(path, 'r') as tar:

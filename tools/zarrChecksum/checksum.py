@@ -96,6 +96,13 @@ def main():
     )
 
     parser.add_argument(
+        '--chunks-only',
+        dest='chunks_only',
+        action='store_true',
+        help='Only process data chunks, ignoring metadata files.'
+    )
+
+    parser.add_argument(
         '-v',
         dest='verbose',
         action='store_true',
@@ -131,6 +138,9 @@ def main():
         zarr_files = [k['Key'] for k in zarr_files]
 
         f_open = partial(open_s3, s3=s3, bucket=bucket)
+
+    if args.chunks_only:
+        zarr_files = [f for f in zarr_files if os.path.basename(f) not in ['.zattrs', '.zmetadata', '.zgroup', '.zarray']]
 
     with ThreadPoolExecutor(thread_name_prefix='s3_worker') as pool:
         parts = []

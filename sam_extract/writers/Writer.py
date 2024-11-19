@@ -19,11 +19,10 @@ from typing import Dict
 from urllib.parse import urlparse
 
 import boto3
+import sam_extract
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from xarray import Dataset
-
-import sam_extract
 
 logger = logging.getLogger(__name__)
 
@@ -106,8 +105,6 @@ FIXED_ATTRIBUTES = {
 
 
 class Writer(ABC):
-    GROUP_KEYS = ['/', '/Meteorology', '/Preprocessors', '/Retrieval', '/Sounding']
-
     def __init__(self, path: str, overwrite: bool = False, **kwargs):
         self.path = path
         self.overwrite = overwrite

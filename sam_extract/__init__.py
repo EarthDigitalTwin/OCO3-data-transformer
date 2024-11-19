@@ -39,3 +39,5 @@ logging.addLevelName(TRACE, 'TRACE')
 setattr(logging, 'TRACE', TRACE)
 setattr(logging, 'trace', log_trace_to_root)
 setattr(logging.getLoggerClass(), 'trace', log_trace)
+
+GROUP_KEYS = ['/', '/Meteorology', '/Preprocessors', '/Retrieval', '/Sounding']
