@@ -582,6 +582,13 @@ def main(phase_override=None):
         logger.info(f"CMR queries returned {cmr_feature_count:,} features with {len(dl_features):,} new granules "
                     f"over {len(granule_date_mapping):,} days to process")
 
+        log_json = json.dumps(
+            dict(features=cmr_feature_count, new=len(dl_features), days=len(granule_date_mapping)),
+            separators=(',', ':')
+        )
+
+        logger.info(f'cmr_granule_report: {log_json}')
+
         if len(dl_features) == 0:
             logger.info('No new data to process')
             return NO_NEW_DATA
