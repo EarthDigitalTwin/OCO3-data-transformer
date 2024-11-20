@@ -454,7 +454,7 @@ class OCO2GlobalProcessor(Processor):
 
                         del gridded_groups_pre_qf
 
-                        ret_pre_qf = open_zarr_group(temp_path_pre, 'local', None)
+                        ret_pre_qf = open_zarr_group(temp_path_pre, 'local', None, decode_times=False)
                     else:
                         ret_pre_qf = None
 
@@ -489,7 +489,7 @@ class OCO2GlobalProcessor(Processor):
                     writer = ZarrWriter(str(temp_path_post), chunking, overwrite=True, verify=False)
                     writer.write(gridded_groups_post_qf)
 
-                    ret_post_qf = open_zarr_group(temp_path_post, 'local', None)
+                    ret_post_qf = open_zarr_group(temp_path_post, 'local', None, decode_times=False)
                 else:
                     ret_post_qf = None
 
@@ -568,6 +568,13 @@ class OCO2GlobalProcessor(Processor):
             )
             for group in variables
         }
+
+        gridded_ds['/'].attrs['interpolation_method'] = cfg.grid_method(Processor.DEFAULT_INTERPOLATE_METHOD)
+
+        res_attr = cfg.grid.get('resolution_attr')
+
+        if res_attr:
+            gridded_ds['/'].attrs['resolution'] = res_attr
 
         return gridded_ds
 
