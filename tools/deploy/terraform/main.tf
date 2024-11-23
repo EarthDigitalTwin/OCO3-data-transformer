@@ -196,6 +196,32 @@ resource "aws_cloudwatch_log_group" "log_group" {
 
 /*
 
+CloudWatch Alarm
+
+*/
+
+# TODO: Make threshold configurable?
+resource "aws_cloudwatch_metric_alarm" "efs_burst_alarm" {
+  alarm_name          = "${local.name_root}fs-burst-alarm"
+  alarm_description   = "Alarm if FS doesn't have enough burst credits to comfortably process ~1yr of OCO data"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 1
+  period              = 60
+  statistic           = "Average"
+  datapoints_to_alarm = 1
+  treat_missing_data  = "notBreaching"
+  actions_enabled     = false
+  namespace           = "AWS/EFS"
+  metric_name         = "BurstCreditBalance"
+  unit                = "Bytes"
+  threshold           = 100000000000 # Margin of 100 GB
+  dimensions = {
+    FileSystemId = var.efs_fs_id
+  }
+}
+
+/*
+
 SNS
 
 */

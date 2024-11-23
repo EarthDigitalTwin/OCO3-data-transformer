@@ -518,12 +518,46 @@ locals {
               "StringEqualsPath": "$$.Execution.Name"
             }
           ],
-          "Next": "init",
+          "Next": "check_efs_alarm",
           "Comment": "We're good. This is the first/only current execution."
         }
       ],
       "Default": "SKIP_CONCURRENT_EXECUTION",
       "Comment": "Check that this is the first running execution"
+    },
+    "check_efs_alarm": {
+      "Type": "Task",
+      "Parameters": {
+        "AlarmNames": [
+          "${aws_cloudwatch_metric_alarm.efs_burst_alarm.alarm_name}"
+        ],
+        "MaxRecords": 1
+      },
+      "Resource": "arn:aws:states:::aws-sdk:cloudwatch:describeAlarms",
+      "Next": "evaluate_alarm_state",
+      "ResultSelector": {
+        "state.$": "$.MetricAlarms[0].StateValue"
+      },
+      "Comment": "Check the EFS alarm"
+    },
+    "evaluate_alarm_state": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Not": {
+            "Variable": "$.state",
+            "StringEquals": "ALARM"
+          },
+          "Next": "init",
+          "Comment": "If we're not in alarm state, continue with the execution"
+        }
+      ],
+      "Default": "EFS_BACKOFF",
+      "Comment": "Evaluate the state of the EFS alarm"
+    },
+    "EFS_BACKOFF": {
+      "Type": "Succeed",
+      "Comment": "EFS does not have enough burst credits to comfortable accommodate an execution, back off until it sufficiently recovers."
     },
     "SKIP_CONCURRENT_EXECUTION": {
       "Type": "Succeed",
