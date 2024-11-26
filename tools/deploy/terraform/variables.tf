@@ -194,7 +194,7 @@ EventBridge
 */
 
 variable "schedule_frequency" {
-  description = "EventBridge schedule frequency. Values: quarter-hourly, half-hourly, hourly, daily, weekly, monthly. Also valid: 15, 30, 60 (minutes per invocation)"
+  description = "EventBridge schedule frequency. Values: quarter-hourly, half-hourly, hourly, or daily. Also valid: 15, 30, 60 (minutes per invocation)"
   type        = string
   default     = "quarter-hourly"
 
@@ -204,8 +204,6 @@ variable "schedule_frequency" {
       "half-hourly",
       "hourly",
       "daily",
-      "weekly",
-      "monthly",
       "15",
       "30",
       "60"

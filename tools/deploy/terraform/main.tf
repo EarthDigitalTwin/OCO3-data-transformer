@@ -177,26 +177,7 @@ resource "aws_s3_object" "data_gaps" {
 
 /*
 
-CloudWatch Logs
-
-*/
-
-resource "aws_cloudwatch_log_group" "log_group" {
-  name              = "${local.name_root}transform-logs"
-  retention_in_days = var.log_retention_time
-  skip_destroy      = false
-
-  lifecycle {
-    ignore_changes = [
-      tags,
-      #      retention_in_days
-    ]
-  }
-}
-
-/*
-
-CloudWatch Alarm
+CloudWatch
 
 */
 
@@ -218,6 +199,37 @@ resource "aws_cloudwatch_metric_alarm" "efs_burst_alarm" {
   dimensions = {
     FileSystemId = var.efs_fs_id
   }
+}
+
+resource "aws_cloudwatch_dashboard" "dashboard" {
+  dashboard_body = var.global_product ? local.global_dashboard_definition : local.tfp_dashboard_definition
+  dashboard_name =  "${local.name_root}dashboard"
+}
+
+/*
+
+CloudWatch Logs
+
+*/
+
+resource "aws_cloudwatch_log_group" "log_group" {
+  name              = "${local.name_root}transform-logs"
+  retention_in_days = var.log_retention_time
+  skip_destroy      = false
+
+  lifecycle {
+    ignore_changes = [
+      tags,
+      #      retention_in_days
+    ]
+  }
+}
+
+resource "aws_cloudwatch_log_subscription_filter" "logs_subscription" {
+  destination_arn = aws_lambda_function.l2m_lambda.arn
+  filter_pattern  = "?\"progress_json\" ?\"cmr_granule_report\" ?\"ExecutionSucceeded\" ?\"ExecutionFailed\" ?\"metrics::\""
+  log_group_name  = aws_cloudwatch_log_group.log_group.name
+  name            = "${local.name_root}logs-subscription"
 }
 
 /*
@@ -371,6 +383,10 @@ data "local_file" "reset_package" {
   filename = "../lambdas/reset/package.zip"
 }
 
+data "local_file" "l2m_package" {
+  filename = "../lambdas/logs2metrics/package.zip"
+}
+
 resource "aws_lambda_function" "init_lambda" {
   function_name    = "${local.name_root}transform-copy-config-files"
   role             = data.aws_iam_role.iam_lambda_role.arn
@@ -521,6 +537,37 @@ resource "aws_lambda_function" "reset_lambda" {
     security_group_ids = [data.aws_security_group.compute_sg.id]
     subnet_ids         = [data.aws_subnet.subnet.id]
   }
+}
+
+resource "aws_lambda_function" "l2m_lambda" {
+  function_name    = "${local.name_root}logs2metrics"
+  role             = data.aws_iam_role.iam_lambda_role.arn
+  architectures    = ["x86_64"]
+  filename         = data.local_file.l2m_package.filename
+  source_code_hash = data.local_file.l2m_package.content_base64sha256
+  handler          = "lambda_function.lambda_handler"
+  memory_size      = 128
+  runtime          = "python3.11"
+  timeout          = 300
+
+  environment {
+    variables = {
+      NAMESPACE = local.metrics_namespace
+    }
+  }
+
+  vpc_config {
+    security_group_ids = [data.aws_security_group.compute_sg.id]
+    subnet_ids         = [data.aws_subnet.subnet.id]
+  }
+}
+
+resource "aws_lambda_permission" "l2m_cloudwatch_permission" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.l2m_lambda.function_name
+  principal     = "logs.${data.aws_region.current.name}.amazonaws.com"
+  source_account = data.aws_caller_identity.current.account_id
+  source_arn = "${aws_cloudwatch_log_group.log_group.arn}:*"
 }
 
 
