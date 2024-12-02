@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM continuumio/miniconda3:23.10.0-1
-
-# Install mamba because conda solve time is abysmal
-RUN conda install -yn base --override-channels -c conda-forge -c defaults mamba=1.5.4 && conda clean -afy
+FROM condaforge/mambaforge:24.9.2-0
 
 # Copy requirements list & install them
 COPY conda-requirements.txt ./conda-requirements.txt
