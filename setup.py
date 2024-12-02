@@ -16,7 +16,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='oco3_sam_zarr',
-    version='2024.11.11',
+    version='2024.12.02',
     url='https://github.com/EarthDigitalTwin/OCO3-data-transformer',
     author='Riley Kuttruff',
     author_email='riley.k.kuttruff@jpl.nasa.gov',
