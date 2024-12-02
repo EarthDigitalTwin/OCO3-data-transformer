@@ -140,7 +140,7 @@ locals {
                     },
                     {
                       "Name": "COLLECTION_ID",
-                      "Value": "C2716248872-GES_DISC"
+                      "Value": "C2912085112-GES_DISC"
                     }
                   ]
                 }
@@ -236,7 +236,7 @@ locals {
                     },
                     {
                       "Name": "COLLECTION_ID",
-                      "Value": "C2082387249-GES_DISC"
+                      "Value": "C2910085832-GES_DISC"
                     }
                   ]
                 }
