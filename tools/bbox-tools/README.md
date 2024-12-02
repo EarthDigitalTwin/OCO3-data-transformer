@@ -13,7 +13,7 @@ formatted file to run the software.
 
 ### Data
 
-You'll need to download data from the [`OCO3_L2_Lite_FP v10.4r`](https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_FP_10.4r/summary?keywords=oco3) dataset. Any amount of data can be used, but we recommend
+You'll need to download data from the [`OCO3_L2_Lite_FP v11r`](https://disc.gsfc.nasa.gov/datasets/OCO3_L2_Lite_FP_11r/summary) dataset. Any amount of data can be used, but we recommend
 downloading as much as you are able, if not the whole dataset. You'll need an [Earthdata login](https://urs.earthdata.nasa.gov/)
 to download the data.
 

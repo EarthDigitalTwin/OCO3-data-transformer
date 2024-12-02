@@ -16,7 +16,7 @@ formatted file to run the software.
 
 ### Data
 
-You'll need to download data from the [`OCO2_L2_Lite_FP v11.1r`](https://disc.gsfc.nasa.gov/datasets/OCO2_L2_Lite_FP_11.1r/summary?keywords=OCO2_L2_Lite_FP_11.1r) dataset. Any amount of data can be used, but we recommend
+You'll need to download data from the [`OCO2_L2_Lite_FP v11.2r`](https://disc.gsfc.nasa.gov/datasets/OCO2_L2_Lite_FP_11.2r/summary) dataset. Any amount of data can be used, but we recommend
 downloading as much as you are able, if not the whole dataset. You'll need an [Earthdata login](https://urs.earthdata.nasa.gov/)
 to download the data.
 
