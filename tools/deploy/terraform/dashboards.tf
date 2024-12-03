@@ -39,7 +39,8 @@ locals {
                     "left": {
                         "min": 0
                     }
-                }
+                },
+                "liveData": true
             }
         },
         {
@@ -63,7 +64,8 @@ locals {
                     "left": {
                         "min": 0
                     }
-                }
+                },
+                "liveData": true
             }
         },
         {
@@ -87,7 +89,8 @@ locals {
                     "left": {
                         "min": 0
                     }
-                }
+                },
+                "liveData": true
             }
         },
         {
@@ -111,14 +114,15 @@ locals {
                     "left": {
                         "min": 0
                     }
-                }
+                },
+                "liveData": true
             }
         },
         {
-            "height": 4,
-            "width": 9,
+            "height": 6,
+            "width": 4,
             "y": 14,
-            "x": 12,
+            "x": 14,
             "type": "metric",
             "properties": {
                 "view": "timeSeries",
@@ -135,7 +139,7 @@ locals {
         },
         {
             "height": 2,
-            "width": 9,
+            "width": 2,
             "y": 18,
             "x": 12,
             "type": "alarm",
@@ -168,7 +172,8 @@ locals {
                         "max": 100,
                         "label": ""
                     }
-                }
+                },
+                "liveData": true
             }
         },
         {
@@ -197,7 +202,8 @@ locals {
                 },
                 "stat": "Average",
                 "period": 5,
-                "title": "Process Task Performance"
+                "title": "Process Task Performance",
+                "liveData": true
             }
         },
         {
@@ -215,7 +221,8 @@ locals {
                 "region": "${data.aws_region.current.name}",
                 "period": 300,
                 "start": "-PT24H",
-                "end": "P0D"
+                "end": "P0D",
+                "liveData": true
             }
         },
         {
@@ -238,7 +245,28 @@ locals {
                 "singleValueFullPrecision": true,
                 "title": "Input Data Counts",
                 "start": "-PT24H",
-                "end": "P0D"
+                "end": "P0D",
+                "liveData": true
+            }
+        },
+        {
+            "type": "metric",
+            "x": 12,
+            "y": 14,
+            "width": 2,
+            "height": 4,
+            "properties": {
+                "metrics": [
+                    [ "AWS/EFS", "StorageBytes", "StorageClass", "Total", "FileSystemId", "${local.fs_dep_id}", { "region": "${data.aws_region.current.name}" } ]
+                ],
+                "sparkline": false,
+                "view": "singleValue",
+                "region": "${data.aws_region.current.name}",
+                "period": 300,
+                "stat": "Maximum",
+                "liveData": false,
+                "singleValueFullPrecision": false,
+                "title": "EFS Current Size"
             }
         }
     ]
@@ -270,7 +298,8 @@ EOF
                     "left": {
                         "min": 0
                     }
-                }
+                },
+                "liveData": true
             }
         },
         {
@@ -294,7 +323,8 @@ EOF
                     "left": {
                         "min": 0
                     }
-                }
+                },
+                "liveData": true
             }
         },
         {
@@ -318,7 +348,8 @@ EOF
                     "left": {
                         "min": 0
                     }
-                }
+                },
+                "liveData": true
             }
         },
         {
@@ -342,14 +373,15 @@ EOF
                     "left": {
                         "min": 0
                     }
-                }
+                },
+                "liveData": true
             }
         },
         {
-            "height": 4,
-            "width": 12,
+            "height": 6,
+            "width": 4,
             "y": 14,
-            "x": 12,
+            "x": 14,
             "type": "metric",
             "properties": {
                 "view": "timeSeries",
@@ -366,7 +398,7 @@ EOF
         },
         {
             "height": 2,
-            "width": 12,
+            "width": 2,
             "y": 18,
             "x": 12,
             "type": "alarm",
@@ -400,7 +432,8 @@ EOF
                     }
                 },
                 "period": 5,
-                "stat": "Maximum"
+                "stat": "Maximum",
+                "liveData": true
             }
         },
         {
@@ -429,7 +462,8 @@ EOF
                 },
                 "stat": "Average",
                 "period": 5,
-                "title": "Process Task Performance"
+                "title": "Process Task Performance",
+                "liveData": true
             }
         },
         {
@@ -447,7 +481,8 @@ EOF
                 "region": "${data.aws_region.current.name}",
                 "period": 300,
                 "start": "-PT24H",
-                "end": "P0D"
+                "end": "P0D",
+                "liveData": true
             }
         },
         {
@@ -471,7 +506,8 @@ EOF
                     "left": {
                         "min": 0
                     }
-                }
+                },
+                "liveData": true
             }
         },
         {
@@ -494,7 +530,28 @@ EOF
                 "end": "P0D",
                 "period": 300,
                 "stat": "Minimum",
-                "title": "Input Data Counts"
+                "title": "Input Data Counts",
+                "liveData": true
+            }
+        },
+        {
+            "type": "metric",
+            "x": 12,
+            "y": 14,
+            "width": 2,
+            "height": 4,
+            "properties": {
+                "metrics": [
+                    [ "AWS/EFS", "StorageBytes", "StorageClass", "Total", "FileSystemId", "${local.fs_dep_id}", { "region": "${data.aws_region.current.name}" } ]
+                ],
+                "sparkline": false,
+                "view": "singleValue",
+                "region": "${data.aws_region.current.name}",
+                "period": 300,
+                "stat": "Maximum",
+                "liveData": false,
+                "singleValueFullPrecision": false,
+                "title": "EFS Current Size"
             }
         }
     ]
