@@ -547,6 +547,20 @@ These will display all the resources set to be deleted and prompt the user for c
 NOTE: These scripts do not delete the corresponding workspaces; that will need to be done manually if so desired with 
 `terraform workspace delete <workspace_name>`.
 
+## Monitoring
+
+Terraform will create a CloudWatch dashboard which will contain information on the current progress of current data generation
+tasks, data generation resource utilization, CMR feature counts, remaining granules and data days to process, EFS performance
+and overall execution time.
+
+<p align="center">
+  <img src="docs/images/AWS-dashboard-global.png" alt="Screenshot of sample global dashboard" width="1000" />
+  <br>
+  <img src="docs/images/AWS-dashboard-tfp.png" alt="Screenshot of sample target-focused dashboard" width="1000" />
+  <br>
+  Sample screenshots of the created dashboards in global (top) and target-focused (bottom) configurations.
+</p>
+
 ## State Machine Diagram
 
 <p align="center">
