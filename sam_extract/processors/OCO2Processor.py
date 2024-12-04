@@ -28,6 +28,7 @@ from sam_extract.processors import Processor
 from sam_extract.processors.Processor import PROCESSORS
 from sam_extract.readers import GranuleReader
 from sam_extract.runconfig import RunConfig
+from sam_extract.utils.dataset_utils import is_nan
 from scipy.interpolate import griddata
 from shapely import from_wkt
 from shapely.affinity import scale
@@ -462,8 +463,9 @@ class OCO2Processor(Processor):
                             logger.info(f'Gridding unfiltered region for target: {target} '
                                         f'({target_defs.get(target, dict()).get("name", "")}). '
                                         f'[{i}/{len(extracted_sams_pre_qf)}]')
-                            processed_sams_pre_qf.append(
-                                (mask_data(
+
+                            processed_data = (
+                                mask_data(
                                     sam,
                                     fit_data_to_grid(
                                         sam,
@@ -472,8 +474,13 @@ class OCO2Processor(Processor):
                                         cfg
                                     ),
                                     cfg
-                                ), target)
+                                ), target
                             )
+
+                            if cfg.drop_empty and (processed_data[0] is None or is_nan(processed_data[0])):
+                                logger.warning(f'Dropped empty pre-qf slice for target {target}')
+                            else:
+                                processed_sams_pre_qf.append(processed_data)
                     else:
                         logger.info('No pre-qf data to extract.')
 
@@ -487,8 +494,9 @@ class OCO2Processor(Processor):
                         logger.info(f'Gridding filtered region for target: {target} '
                                     f'({target_defs.get(target, dict()).get("name", "")}). '
                                     f'[{i}/{len(extracted_sams_post_qf)}]')
-                        processed_sams_post_qf.append(
-                            (mask_data(
+
+                        processed_data = (
+                            mask_data(
                                 sam,
                                 fit_data_to_grid(
                                     sam,
@@ -497,8 +505,13 @@ class OCO2Processor(Processor):
                                     cfg
                                 ),
                                 cfg
-                            ), target)
+                            ), target
                         )
+
+                        if cfg.drop_empty and (processed_data[0] is None or is_nan(processed_data[0])):
+                            logger.warning(f'Dropped empty post-qf slice for target {target}')
+                        else:
+                            processed_sams_post_qf.append(processed_data)
                 else:
                     logger.info('No post-qf data to extract.')
 

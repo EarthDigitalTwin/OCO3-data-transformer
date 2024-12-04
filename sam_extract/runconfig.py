@@ -256,7 +256,6 @@ class RunConfig(object):
 
         return oco3_td
 
-
-
-
-
+    @property
+    def drop_empty(self):
+        return self.__dict['output'].get('drop-empty', False)

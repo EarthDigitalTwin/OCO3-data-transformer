@@ -27,6 +27,7 @@ output:  # required; one-of
   title:    # Dataset title in metadata, uses output.naming values (w/o '.zarr') if omitted
     pre_qf: pre_qf_root_title
     post_qf: post_qf_root_title
+  drop-empty: true
   cog:
     output:
       local: file:///tmp/oco3/cog/
