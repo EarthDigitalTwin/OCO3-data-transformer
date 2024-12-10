@@ -160,7 +160,7 @@ pip install .
 
 The conversion script is controlled by a configuration YAML file, a template of which can be found [here](sample-run-config.yaml).
 
-#### Inputs Section
+#### Input Section
 
 The `input` key is required to define what and were the script sources its data from. There are two options for input; one and only one should be defined.
 
@@ -255,17 +255,19 @@ inputs:
 
 As above, the S3 object can have an optional field `region` to specify the AWS region, the default value is `us-west-2`
 
-#### Outputs Section
+#### Output Section
 
 The `output` key is required to define where the output data is written to, and its filename & title metadata.
 
 To set target-focused mode, you must specify the `output.global` key as `false`
 
+Note if you set this mode, you must configure target bounding boxes ([see below](#target-bounding-boxes)).
+
 Output location can either be `output.local`, which should be a local filesystem path, or the script can be configured to write to S3 with:
 
 ```yaml
 output: 
-  global: false
+  global: true
   s3:
     url: s3://sam-zarr-bucket/root/path/
     region: us-west-2 # optional; assume us-west-2
@@ -276,7 +278,7 @@ output:
 
 ```yaml
 output: 
-  global: false
+  global: true
   local: /home/user/oco-zarrs
 ```
 
@@ -285,7 +287,7 @@ groups will be placed. The parent directories for these groups are set by the fo
 
 ```yaml
 output:
-  global: false
+  global: true
   naming:
     pre_qf: pre_qf_root_name
     post_qf: post_qf_root_name
@@ -298,11 +300,13 @@ The metadata `title` field can be set by the optional `output.title` field:
 
 ```yaml
 output:
-  global: false
+  global: true
   title:
     pre_qf: PRE_QF_ROOT_TITLE
     post_qf: POST_QF_ROOT_TITLE
 ```
+
+##### Options For Target-Focused Mode
 
 You can optionally also include Cloud-optimized GeoTIFF outputs by adding an `output.cog` key with its own `output.local`
 or `output.s3` subkeys to configure the path:
@@ -328,6 +332,17 @@ output:
       blocksize: 128
       overview_count: 4
 ```
+
+One caveat to CoG output is that oftentimes all data for a SAM or Target capture (especially for certain target types) will lie outside the defined bounding box
+for the target, which will result in an empty set of output products. You can elect to drop these products with the `output.drop-empty` option:
+
+```yaml
+output:
+  global: false
+  drop-empty: true
+```
+
+Note this option will be ignored in global mode, since there won't be any additional overhead in output files.
 
 #### Grid Resolution and Zarr Chunking Sections
 

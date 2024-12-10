@@ -12,27 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-python>=3.9,<3.12
-xarray>=2023.8.0
-numpy
-dask
-netCDF4
-h5netcdf
-bottleneck
-scipy<1.12.0
-zarr>=2.11
-shapely
-pyyaml
-boto3
-geos>=3.10.0
-s3fs==2022.5.0
-fsspec==2022.5.0
-tini
-aiobotocore>=2.3.0,<2.4
-pika
-schema
-requests
-psutil
-rioxarray
-yamale
-tenacity
+
+from typing import Dict
+
+from xarray import Dataset
+
+
+def is_nan(dataset_group: Dict[str, Dataset]) -> bool:
+    mapped = {k: dataset_group[k].isnull() for k in dataset_group}
+
+    groups_nan = {k: all([all(mapped[k][v].data.flatten()) for v in mapped[k].data_vars]) for k in dataset_group}
+
+    return all(groups_nan.values())

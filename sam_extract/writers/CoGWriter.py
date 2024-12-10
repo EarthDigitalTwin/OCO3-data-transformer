@@ -25,6 +25,7 @@ import boto3
 from sam_extract.utils import AWSConfig
 from sam_extract.writers import Writer
 from sam_extract.writers.Writer import FIXED_ATTRIBUTES
+from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type, after_log
 from xarray import Dataset
 
 logger = logging.getLogger(__name__)
@@ -66,11 +67,11 @@ class CoGWriter(Writer):
         self.__efs = efs and self.store == 'local'
 
         if self.__efs:
-            self.__tp: ThreadPoolExecutor = ThreadPoolExecutor(thread_name_prefix='cog-worker')
+            self.__tp: ThreadPoolExecutor | None = ThreadPoolExecutor(thread_name_prefix='cog-worker')
             self.__td = TemporaryDirectory(ignore_cleanup_errors=True)
             self.__futures = []
         else:
-            self.__tp = None
+            self.__tp: ThreadPoolExecutor | None = None
             self.__td = None
             self.__futures = None
 
@@ -92,6 +93,12 @@ class CoGWriter(Writer):
 
         return validated
 
+    @retry(
+        stop=stop_after_attempt(2),
+        retry=retry_if_exception_type(FileNotFoundError),
+        reraise=True,
+        after=after_log(logger, logging.WARNING)
+    )
     def write(
             self,
             ds: Dict[str, Dataset],
@@ -152,18 +159,27 @@ class CoGWriter(Writer):
                             out_path = os.path.join(root_dir, filename)
                             logger.debug(f'Writing Cloud-Optimized GeoTIFF to {out_path}')
                             data.rio.to_raster(out_path, driver='COG', sharing=False, **self.__driver_kwargs)
+                            # logger.trace(f'stat {out_path}: {os.stat(out_path)}')
                             tiffs.append(out_path)
                         else:
                             out_path = os.path.join(self.__td.name, filename)
                             logger.debug(f'Writing Cloud-Optimized GeoTIFF {filename}')
                             logger.trace(f'Writing Cloud-Optimized GeoTIFF to {out_path}')
                             data.rio.to_raster(out_path, driver='COG', sharing=False, **self.__driver_kwargs)
+                            # logger.trace(f'stat {out_path}: {os.stat(out_path)}')
 
                             dst_path = os.path.join(root_dir, filename)
 
+                            # Use copy instead of move because a: the source files will disappear at container exit and
+                            # b: there have been issues with the unlink step of shutil.move on EFS
+
                             self.__futures.append(
-                                self.__tp.submit(CoGWriter.__move, out_path, dst_path)
+                                self.__tp.submit(
+                                    CoGWriter.__copy,
+                                    out_path, dst_path,
+                                )
                             )
+
                             logger.trace(f'Queued move of {out_path} -> {dst_path}')
             if self.store == 's3':
                 logger.debug(f'Pushing {len(tiffs):,} to {self.path}')
@@ -217,6 +233,8 @@ class CoGWriter(Writer):
             raise ValueError('Bad store type')
 
     @staticmethod
-    def __move(src, dst):
-        shutil.move(src, dst)
-        logger.trace(f'Successfully moved {src} -> {dst}')
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0.05), reraise=True, after=after_log(logger, logging.WARNING))
+    def __copy(src, dst, *, follow_symlinks=True):
+        logger.trace(f'Attempting copy of {src} to {dst}')
+        shutil.copy2(src, dst, follow_symlinks=follow_symlinks)
+        # logger.trace(f'stat {dst}: {os.stat(dst)}')

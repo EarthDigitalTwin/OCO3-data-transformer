@@ -203,7 +203,7 @@ resource "aws_cloudwatch_metric_alarm" "efs_burst_alarm" {
 
 resource "aws_cloudwatch_dashboard" "dashboard" {
   dashboard_body = var.global_product ? local.global_dashboard_definition : local.tfp_dashboard_definition
-  dashboard_name =  "${local.name_root}dashboard"
+  dashboard_name = "${local.name_root}dashboard"
 }
 
 /*
@@ -563,11 +563,11 @@ resource "aws_lambda_function" "l2m_lambda" {
 }
 
 resource "aws_lambda_permission" "l2m_cloudwatch_permission" {
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.l2m_lambda.function_name
-  principal     = "logs.${data.aws_region.current.name}.amazonaws.com"
+  action         = "lambda:InvokeFunction"
+  function_name  = aws_lambda_function.l2m_lambda.function_name
+  principal      = "logs.${data.aws_region.current.name}.amazonaws.com"
   source_account = data.aws_caller_identity.current.account_id
-  source_arn = "${aws_cloudwatch_log_group.log_group.arn}:*"
+  source_arn     = "${aws_cloudwatch_log_group.log_group.arn}:*"
 }
 
 
