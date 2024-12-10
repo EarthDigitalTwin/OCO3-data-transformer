@@ -39,6 +39,12 @@ locals {
     "60"           = "cron(*/60 * * * ? *)"
   }
 
+  log_levels = {
+    INFO  = []
+    DEBUG = ["-v"]
+    TRACE = ["-vv"]
+  }
+
   rc_template = yamlencode({
     output = {
       local = "/var/outputs"
@@ -231,7 +237,7 @@ locals {
       },
       {
         name  = "LOG_LEVEL",
-        value = var.verbose ? "10" : "20"
+        value = contains(["DEBUG", "TRACE"], var.log_level) ? "10" : "20"
       },
       {
         name  = "STAC_JSON",
@@ -282,7 +288,7 @@ locals {
     image = local.image
     command = concat(
       ["python", "/sam_extract/main.py", "-i", "/var/pipeline-rc.yaml"],
-      var.verbose ? ["-v"] : []
+      local.log_levels[var.log_level]
     )
     jobRoleArn       = data.aws_iam_role.iam_task_role.arn
     executionRoleArn = data.aws_iam_role.iam_task_execution_role.arn

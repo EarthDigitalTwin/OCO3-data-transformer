@@ -389,10 +389,15 @@ variable "skip_datasets" {
   }
 }
 
-variable "verbose" {
-  type        = bool
-  description = "Process step logging verbosity"
-  default     = false
+variable "log_level" {
+  type        = string
+  description = "Process step logging verbosity. One of INFO (default), DEBUG, or TRACE"
+  default     = "INFO"
+
+  validation {
+    condition     = contains(["INFO", "DEBUG", "TRACE"], var.log_level)
+    error_message = "Invalid log_level. Must be one of INFO, DEBUG or TRACE"
+  }
 }
 
 variable "testing" {

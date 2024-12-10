@@ -46,7 +46,9 @@ s3_data_gap_config_source = ""
 // Logging configurations
 metrics_profile_rate = 10
 log_retention_time   = 7
-verbose              = false
+log_level            = "INFO"
+
+drop-empty = false
 
 // Desired output variables. Sample provided
 variables = {
