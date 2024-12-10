@@ -21,7 +21,7 @@ locals {
   sfn_name      = "${local.name_root}transform"
 
   metrics_namespace_root = var.global_product ? "OCO3/GLOBAL${var.testing ? "-TFTEST" : ""}" : "OCO3/TARGET_FOCUSED${var.testing ? "-TFTEST" : ""}"
-  metrics_namespace = "${local.metrics_namespace_root}${terraform.workspace == "default" ? "-DEV" : "-PROD"}"
+  metrics_namespace      = "${local.metrics_namespace_root}${terraform.workspace == "default" ? "-DEV" : "-PROD"}"
 
   image = "${var.image}:${var.image_tag}"
 
@@ -50,7 +50,8 @@ locals {
         pre_qf  = upper("${var.output_ds_name}_pre_qf")
         post_qf = upper("${var.output_ds_name}_post_qf")
       }
-      global = var.global_product
+      global     = var.global_product
+      drop-empty = var.drop-empty
       cog = var.global_product ? null : {
         efs = true,
         output = {

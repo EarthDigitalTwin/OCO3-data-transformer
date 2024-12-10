@@ -14,7 +14,7 @@
 
 
 locals {
-    sfn_definition = <<EOF
+  sfn_definition = <<EOF
 {
   "StartAt": "check_executions",
   "States": {

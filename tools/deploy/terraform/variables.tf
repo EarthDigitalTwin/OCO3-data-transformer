@@ -412,3 +412,11 @@ variable "deployment_name" {
     error_message = "Invalid deployment name"
   }
 }
+
+variable "drop-empty" {
+  description = "If true, drop empty data slices (ie, slices where all interpolated data lies outside of the bounding box) from the output. Only applies if global_product = false; does nothing if global_product = true."
+  type        = bool
+  default     = false
+}
+
+// TODO: Organize this file
