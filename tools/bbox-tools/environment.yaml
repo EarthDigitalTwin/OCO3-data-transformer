@@ -16,7 +16,6 @@
 name: oco3-bboxes
 channels:
   - conda-forge
-  - defaults
 dependencies:
   - python>=3.9,<3.12
   - xarray>=2023.8.0
