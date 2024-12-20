@@ -268,6 +268,20 @@ locals {
                 "singleValueFullPrecision": false,
                 "title": "EFS Current Size"
             }
+        },
+        {
+            "type": "log",
+            "x": 18,
+            "y": 14,
+            "width": 6,
+            "height": 6,
+            "properties": {
+                "query": "SOURCE '${aws_cloudwatch_log_group.log_group.name}' | fields @message, @timestamp, @logStream, @log\n| filter @logStream like /process-data/\n| parse @message \"* * * * * *\" as date, time, level, thread, location, text\n| sort @timestamp desc\n| filter level in [\"[WARNING]\", \"[ERROR]\", \"[CRITICAL]\"]\n| limit 10000\n| display @timestamp, level, text",
+                "region": "us-west-2",
+                "stacked": false,
+                "title": "Process phase warnings and errors",
+                "view": "table"
+            }
         }
     ]
 }
@@ -552,6 +566,20 @@ EOF
                 "liveData": false,
                 "singleValueFullPrecision": false,
                 "title": "EFS Current Size"
+            }
+        },
+        {
+            "type": "log",
+            "x": 18,
+            "y": 14,
+            "width": 6,
+            "height": 6,
+            "properties": {
+                "query": "SOURCE '${aws_cloudwatch_log_group.log_group.name}' | fields @message, @timestamp, @logStream, @log\n| filter @logStream like /process-data/\n| parse @message \"* * * * * *\" as date, time, level, thread, location, text\n| sort @timestamp desc\n| filter level in [\"[WARNING]\", \"[ERROR]\", \"[CRITICAL]\"]\n| limit 10000\n| display @timestamp, level, text",
+                "region": "us-west-2",
+                "stacked": false,
+                "title": "Process phase warnings and errors",
+                "view": "table"
             }
         }
     ]
