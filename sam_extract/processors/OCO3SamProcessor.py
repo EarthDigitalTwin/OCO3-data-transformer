@@ -18,7 +18,7 @@ import logging
 import re
 import warnings
 from datetime import datetime, timezone
-from typing import Dict
+from typing import Dict, List, Tuple
 
 import numpy as np
 import xarray as xr
@@ -355,38 +355,50 @@ class OCO3SamProcessor(Processor):
 
                 logger.info('Splitting into individual SAM regions')
 
-                n_sams = 0
-                n_targets = 0
-
                 region_slices = []
                 in_region = False
                 start = None
                 target_id = None
 
-                for i, (mode, target) in enumerate(zip(mode_array.to_numpy(), target_array.to_numpy())):
-                    # print('SAM', region_slices[-1:], i, mode, target, in_region, start, target_id, n_sams)
+                n_merged = 0
 
+                def merge_last_or_append(slices: List[Tuple[slice, int]], item: Tuple[slice, int], margin=2):
+                    if len(slices) == 0:
+                        slices.append(item)
+                    else:
+                        last = slices[-1]
+
+                        if abs(last[0].stop - item[0].start) < margin and last[1] == item[1]:
+                            slices[-1] = (slice(last[0].start, item[0].stop), last[1])
+                            logger.debug(f'Merged region {last} and {item} to {slices[-1]} since they are close and '
+                                         f'similar')
+                        else:
+                            slices.append(item)
+
+                for i, (mode, target) in enumerate(zip(mode_array.to_numpy(), target_array.to_numpy())):
                     if mode.item() == OPERATION_MODE_SAM:
                         if not in_region:
                             in_region = True
                             target_id = target
                             start = i
                         elif target != target_id:
-                            region_slices.append((slice(start, i), target_id))
+                            if merge_last_or_append(region_slices, (slice(start, i), target_id)):
+                                n_merged += 1
                             target_id = target
                             start = i
-                            n_sams += 1
 
                     if mode.item() != OPERATION_MODE_SAM:
                         if in_region:
-                            region_slices.append((slice(start, i), target_id))
+                            if merge_last_or_append(region_slices, (slice(start, i), target_id)):
+                                n_merged += 1
                             target_id = None
                             in_region = False
-                            n_sams += 1
 
                 if in_region:
-                    region_slices.append((slice(start, i+1), target_id))
-                    n_sams += 1
+                    if merge_last_or_append(region_slices, (slice(start, i + 1), target_id)):
+                        n_merged += 1
+
+                n_sams = len(region_slices)
 
                 logger.info('Splitting into individual target regions')
 
@@ -395,34 +407,34 @@ class OCO3SamProcessor(Processor):
                 target_id = None
 
                 for i, (mode, target) in enumerate(zip(mode_array.to_numpy(), target_array.to_numpy())):
-                    # print('Target', region_slices[-1:], i, mode, target, in_region, start, target_id, n_sams)
-
                     if mode.item() == OPERATION_MODE_TARGET:
                         if not in_region:
                             in_region = True
                             target_id = target
                             start = i
                         elif target != target_id:
-                            region_slices.append((slice(start, i), target_id))
+                            if merge_last_or_append(region_slices, (slice(start, i), target_id)):
+                                n_merged += 1
                             target_id = target
                             start = i
-                            n_targets += 1
 
                     if mode.item() != OPERATION_MODE_TARGET:
                         if in_region:
-                            region_slices.append((slice(start, i), target_id))
+                            if merge_last_or_append(region_slices, (slice(start, i), target_id)):
+                                n_merged += 1
                             target_id = None
                             in_region = False
-                            n_targets += 1
 
                 if in_region:
-                    region_slices.append((slice(start, i+1), target_id))
-                    n_targets += 1
+                    if merge_last_or_append(region_slices, (slice(start, i + 1), target_id)):
+                        n_merged += 1
+
+                n_targets = len(region_slices) - n_sams
 
                 extracted_sams_pre_qf = []
                 extracted_sams_post_qf = []
 
-                logger.info(f'Identified {n_sams} SAM regions and {n_targets} Target regions')
+                logger.info(f'Identified {n_sams} SAM regions and {n_targets} Target regions ({n_merged} merges)')
                 logger.info('Filtering out bad quality soundings in selected ranges')
 
                 for s, target in region_slices:

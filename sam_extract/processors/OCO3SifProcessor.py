@@ -18,7 +18,7 @@ import logging
 import re
 import warnings
 from datetime import datetime, timezone, timedelta
-from typing import Dict
+from typing import Dict, List, Tuple
 
 import numpy as np
 import xarray as xr
@@ -356,7 +356,7 @@ class OCO3SamSIFProcessor(Processor):
         logger.info(f'Processing OCO-3 SIF input at {path}')
 
         try:
-            with GranuleReader(path, GROUPS, **additional_params) as ds:
+            with (GranuleReader(path, GROUPS, **additional_params) as ds):
                 mode_array = ds['/Metadata']['MeasurementMode']
                 # target_array = ds['/Sounding']['target_id']
 
@@ -367,16 +367,45 @@ class OCO3SamSIFProcessor(Processor):
 
                 logger.info('Splitting into individual SAM regions')
 
-                n_sams = 0
-                n_targets = 0
-
                 region_slices = []
                 in_region = False
                 start = None
                 target_id = None
 
+                n_merged = 0
+
+                def merge_last_or_append(slices: List[Tuple[slice, int]], item: Tuple[slice, int], margin=2):
+                    if len(slices) == 0:
+                        slices.append(item)
+                        return False
+                    else:
+                        last = slices[-1]
+
+                        if abs(last[0].stop - item[0].start) <= margin and \
+                              (last[1] == item[1] or 'none' in [last[1], item[1]]):
+
+                            if 'none' in [last[1], item[1]]:
+                                replace_id = last[1] if last[1] != 'none' else item[1]
+                            else:
+                                replace_id = last[1]
+
+                            slices[-1] = (slice(last[0].start, item[0].stop), replace_id)
+
+                            logger.debug(f'Merged region {last} and {item} to {slices[-1]} since they are close and '
+                                         f'similar')
+                            return True
+                        else:
+                            if item[1] != 'none' and slices[-1][1] == item[1]:
+                                logger.warning(f'Possible unmerged region for target {item[1]}. '
+                                               f'Diff: {abs(last[0].stop - item[0].start)}. Consider adjusting margin '
+                                               f'if this diff seems small, otherwise, it is likely the same target on '
+                                               f'another orbit')
+
+                            slices.append(item)
+                            return False
+
                 for i, (mode, target) in enumerate(zip(mode_array.to_numpy(), target_array)):
-                    logger.trace(f'SAM, {region_slices[-1:]}, {len(region_slices)}, {i}, {mode}, {target}, {in_region}, {start}, {target_id}, {n_sams}')
+                    logger.trace(f'SAM, {region_slices[-1:]}, {len(region_slices)}, {i}, {mode}, {target}, {in_region}, {start}, {target_id}')
 
                     if mode.item() == OPERATION_MODE_SAM:
                         if not in_region:
@@ -391,21 +420,23 @@ class OCO3SamSIFProcessor(Processor):
                                 if target == 'none':
                                     continue
 
-                                region_slices.append((slice(start, i), target_id))
+                                if merge_last_or_append(region_slices, (slice(start, i), target_id)):
+                                    n_merged += 1
                                 start = i
-                                n_sams += 1
                                 target_id = target
 
                     if mode.item() != OPERATION_MODE_SAM:
                         if in_region:
-                            region_slices.append((slice(start, i), target_id))
+                            if merge_last_or_append(region_slices, (slice(start, i), target_id)):
+                                n_merged += 1
                             target_id = None
                             in_region = False
-                            n_sams += 1
 
                 if in_region:
-                    region_slices.append((slice(start, i+1), target_id))
-                    n_sams += 1
+                    if merge_last_or_append(region_slices, (slice(start, i + 1), target_id)):
+                        n_merged += 1
+
+                n_sams = len(region_slices)
 
                 logger.info('Splitting into individual target regions')
 
@@ -414,7 +445,7 @@ class OCO3SamSIFProcessor(Processor):
                 target_id = None
 
                 for i, (mode, target) in enumerate(zip(mode_array.to_numpy(), target_array)):
-                    logger.trace(f'Target, {region_slices[-1:]}, {len(region_slices)}, {i}, {mode}, {target}, {in_region}, {start}, {target_id}, {n_sams}')
+                    logger.trace(f'Target, {region_slices[-1:]}, {len(region_slices)}, {i}, {mode}, {target}, {in_region}, {start}, {target_id}')
 
                     if mode.item() == OPERATION_MODE_TARGET:
                         if not in_region:
@@ -429,26 +460,28 @@ class OCO3SamSIFProcessor(Processor):
                                 if target == 'none':
                                     continue
 
-                                region_slices.append((slice(start, i), target_id))
+                                if merge_last_or_append(region_slices, (slice(start, i), target_id)):
+                                    n_merged += 1
                                 start = i
-                                n_sams += 1
                                 target_id = target
 
                     if mode.item() != OPERATION_MODE_TARGET:
                         if in_region:
-                            region_slices.append((slice(start, i), target_id))
+                            if merge_last_or_append(region_slices, (slice(start, i), target_id)):
+                                n_merged += 1
                             target_id = None
                             in_region = False
-                            n_targets += 1
 
                 if in_region:
-                    region_slices.append((slice(start, i+1), target_id))
-                    n_targets += 1
+                    if merge_last_or_append(region_slices, (slice(start, i + 1), target_id)):
+                        n_merged += 1
+
+                n_targets = len(region_slices) - n_sams
 
                 extracted_sams_pre_qf = []
                 extracted_sams_post_qf = []
 
-                logger.info(f'Identified {n_sams} SAM regions and {n_targets} Target regions')
+                logger.info(f'Identified {n_sams} SAM regions and {n_targets} Target regions ({n_merged} merges)')
                 logger.info('Filtering out bad quality soundings in selected ranges')
 
                 for s, target in region_slices:
