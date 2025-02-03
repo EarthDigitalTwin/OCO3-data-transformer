@@ -17,6 +17,7 @@ import logging
 import os
 import tempfile
 import threading
+from datetime import datetime
 from typing import Dict, Optional, List, Tuple
 from urllib.parse import urlparse, ParseResult
 
@@ -94,6 +95,8 @@ class GranuleReader:
         else:
             raise ValueError(f'Invalid URL scheme: {url.scheme}. Expected file or S3')
 
+        start = datetime.now()
+
         try:
             # Open the input datasets but do not mask out missing values yet
             ds_dict = dict()
@@ -127,7 +130,7 @@ class GranuleReader:
             logger.exception(err)
             raise ReaderException('Something went wrong!')
 
-        logger.info(f'Granule at {path} loaded successfully; now dropping dimensions provided')
+        logger.info(f'Granule at {path} loaded successfully in {datetime.now() - start}')
 
         for group, var in self.__drop:
             if group == '/' or (group, var) in ESSENTIAL_VARS:
