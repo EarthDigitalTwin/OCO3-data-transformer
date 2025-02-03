@@ -16,7 +16,7 @@
 locals {
   global_dashboard_definition = <<EOF
 {
-    "start": "-PT15M",
+    "start": "-PT90M",
     "widgets": [
         {
             "height": 7,
@@ -289,7 +289,7 @@ EOF
 
   tfp_dashboard_definition = <<EOF
 {
-    "start": "-PT15M",
+    "start": "-PT90M",
     "widgets": [
         {
             "height": 7,

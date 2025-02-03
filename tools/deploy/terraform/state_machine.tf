@@ -155,7 +155,19 @@ locals {
                   "Comment": "General error catch"
                 }
               ],
-              "Next": "err_check_0_oco2"
+              "Next": "err_check_0_oco2",
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Batch.ServerException"
+                  ],
+                  "BackoffRate": 2,
+                  "IntervalSeconds": 5,
+                  "MaxAttempts": 3,
+                  "Comment": "Seeing an uptick in batch internal server failures (500) on submit. Retry these.",
+                  "JitterStrategy": "FULL"
+                }
+              ]
             },
             "err_check_0_oco2": {
               "Type": "Choice",
@@ -197,7 +209,19 @@ locals {
                   "Comment": "General error catch"
                 }
               ],
-              "Next": "err_check_0_oco3"
+              "Next": "err_check_0_oco3",
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Batch.ServerException"
+                  ],
+                  "BackoffRate": 2,
+                  "IntervalSeconds": 5,
+                  "MaxAttempts": 3,
+                  "Comment": "Seeing an uptick in batch internal server failures (500) on submit. Retry these.",
+                  "JitterStrategy": "FULL"
+                }
+              ]
             },
             "err_check_0_oco3": {
               "Type": "Choice",
@@ -251,7 +275,19 @@ locals {
                   "Comment": "General error catch"
                 }
               ],
-              "Next": "err_check_0_oco3_sif"
+              "Next": "err_check_0_oco3_sif",
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Batch.ServerException"
+                  ],
+                  "BackoffRate": 2,
+                  "IntervalSeconds": 5,
+                  "MaxAttempts": 3,
+                  "Comment": "Seeing an uptick in batch internal server failures (500) on submit. Retry these.",
+                  "JitterStrategy": "FULL"
+                }
+              ]
             },
             "err_check_0_oco3_sif": {
               "Type": "Choice",
@@ -378,6 +414,18 @@ locals {
           "Next": "fail_msg_stage",
           "Comment": "General error catch"
         }
+      ],
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Batch.ServerException"
+          ],
+          "BackoffRate": 2,
+          "IntervalSeconds": 5,
+          "MaxAttempts": 3,
+          "Comment": "Seeing an uptick in batch internal server failures (500) on submit. Retry these.",
+          "JitterStrategy": "FULL"
+        }
       ]
     },
     "err_check_2": {
@@ -463,6 +511,18 @@ locals {
           ],
           "Next": "pipeline_fail_eval",
           "Comment": "General error catch"
+        }
+      ],
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Batch.ServerException"
+          ],
+          "BackoffRate": 2,
+          "IntervalSeconds": 5,
+          "MaxAttempts": 3,
+          "Comment": "Seeing an uptick in batch internal server failures (500) on submit. Retry these.",
+          "JitterStrategy": "FULL"
         }
       ]
     },
