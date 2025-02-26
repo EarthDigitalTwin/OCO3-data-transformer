@@ -112,7 +112,7 @@ def plan(local_dir, bucket, prefix, s3) -> Tuple[List[Tuple[str, str]], List[str
     logger.info(f'Listing local directory {local_dir}')
 
     local_list = [
-        strip_prefix(os.path.join(dp, f), local_dir) for dp, dn, filenames in os.walk(local_dir) for f in filenames
+        strip_prefix(os.path.join(str(dp), f), local_dir) for dp, dn, filenames in os.walk(local_dir) for f in filenames
     ]
 
     logger.info(f'Comparing S3 to local...')
@@ -163,8 +163,17 @@ def plan(local_dir, bucket, prefix, s3) -> Tuple[List[Tuple[str, str]], List[str
     return to_upload, to_delete
 
 
-def awscli_sync(task: str, local_dir: str, s3_dst_uri: str, log: logging.Logger = logger):
+def awscli_sync(
+        task: str,
+        local_dir: str,
+        s3_dst_uri: str,
+        log: logging.Logger = logger,
+        dryrun: bool = False
+):
     cmd = ['aws', 's3', 'sync', local_dir, s3_dst_uri, '--delete', '--no-progress']
+
+    if dryrun:
+        cmd.append('--dryrun')
 
     mod_count = 0
     delete_count = 0
@@ -176,9 +185,12 @@ def awscli_sync(task: str, local_dir: str, s3_dst_uri: str, log: logging.Logger 
 
     with p.stdout:
         for line in iter(p.stdout.readline, b''):
-            line = line.decode('utf-8')
+            line = line.decode('utf-8').strip()
 
             log.debug(f'awscli sync [{task}]: {line}')
+
+            if dryrun:
+                line = line.removeprefix('(dryrun) ')
 
             if line.startswith('upload:') or line.startswith('copy:'):
                 mod_count += 1
@@ -321,21 +333,25 @@ def main():
     elif args.method == 'awscli':
         start = datetime.now()
 
+        exception = None
+
         with ThreadPoolExecutor(thread_name_prefix='s3_copy_awscli', max_workers=3) as pool:
             futures = [
                 pool.submit(
                     awscli_sync,
-                    'pre-qf',
+                    'pre-qf  ',
                     pre_qf_src,
                     f's3://{S3_BUCKET}/{S3_ROOT_PREFIX.strip("/")}/{PRE_QF_NAME}',
-                    logger
+                    logger,
+                    dryrun=DRYRUN
                 ),
                 pool.submit(
                     awscli_sync,
-                    'post-qf',
+                    'post-qf ',
                     post_qf_src,
                     f's3://{S3_BUCKET}/{S3_ROOT_PREFIX.strip("/")}/{POST_QF_NAME}',
-                    logger
+                    logger,
+                    dryrun=DRYRUN
                 )
             ]
 
@@ -345,19 +361,27 @@ def main():
                     'cog-sync',
                     COG_DIR,
                     f's3://{S3_BUCKET}/{S3_ROOT_PREFIX.strip("/")}/{COG_DIR_S3}_cog',
-                    logger
+                    logger,
+                    dryrun=DRYRUN
                 ))
 
             uploaded_objects, deleted_objects = 0, 0
 
             for f in futures:
-                task_uploaded, task_deleted = f.result()
+                try:
+                    task_uploaded, task_deleted = f.result()
 
-                uploaded_objects += task_uploaded
-                deleted_objects += task_deleted
+                    uploaded_objects += task_uploaded
+                    deleted_objects += task_deleted
+                except Exception as e:
+                    exception = e
 
-        logger.info(f'Sync completed in {datetime.now() - start}. {uploaded_objects:,} uploaded to S3, '
-                    f'{deleted_objects:,} deleted from S3')
+        if exception is None:
+            logger.info(f'Sync completed in {datetime.now() - start}. {uploaded_objects:,} files uploaded to S3, '
+                        f'{deleted_objects:,} objects deleted from S3')
+        else:
+            logger.error(f'Sync failed in {datetime.now() - start}: {exception}')
+            return 1
 
     return 0
 
