@@ -335,7 +335,7 @@ def main():
 
         exception = None
 
-        with ThreadPoolExecutor(thread_name_prefix='s3_copy_awscli', max_workers=3) as pool:
+        with ThreadPoolExecutor(thread_name_prefix='awscli_caller', max_workers=3) as pool:
             futures = [
                 pool.submit(
                     awscli_sync,
