@@ -13,11 +13,13 @@
 # limitations under the License.
 
 
+import argparse
 import logging
 import os
 import pathlib
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+from subprocess import Popen, STDOUT, PIPE
 from typing import Tuple, List
 from urllib.parse import urlparse
 
@@ -161,7 +163,53 @@ def plan(local_dir, bucket, prefix, s3) -> Tuple[List[Tuple[str, str]], List[str
     return to_upload, to_delete
 
 
+def awscli_sync(task: str, local_dir: str, s3_dst_uri: str, log: logging.Logger = logger):
+    cmd = ['aws', 's3', 'sync', local_dir, s3_dst_uri, '--delete', '--no-progress']
+
+    mod_count = 0
+    delete_count = 0
+    line = None
+
+    log.info(f'sync [{task}]: invoking command: {" ".join(cmd)}')
+
+    p = Popen(cmd, stdout=PIPE, stderr=STDOUT)
+
+    with p.stdout:
+        for line in iter(p.stdout.readline, b''):
+            line = line.decode('utf-8')
+
+            log.debug(f'awscli sync [{task}]: {line}')
+
+            if line.startswith('upload:') or line.startswith('copy:'):
+                mod_count += 1
+            elif line.startswith('delete:'):
+                delete_count += 1
+
+    ret_code = p.wait()
+
+    if ret_code != 0:
+        log.error(f'AWS CLI Sync [{task}] returned non-zero exit code {ret_code}')
+        if log is not None:
+            log.error(f'Last log line [{task}]: {line}')
+
+        raise Exception(f'AWS CLI Sync [{task}] failed')
+
+    return mod_count, delete_count
+
+
 def main():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        '-m', '--method',
+        help='Sync method',
+        choices=['default', 'awscli'],
+        default='default',
+        dest='method',
+    )
+
+    args = parser.parse_args()
+
     if any([v is None for v in [LOCAL_ROOT, S3_ROOT_PREFIX, S3_BUCKET, PRE_QF_NAME, POST_QF_NAME]]):
         logger.error('Not all required params are set')
         return 1
@@ -176,96 +224,140 @@ def main():
 
     s3 = boto3.client('s3')
 
-    to_upload: List[Tuple[str, str]] = []  # list map key -> file abs path to upload
-    to_delete: List[str] = []
+    pre_qf_src = os.path.join(LOCAL_ROOT, PRE_QF_NAME)
+    post_qf_src = os.path.join(LOCAL_ROOT, POST_QF_NAME)
 
-    pre_qf_upload, pre_qf_delete = plan(
-        os.path.join(LOCAL_ROOT, PRE_QF_NAME),
-        S3_BUCKET,
-        f'{S3_ROOT_PREFIX.strip("/")}/{PRE_QF_NAME}',
-        s3
-    )
+    if args.method == 'default':
+        to_upload: List[Tuple[str, str]] = []  # list map key -> file abs path to upload
+        to_delete: List[str] = []
 
-    to_upload.extend(pre_qf_upload)
-    to_delete.extend(pre_qf_delete)
-
-    post_qf_upload, post_qf_delete = plan(
-        os.path.join(LOCAL_ROOT, POST_QF_NAME),
-        S3_BUCKET,
-        f'{S3_ROOT_PREFIX.strip("/")}/{POST_QF_NAME}',
-        s3
-    )
-
-    to_upload.extend(post_qf_upload)
-    to_delete.extend(post_qf_delete)
-
-    if COG_DIR is not None:
-        cog_upload, cog_delete = plan(
-            COG_DIR,
+        pre_qf_upload, pre_qf_delete = plan(
+            pre_qf_src,
             S3_BUCKET,
-            f'{S3_ROOT_PREFIX.strip("/")}/{COG_DIR_S3}_cog',
+            f'{S3_ROOT_PREFIX.strip("/")}/{PRE_QF_NAME}',
             s3
         )
 
-        to_upload.extend(cog_upload)
-        to_delete.extend(cog_delete)
+        to_upload.extend(pre_qf_upload)
+        to_delete.extend(pre_qf_delete)
 
-    logger.info(f'Found {len(to_upload):,} new or modified objects to upload to S3')
-    logger.info(f'Found {len(to_delete):,} missing objects to delete from S3')
-
-    if DRYRUN:
-        logger.warning('DRYRUN ENABLED FILES WILL NOT BE UPLOADED OR DELETED BUT WILL BE LOGGED')
-
-    def s3_copy(key_src_pair):
-        key, src_file = key_src_pair
-
-        logger.log(
-            logging.DEBUG,
-            f'{src_file} -> s3://{S3_BUCKET}/{key}'
+        post_qf_upload, post_qf_delete = plan(
+            post_qf_src,
+            S3_BUCKET,
+            f'{S3_ROOT_PREFIX.strip("/")}/{POST_QF_NAME}',
+            s3
         )
 
-        if not DRYRUN:
-            s3.upload_file(src_file, S3_BUCKET, key)
+        to_upload.extend(post_qf_upload)
+        to_delete.extend(post_qf_delete)
 
-    with ThreadPoolExecutor(thread_name_prefix='s3_copy_worker') as pool:
-        futures = []
-        for p in to_upload:
-            futures.append(pool.submit(s3_copy, p))
+        if COG_DIR is not None:
+            cog_upload, cog_delete = plan(
+                COG_DIR,
+                S3_BUCKET,
+                f'{S3_ROOT_PREFIX.strip("/")}/{COG_DIR_S3}_cog',
+                s3
+            )
 
-        for f in futures:
-            f.result()
+            to_upload.extend(cog_upload)
+            to_delete.extend(cog_delete)
 
-    if len(to_upload) > 0:
-        logger.info('Uploads complete')
+        logger.info(f'Found {len(to_upload):,} new or modified objects to upload to S3')
+        logger.info(f'Found {len(to_delete):,} missing objects to delete from S3')
 
-    to_delete_dicts = [dict(Key=k) for k in to_delete]
-    batches = [to_delete_dicts[i:i + 1000] for i in range(0, len(to_delete_dicts), 1000)]
+        if DRYRUN:
+            logger.warning('DRYRUN ENABLED FILES WILL NOT BE UPLOADED OR DELETED BUT WILL BE LOGGED')
 
-    for batch in batches:
-        logger.info(f'Deleting {len(batch):,} objects')
+        def s3_copy(key_src_pair):
+            key, src_file = key_src_pair
 
-        if not DRYRUN:
-            resp = s3.delete_objects(Bucket=S3_BUCKET, Delete=dict(Objects=batch))
+            logger.log(
+                logging.DEBUG,
+                f'{src_file} -> s3://{S3_BUCKET}/{key}'
+            )
 
-            if len(resp['Deleted']) != len(batch):
-                logger.error(f'{len(resp["Errors"]):,} objects could not be deleted')
+            if not DRYRUN:
+                s3.upload_file(src_file, S3_BUCKET, key)
 
-                retries = 3
+        with ThreadPoolExecutor(thread_name_prefix='s3_copy_worker') as pool:
+            futures = []
+            for p in to_upload:
+                futures.append(pool.submit(s3_copy, p))
 
-                while len(resp["Errors"]) > 0 and retries > 0:
-                    logger.info(f'Retrying {len(resp["Errors"])} objects')
-                    resp = s3.delete_objects(
-                        Bucket=S3_BUCKET,
-                        Delete=dict(Objects=[dict(Key=e['Key']) for e in resp['Errors']])
-                    )
-        else:
-            for k in batch:
-                logger.info(f'(dryrun) Delete s3://{S3_BUCKET}/{k["Key"]}')
+            for f in futures:
+                f.result()
 
-    if len(to_delete) > 0:
-        logger.info('Deletions complete')
+        if len(to_upload) > 0:
+            logger.info('Uploads complete')
 
-    logger.info('Sync complete')
+        to_delete_dicts = [dict(Key=k) for k in to_delete]
+        batches = [to_delete_dicts[i:i + 1000] for i in range(0, len(to_delete_dicts), 1000)]
+
+        for batch in batches:
+            logger.info(f'Deleting {len(batch):,} objects')
+
+            if not DRYRUN:
+                resp = s3.delete_objects(Bucket=S3_BUCKET, Delete=dict(Objects=batch))
+
+                if len(resp['Deleted']) != len(batch):
+                    logger.error(f'{len(resp["Errors"]):,} objects could not be deleted')
+
+                    retries = 3
+
+                    while len(resp["Errors"]) > 0 and retries > 0:
+                        logger.info(f'Retrying {len(resp["Errors"])} objects')
+                        resp = s3.delete_objects(
+                            Bucket=S3_BUCKET,
+                            Delete=dict(Objects=[dict(Key=e['Key']) for e in resp['Errors']])
+                        )
+            else:
+                for k in batch:
+                    logger.info(f'(dryrun) Delete s3://{S3_BUCKET}/{k["Key"]}')
+
+        if len(to_delete) > 0:
+            logger.info('Deletions complete')
+
+        logger.info('Sync complete')
+    elif args.method == 'awscli':
+        start = datetime.now()
+
+        with ThreadPoolExecutor(thread_name_prefix='s3_copy_awscli', max_workers=3) as pool:
+            futures = [
+                pool.submit(
+                    awscli_sync,
+                    'pre-qf',
+                    pre_qf_src,
+                    f's3://{S3_BUCKET}/{S3_ROOT_PREFIX.strip("/")}/{PRE_QF_NAME}',
+                    logger
+                ),
+                pool.submit(
+                    awscli_sync,
+                    'post-qf',
+                    post_qf_src,
+                    f's3://{S3_BUCKET}/{S3_ROOT_PREFIX.strip("/")}/{POST_QF_NAME}',
+                    logger
+                )
+            ]
+
+            if COG_DIR is not None:
+                futures.append(pool.submit(
+                    awscli_sync,
+                    'cog-sync',
+                    COG_DIR,
+                    f's3://{S3_BUCKET}/{S3_ROOT_PREFIX.strip("/")}/{COG_DIR_S3}_cog',
+                    logger
+                ))
+
+            uploaded_objects, deleted_objects = 0, 0
+
+            for f in futures:
+                task_uploaded, task_deleted = f.result()
+
+                uploaded_objects += task_uploaded
+                deleted_objects += task_deleted
+
+        logger.info(f'Sync completed in {datetime.now() - start}. {uploaded_objects:,} uploaded to S3, '
+                    f'{deleted_objects:,} deleted from S3')
 
     return 0
 
