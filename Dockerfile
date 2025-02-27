@@ -14,6 +14,17 @@
 
 FROM condaforge/mambaforge:24.9.2-0
 
+# Install additional dependencies for image
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y unzip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN wget "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -O /tmp/awscliv2.zip && \
+    unzip -d /tmp/ /tmp/awscliv2.zip && \
+    /tmp/aws/install && \
+    rm -rf /tmp/aws*
+
 # Copy requirements list & install them
 COPY conda-requirements.txt ./conda-requirements.txt
 RUN mamba install -yc conda-forge --file conda-requirements.txt && conda clean -ay

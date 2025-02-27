@@ -39,3 +39,11 @@ Then with your environment variables set, simply run:
 ```shell
 python sync.py
 ```
+
+## AWS CLI Sync Method
+
+If AWS CLI is installed, you can use that instead, syncing all output products in a better parallelized fashion:
+
+```shell
+python sync.py --method awscli
+```
