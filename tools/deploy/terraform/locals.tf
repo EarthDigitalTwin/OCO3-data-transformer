@@ -368,7 +368,7 @@ locals {
 
   batch_definition_containerprops_push = jsonencode({
     image            = local.image
-    command          = ["python", "/tools/s3Sync/sync.py"]
+    command          = ["python", "/tools/s3Sync/sync.py", "--method", "awscli"]
     jobRoleArn       = data.aws_iam_role.iam_task_role.arn
     executionRoleArn = data.aws_iam_role.iam_task_execution_role.arn
     volumes = [
