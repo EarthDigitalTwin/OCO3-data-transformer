@@ -150,6 +150,16 @@ class CoGWriter(Writer):
                         data.attrs['datetime_of_first_sounding'] = dt.strftime('%Y-%m-%dT%H:%M:%SZ')
                         data.attrs = {k.upper(): v for k, v in data.attrs.items()}
 
+                        try:
+                            latitude = data.latitude.to_numpy()
+
+                            if latitude[1] - latitude[0] >= 0:
+                                logger.debug(f'Flipping latitude for {self.__mission}:{target_id}.{var}')
+                                data = data.isel(latitude=slice(None, None, -1))
+                        except Exception as e:
+                            logger.warning(f'Could not check latitude ordering for {self.__mission}:{target_id}.{var}'
+                                           f'due to {e}')
+
                         fn_mission = DATASET_FILENAME_PREFIXES.get(self.__mission, self.__mission)
 
                         filename = (f'{fn_mission}_{target_id}_{dt.strftime(DATETIME_FMT)}_'
@@ -159,14 +169,12 @@ class CoGWriter(Writer):
                             out_path = os.path.join(root_dir, filename)
                             logger.debug(f'Writing Cloud-Optimized GeoTIFF to {out_path}')
                             data.rio.to_raster(out_path, driver='COG', sharing=False, **self.__driver_kwargs)
-                            # logger.trace(f'stat {out_path}: {os.stat(out_path)}')
                             tiffs.append(out_path)
                         else:
                             out_path = os.path.join(self.__td.name, filename)
                             logger.debug(f'Writing Cloud-Optimized GeoTIFF {filename}')
                             logger.trace(f'Writing Cloud-Optimized GeoTIFF to {out_path}')
                             data.rio.to_raster(out_path, driver='COG', sharing=False, **self.__driver_kwargs)
-                            # logger.trace(f'stat {out_path}: {os.stat(out_path)}')
 
                             dst_path = os.path.join(root_dir, filename)
 
