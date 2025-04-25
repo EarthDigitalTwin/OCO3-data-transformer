@@ -867,8 +867,10 @@ def lambda_handler(event, context):
 
     try:
         ret = main(event.get('phase', PHASE_STAC_CHECK))
-    except:
+    except Exception as e:
         ret = FAILED_GENERAL
+        logger.error('Caught exception:')
+        logger.exception(e)
     finally:
         return {
             'ExitCode': ret
