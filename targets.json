@@ -4069,6 +4069,17 @@
         "id": "fossil0244",
         "name": "fossil_Fos_sur_Mer_France"
     },
+    "fossil0245": {
+        "bbox": {
+            "max_lat": 41.313801,
+            "max_lon": 99.756401,
+            "min_lat": 38.313801,
+            "min_lon": 96.756401
+        },
+        "centroid_wkt": "POINT(98.256401 39.813801)",
+        "id": "fossil0245",
+        "name": "fossil_GansuJiuSteel_China"
+    },
     "sif_atto": {
         "bbox": {
             "max_lat": 3.6459,
