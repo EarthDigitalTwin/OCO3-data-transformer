@@ -4080,6 +4080,116 @@
         "id": "fossil0245",
         "name": "fossil_GansuJiuSteel_China"
     },
+    "fossil0246": {
+        "bbox": {
+            "max_lat": 41.148602,
+            "max_lon": -79.097198,
+            "min_lat": 38.148602,
+            "min_lon": -82.097198
+        },
+        "centroid_wkt": "POINT(-80.597198 39.648602)",
+        "id": "fossil0246",
+        "name": "fossil_marcellus_sw_mageq_USA"
+    },
+    "fossil0247": {
+        "bbox": {
+            "max_lat": 38.733898,
+            "max_lon": 83.3508,
+            "min_lat": 35.733898,
+            "min_lon": 80.3508
+        },
+        "centroid_wkt": "POINT(81.8508 37.233898)",
+        "id": "fossil0247",
+        "name": "fossil_pocahantas3_vs16_mageq_USA"
+    },
+    "fossil0248": {
+        "bbox": {
+            "max_lat": 36.573101,
+            "max_lon": -88.542801,
+            "min_lat": 33.573101,
+            "min_lon": -91.542801
+        },
+        "centroid_wkt": "POINT(-90.042801 35.073101)",
+        "id": "fossil0248",
+        "name": "fossil_memphis_datacenter_USA"
+    },
+    "fossil0249": {
+        "bbox": {
+            "max_lat": 32.239999999999995,
+            "max_lon": 78.26,
+            "min_lat": 29.24,
+            "min_lon": 75.26
+        },
+        "centroid_wkt": "POINT(76.76 30.74)",
+        "id": "fossil0249",
+        "name": "fossil_Chandigarh_India"
+    },
+    "fossil0250": {
+        "bbox": {
+            "max_lat": 32.41,
+            "max_lon": 77.35,
+            "min_lat": 29.41,
+            "min_lon": 74.35
+        },
+        "centroid_wkt": "POINT(75.85 30.91)",
+        "id": "fossil0250",
+        "name": "fossil_Ludhiana_India"
+    },
+    "fossil0251": {
+        "bbox": {
+            "max_lat": 28.68,
+            "max_lon": 79.5,
+            "min_lat": 25.68,
+            "min_lon": 76.5
+        },
+        "centroid_wkt": "POINT(78 27.18)",
+        "id": "fossil0251",
+        "name": "fossil_Agra_India"
+    },
+    "fossil0252": {
+        "bbox": {
+            "max_lat": 28.35,
+            "max_lon": 82.45,
+            "min_lat": 25.35,
+            "min_lon": 79.45
+        },
+        "centroid_wkt": "POINT(80.95 26.85)",
+        "id": "fossil0252",
+        "name": "fossil_Lucknow_India"
+    },
+    "fossil0253": {
+        "bbox": {
+            "max_lat": 27.95,
+            "max_lon": 81.83,
+            "min_lat": 24.95,
+            "min_lon": 78.83
+        },
+        "centroid_wkt": "POINT(80.33 26.45)",
+        "id": "fossil0253",
+        "name": "fossil_Kanpur_India"
+    },
+    "fossil0254": {
+        "bbox": {
+            "max_lat": 26.97,
+            "max_lon": 83.38,
+            "min_lat": 23.97,
+            "min_lon": 80.38
+        },
+        "centroid_wkt": "POINT(81.88 25.47)",
+        "id": "fossil0254",
+        "name": "fossil_Prayagraj_India"
+    },
+    "fossil0255": {
+        "bbox": {
+            "max_lat": 27.11,
+            "max_lon": 86.66,
+            "min_lat": 24.11,
+            "min_lon": 83.66
+        },
+        "centroid_wkt": "POINT(85.16 25.61)",
+        "id": "fossil0255",
+        "name": "fossil_Patna_India"
+    },
     "sif_atto": {
         "bbox": {
             "max_lat": 3.6459,
@@ -4222,6 +4332,17 @@
         "centroid_wkt": "POINT(-92.2 38.7441)",
         "id": "sif_mzo",
         "name": "sif_Ozark_USA"
+    },
+    "sif_ngm": {
+        "bbox": {
+            "max_lat": 45.947582,
+            "max_lon": -71.286575,
+            "min_lat": 42.947582,
+            "min_lon": -74.286575
+        },
+        "centroid_wkt": "POINT(-72.786575 44.447582)",
+        "id": "sif_ngm",
+        "name": "sif_Northern_Green_Mountains_Vermont_USA"
     },
     "sif_niwot": {
         "bbox": {
@@ -4951,14 +5072,47 @@
     },
     "val009": {
         "bbox": {
+            "max_lat": 41.947842,
+            "max_lon": -103.136681,
+            "min_lat": 38.947842,
+            "min_lon": -106.136681
+        },
+        "centroid_wkt": "POINT(-104.636681 40.447842)",
+        "id": "val009",
+        "name": "val009_LIRF_Colorado"
+    },
+    "val010": {
+        "bbox": {
+            "max_lat": -14.9799,
+            "max_lon": -66.6857,
+            "min_lat": -17.9799,
+            "min_lon": -69.6857
+        },
+        "centroid_wkt": "POINT(-68.1857 -16.4799)",
+        "id": "val010",
+        "name": "val_el_alto_bolivia"
+    },
+    "val011": {
+        "bbox": {
+            "max_lat": -16.68,
+            "max_lon": -65.9,
+            "min_lat": -19.68,
+            "min_lon": -68.9
+        },
+        "centroid_wkt": "POINT(-67.4 -18.18)",
+        "id": "val011",
+        "name": "val_toledo_bolivia"
+    },
+    "val012": {
+        "bbox": {
             "max_lat": 41.422722,
             "max_lon": -102.472275,
             "min_lat": 38.422722,
             "min_lon": -105.472275
         },
         "centroid_wkt": "POINT(-103.972275 39.922722)",
-        "id": "val009",
-        "name": "val009_LIRF_Colorado"
+        "id": "val012",
+        "name": "val012_CAO_Colorado"
     },
     "volcano0001": {
         "bbox": {
